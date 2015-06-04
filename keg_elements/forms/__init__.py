@@ -5,7 +5,7 @@ import inspect
 import logging
 
 import flask
-from flask_wtf import Form
+from flask_wtf import Form as BaseForm
 from keg.db import db
 from wtforms_alchemy import model_form_factory, FormGenerator as FormGeneratorBase
 
@@ -123,6 +123,15 @@ class FormGenerator(FormGeneratorBase):
         if modifier is not None:
             modifier.apply_to_field(field)
         return field
+
+
+class Form(BaseForm):
+    def __init__(self, *args, **kwargs):
+        super(Form, self).__init__(*args, **kwargs)
+        self.after_init(args, kwargs)
+
+    def after_init(self, args, kwargs):
+        pass
 
 BaseModelForm = model_form_factory(Form, form_generator=FormGenerator)
 
