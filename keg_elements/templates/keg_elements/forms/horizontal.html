@@ -61,14 +61,34 @@
     Example usage:
         {{ horiz_form.radio_field(form.answers) }}
  #}
-{% macro radio_field(field) -%}
-    {% for value, label, _ in field.iter_choices() %}
-        <div class="radio">
-            <label>
-                <input type="radio" name="{{ field.id }}" id="{{ field.id }}" value="{{ value }}">{{ label }}
-            </label>
+{% macro radio_field(field, label_visible=true) -%}
+    <div class="form-group {% if field.errors %}has-error{% endif %} {{ kwargs.pop('class_', '') }}">
+        {% if label_visible %}
+            <label for="{{ field.id }}" class="control-label">{{ field.label.text }}</label>
+        {% endif %}
+        <div class="labeled-group">
+        {% for value, label, checked in field.iter_choices() %}
+            <div class="radio">
+                <label>
+                    <input type="radio" name="{{ field.id }}" id="{{ field.id }}" value="{{ value }}" {% if checked %} checked="checked" {% endif %}>{{ label }}
+                </label>
+            </div>
+        {% endfor %}
+        {% if field.errors %}
+            {% for e in field.errors %}
+                <p class="help-block">{{ e }}</p>
+            {% endfor %}
+        {% endif %}
         </div>
-    {% endfor %}
+        {% if field.description %}
+          <div class="description">
+            <button type="button" class="btn" data-toggle="popover"
+                    data-content="{{ field.description }}" data-placement="top">
+              ?
+            </button>
+          </div>
+        {% endif %}
+    </div>
 {%- endmacro %}
 
 {% macro submit_group(action_text='Submit', btn_class='btn btn-primary', cancel_url='') -%}
