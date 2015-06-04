@@ -1,0 +1,131 @@
+{# Renders field for bootstrap 3 standards.
+
+    Params:
+        field - WTForm field
+        kwargs - pass any arguments you want in order to put them into the html attributes.
+        There are few exceptions: for - for_, class - class_, class__ - class_
+
+    Example usage:
+        {{ horz_form.field(form.email, placeholder='Input email', type='email') }}
+#}
+{% macro field(field, label_visible=true) -%}
+
+    <div class="form-group {% if field.errors %}has-error{% endif %} {{ kwargs.pop('class_', '') }}">
+        {% if (field.type != 'HiddenField' and field.type !='CSRFTokenField') and label_visible %}
+            <label for="{{ field.id }}" class="control-label">{{ field.label }}</label>
+        {% endif %}
+        <div class="labeled-group">
+        {{ field(class_='form-control', **kwargs) }}
+        {% if field.errors %}
+            {% for e in field.errors %}
+                <p class="help-block">{{ e }}</p>
+            {% endfor %}
+        {% endif %}
+        </div>
+        {% if field.description %}
+          <div class="description">
+            <button type="button" class="btn" data-toggle="popover"
+                    data-content="{{ field.description }}" data-placement="top">
+              ?
+            </button>
+          </div>
+        {% endif %}
+    </div>
+{%- endmacro %}
+
+{# Renders checkbox fields since they are represented differently in bootstrap
+    Params:
+        field - WTForm field (there are no check, but you should put here only BooleanField.
+        kwargs - pass any arguments you want in order to put them into the html attributes.
+        There are few exceptions: for - for_, class - class_, class__ - class_
+
+    Example usage:
+        {{ horiz_form.checkbox_field(form.remember_me) }}
+ #}
+{% macro checkbox_field(field) -%}
+    <div class="form-group">
+      <div class="unlabeled-group checkbox">
+        <label>
+            {{ field(type='checkbox', **kwargs) }} {{ field.label }}
+        </label>
+      </div>
+    </div>
+{%- endmacro %}
+
+{# Renders radio field
+    Params:
+        field - WTForm field (there are no check, but you should put here only BooleanField.
+        kwargs - pass any arguments you want in order to put them into the html attributes.
+        There are few exceptions: for - for_, class - class_, class__ - class_
+
+    Example usage:
+        {{ horiz_form.radio_field(form.answers) }}
+ #}
+{% macro radio_field(field) -%}
+    {% for value, label, _ in field.iter_choices() %}
+        <div class="radio">
+            <label>
+                <input type="radio" name="{{ field.id }}" id="{{ field.id }}" value="{{ value }}">{{ label }}
+            </label>
+        </div>
+    {% endfor %}
+{%- endmacro %}
+
+{% macro submit_group(action_text='Submit', btn_class='btn btn-primary', cancel_url='') -%}
+    <div class="form-group">
+      <div class="unlabeled-group">
+        <button type="submit" class="{{ btn_class }}">{{ action_text }} </button>
+        <a href="{{cancel_url}}" class="cancel">Cancel</a>
+      </div>
+    </div>
+{%- endmacro %}
+
+{% macro render_field(f) -%}
+    {% if f.type == 'BooleanField' %}
+        {{ checkbox_field(f) }}
+    {% elif f.type == 'RadioField' %}
+        {{ radio_field(f) }}
+    {% else %}
+        {{ field(f) }}
+    {% endif %}
+{%- endmacro %}
+
+
+
+{# Renders WTForm in bootstrap way. There are two ways to call function:
+     - as macros: it will render all field forms using cycle to iterate over them
+     - as call: it will insert form fields as you specify:
+     e.g. {% call macros.render_form(form, action_url=url_for('login_view'), action_text='Login',
+                                        class_='login-form') %}
+                {{ macros.render_field(form.email, placeholder='Input email', type='email') }}
+                {{ macros.render_field(form.password, placeholder='Input password', type='password') }}
+                {{ macros.render_checkbox_field(form.remember_me, type='checkbox') }}
+            {% endcall %}
+
+     Params:
+        form - WTForm class
+        action_url - url where to submit this form
+        action_text - text of submit button
+        class_ - sets a class for form
+    #}
+{% macro form(form, action_url='', action_text='Submit', class_='form-horizontal', btn_class='btn btn-primary') -%}
+
+    <form method="POST" action="{{ action_url }}" role="form" class="{{ class_ }}">
+        {{ form.hidden_tag() if form.hidden_tag }}
+        {% if caller %}
+            {{ caller() }}
+        {% else %}
+            {% for f in form %}
+                {{ render_field(f) }}
+            {% endfor %}
+        {% endif %}
+        {{ submit_group(action_text=action_text, btn_class=btn_class) }}
+    </form>
+{%- endmacro %}
+
+{% macro section(heading, form, fields) -%}
+    <h2>{{heading}}</h2>
+    {% for field_name in fields %}
+        {{ render_field(form[field_name]) }}
+    {% endfor %}
+{%- endmacro %}
