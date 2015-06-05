@@ -128,7 +128,7 @@
         action_text - text of submit button
         class_ - sets a class for form
     #}
-{% macro form(form, action_url='', action_text='Submit', class_='form-horizontal', btn_class='btn btn-primary') -%}
+{% macro form(form, action_url='', action_text='Submit', class_='form-horizontal', btn_class='btn btn-primary', cancel_url='') -%}
 
     <form method="POST" action="{{ action_url }}" role="form" class="{{ class_ }}">
         {{ form.hidden_tag() if form.hidden_tag }}
@@ -139,7 +139,7 @@
                 {{ render_field(f) }}
             {% endfor %}
         {% endif %}
-        {{ submit_group(action_text=action_text, btn_class=btn_class) }}
+        {{ submit_group(action_text=action_text, btn_class=btn_class, cancel_url=cancel_url) }}
     </form>
 {%- endmacro %}
 
