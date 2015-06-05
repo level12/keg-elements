@@ -1,0 +1,115 @@
+{# Renders field for bootstrap 3 standards.
+
+    Params:
+        field - WTForm field
+        kwargs - pass any arguments you want in order to put them into the html attributes.
+        There are few exceptions: for - for_, class - class_, class__ - class_
+
+    Example usage:
+        {{ horz_form.field(form.email, placeholder='Input email', type='email') }}
+#}
+{% macro field(field, label_visible=true) -%}
+    <div class="form-group {{ kwargs.pop('class_', '') }}">
+        {% if (field.type != 'HiddenField' and field.type !='CSRFTokenField') and label_visible %}
+            {{ field.label(class_='control-label') }}
+        {% endif %}
+        <div class="labeled-group">
+            <p class="form-control-static">{{ field._value() }}</p>
+        </div>
+        {% if field.description %}
+          <div class="description">
+            <button type="button" class="btn" data-toggle="popover"
+                    data-content="{{ field.description }}" data-placement="top">
+              ?
+            </button>
+          </div>
+        {% endif %}
+    </div>
+{%- endmacro %}
+
+
+{# Renders radio field
+    Params:
+        field - WTForm field (there are no check, but you should put here only BooleanField.
+        kwargs - pass any arguments you want in order to put them into the html attributes.
+        There are few exceptions: for - for_, class - class_, class__ - class_
+
+    Example usage:
+        {{ horiz_form.radio_field(form.answers) }}
+ #}
+{% macro radio_field(field, label_visible=true) -%}
+    <div class="form-group {{ kwargs.pop('class_', '') }}">
+        {% if label_visible %}
+            {{ field.label(class_='control-label') }}
+        {% endif %}
+        <div class="labeled-group">
+        {% for value, label, checked in field.iter_choices() %}
+            {% if checked %}
+                <p id="{{ field.id }}" class="form-control-static">label</p>
+            {% endif %}
+        {% endfor %}
+        </div>
+        {% if field.description %}
+          <div class="description">
+            <button type="button" class="btn" data-toggle="popover"
+                    data-content="{{ field.description }}" data-placement="top">
+              ?
+            </button>
+          </div>
+        {% endif %}
+    </div>
+{%- endmacro %}
+
+{% macro submit_group(action_text='Done', btn_class='btn btn-primary', cancel_url='') -%}
+    <div class="form-group">
+      <div class="unlabeled-group">
+        <a href="{{cancel_url}}" class="{{ btn_class }}">{{ action_text }}</a>
+      </div>
+    </div>
+{%- endmacro %}
+
+{% macro render_field(f) -%}
+    {% if f.type == 'RadioField' %}
+        {{ radio_field(f) }}
+    {% else %}
+        {{ field(f) }}
+    {% endif %}
+{%- endmacro %}
+
+
+
+{# Renders WTForm in bootstrap way. There are two ways to call function:
+     - as macros: it will render all field forms using cycle to iterate over them
+     - as call: it will insert form fields as you specify:
+     e.g. {% call macros.render_form(form, action_url=url_for('login_view'), action_text='Login',
+                                        class_='login-form') %}
+                {{ macros.render_field(form.email, placeholder='Input email', type='email') }}
+                {{ macros.render_field(form.password, placeholder='Input password', type='password') }}
+                {{ macros.render_checkbox_field(form.remember_me, type='checkbox') }}
+            {% endcall %}
+
+     Params:
+        form - WTForm class
+        action_url - url where to submit this form
+        action_text - text of submit button
+        class_ - sets a class for form
+    #}
+{% macro form(form, action_url='', action_text='Done', class_='form-horizontal', btn_class='btn btn-primary') -%}
+    <div class="{{ class_ }}">
+        {% if caller %}
+            {{ caller() }}
+        {% else %}
+            {% for f in form %}
+                {{ render_field(f) }}
+            {% endfor %}
+        {% endif %}
+        {{ submit_group(action_text=action_text, btn_class=btn_class) }}
+    </div>
+{%- endmacro %}
+
+{% macro section(heading, form, fields) -%}
+    <h2>{{heading}}</h2>
+    {% for field_name in fields %}
+        {{ render_field(form[field_name]) }}
+    {% endfor %}
+{%- endmacro %}
