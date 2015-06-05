@@ -35,7 +35,7 @@ setup(
         'Programming Language :: Python :: 3.4',
     ],
     license='BSD',
-    packages=find_packages(include=['keg_elements.*']),
+    packages=find_packages(),
     zip_safe=False,
     include_package_data=True,
     install_requires=[
