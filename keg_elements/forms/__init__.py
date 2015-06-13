@@ -8,6 +8,7 @@ import flask
 from flask_wtf import Form as BaseForm
 from keg.db import db
 from wtforms_alchemy import model_form_factory, FormGenerator as FormGeneratorBase
+from wtforms_components.fields import SelectField as SelectFieldBase
 
 form_element = flask.Blueprint('form_element', __name__)
 log = logging.getLogger(__name__)
@@ -18,7 +19,7 @@ def to_title_case(x):
     return x.replace('_', ' ').replace('-', ' ').title()
 
 
-#sentinel
+# sentinel
 _not_given = ()
 
 
@@ -117,10 +118,28 @@ class FieldMeta(object):
             pass
 
 
+class SelectField(SelectFieldBase):
+    def __init__(self, *args, **kwargs):
+        self.add_blank_choose = kwargs.pop('add_blank_choose', True)
+        super(SelectField, self).__init__(*args, **kwargs)
+
+    def iter_choices(self):
+        if self.add_blank_choose:
+            yield ('', '', (self.coerce, False))
+        for value in super(SelectField, self).iter_choices():
+            yield value
+
+
 class FormGenerator(FormGeneratorBase):
     def __init__(self, form_class):
         super(FormGenerator, self).__init__(form_class)
         self.fields_meta = getattr(self.form_class, 'FieldsMeta', None)
+
+    def get_field_class(self, column):
+        field_cls = super(FormGenerator, self).get_field_class(column)
+        if field_cls is SelectFieldBase:
+            return SelectField
+        return field_cls
 
     def get_field_modifier(self, prop):
 
@@ -157,7 +176,3 @@ class ModelForm(BaseModelForm):
     @classmethod
     def get_session(self):
         return db.session
-
-
-
-

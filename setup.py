@@ -40,6 +40,8 @@ setup(
     include_package_data=True,
     install_requires=[
         'Keg',
+        'WTForms-Alchemy',
+
     ],
     extras_require={'forms': forms_require},
 )
