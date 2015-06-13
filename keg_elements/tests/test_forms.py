@@ -24,7 +24,10 @@ class FruitForm(Form):
                         choices=[('apple', 'apple'), ('banana', 'banana')])
     letter = SelectField(validators=[validators.Optional()],
                          choices=[('a', 'a'), ('b', 'b'), ('', 'blank')], add_blank_choice=False)
-    number = SelectField(validators=[validators.InputRequired()], choices=[('1', '1'), ('0', '0')])
+    letter2 = SelectField(validators=[validators.InputRequired()], choices=[('a', 'a'), ('b', 'b')])
+    number = SelectField(validators=[validators.Optional()], choices=[(1, '1'), (0, '0')])
+    numstr = SelectField(validators=[validators.Optional()], choices=[('1', '1'), ('0', '0')],
+                         coerce=unicode)
 
 
 class TestSelectField(FormBase):
@@ -41,13 +44,19 @@ class TestSelectField(FormBase):
         assert letter_options.length == 3
 
     def test_blank_choice_submit(self):
-        form = self.assert_valid({'fruit': '', 'letter': '', 'number': '1'})
+        form = self.assert_valid({'fruit': '', 'letter': '', 'letter2': 'a'})
 
         assert form.fruit.data is None
         assert form.letter.data == ''
 
     def test_blank_choice_required(self):
-        form = self.assert_invalid({'number': ''})
-        assert form.number.errors == ['This field is required.']
+        form = self.assert_invalid({'letter2': ''})
+        assert form.letter2.errors == ['This field is required.']
 
-        form = self.assert_valid({'number': '0'})
+        form = self.assert_valid({'letter2': 'b'})
+
+    def test_blank_choice_coerce(self):
+        self.assert_valid({'letter2': 'a', 'number': '1'})
+
+        # make sure we can override the int helper by passing through an explicit coerce
+        self.assert_valid({'letter2': 'a', 'numstr': '1'})

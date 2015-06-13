@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import functools
 import inspect
 import logging
 
@@ -118,16 +119,44 @@ class FieldMeta(object):
             pass
 
 
+def select_coerce(es_pass_thru, coerce, value):
+    if es_pass_thru and value == '':
+        return value
+    if coerce is not _not_given:
+        return coerce(value)
+
+    # try coercing to int first.  If not valid, fall back to default behavior
+    try:
+        return int(value)
+    except ValueError as e:
+        if 'invalid literal for int()' not in str(e):
+            raise
+        return unicode(value)
+
+
 class SelectField(SelectFieldBase):
+    """
+        Provides helpful features above wtforms_components SelectField which it is based on:
+
+        1) Adds a blank choice by default at the front of the choices.  This results in your user
+           being forced to select something if the field is required, which avoids unintial
+           deaulting of the first value in the field getting submitted.
+        2) The coerce function used for the choices will automatically convert to int if possible,
+           falling back to unicode if the value is not an integer.
+    """
     def __init__(self, *args, **kwargs):
         self.add_blank_choice = kwargs.pop('add_blank_choice', True)
+        coerce_arg = kwargs.pop('coerce', _not_given)
         super(SelectField, self).__init__(*args, **kwargs)
 
-        # If we are adding a blank choice, and it is selected, we want the value that comes back
-        # in .data to be None -> as if no value was selected.
         if self.add_blank_choice:
-            # self.filters is a tuple, so have to do some extra work
+            # If we are adding a blank choice, and it is selected, we want the value that comes back
+            # in .data to be None -> as if no value was selected.
+            #
+            # Self.filters is a tuple, so have to do some extra work.
             self.filters = [lambda x: None if x == '' else x] + list(self.filters)
+
+        self.coerce = functools.partial(select_coerce, self.add_blank_choice, coerce_arg)
 
     def iter_choices(self):
         if self.add_blank_choice:
