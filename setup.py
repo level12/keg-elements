@@ -10,11 +10,6 @@ version_globals = {}
 with open(version_fpath) as fo:
     exec(fo.read(), version_globals)
 
-forms_require = [
-    'flask_wtf',
-    'wtforms_alchemy',
-]
-
 setup(
     name="KegElements",
     version=version_globals['VERSION'],
@@ -41,7 +36,7 @@ setup(
     install_requires=[
         'Keg',
         'WTForms-Alchemy',
+        'Flask-WTF',
 
-    ],
-    extras_require={'forms': forms_require},
+    ]
 )

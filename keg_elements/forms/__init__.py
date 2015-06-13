@@ -120,14 +120,27 @@ class FieldMeta(object):
 
 class SelectField(SelectFieldBase):
     def __init__(self, *args, **kwargs):
-        self.add_blank_choose = kwargs.pop('add_blank_choose', True)
+        self.add_blank_choice = kwargs.pop('add_blank_choice', True)
         super(SelectField, self).__init__(*args, **kwargs)
 
+        # If we are adding a blank choice, and it is selected, we want the value that comes back
+        # in .data to be None -> as if no value was selected.
+        if self.add_blank_choice:
+            # self.filters is a tuple, so have to do some extra work
+            self.filters = [lambda x: None if x == '' else x] + list(self.filters)
+
     def iter_choices(self):
-        if self.add_blank_choose:
+        if self.add_blank_choice:
             yield ('', '', (self.coerce, False))
         for value in super(SelectField, self).iter_choices():
             yield value
+
+    @property
+    def choice_values(self):
+        values = super(SelectField, self).choice_values
+        if self.add_blank_choice:
+            return [''] + values
+        return values
 
 
 class FormGenerator(FormGeneratorBase):

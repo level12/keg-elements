@@ -3,3 +3,4 @@
 
 https://github.com/level12/keg/zipball/master
 WTForms-Alchemy
+Flask-WTF
