@@ -25,18 +25,22 @@ _not_given = ()
 class FieldMeta(object):
 
     def __init__(self, label_text=_not_given, description=_not_given, label_modifier=_not_given,
-                 choices_modifier=_not_given, choices=None):
+                 choices_modifier=_not_given, choices=None, required=_not_given):
         self.label_text = label_text
         self.label_modifier = label_modifier
         self.description = description
         self.choices_modifier = choices_modifier
         self.choices = choices
+        self.required = required
+
+        assert self.required in (_not_given, None, True)
 
     def apply_to_field(self, field):
         # field is a wtforms.fields.core.UnboundField instance
         self.apply_to_label(field)
         self.apply_to_description(field)
         self.apply_to_choices(field)
+        self.apply_required(field)
 
     def apply_to_label(self, field):
         default_label = field.kwargs['label']
@@ -98,6 +102,19 @@ class FieldMeta(object):
 
     def modify_choices(self, choices):
         return choices
+
+    def apply_required(self, field):
+        if self.required is None:
+            # We should remove any required validators.  None is an explicit override indicating
+            # the value should not be required.
+            new_validators = []
+            for validator in field.kwargs.get('validators', []):
+                if 'required' not in validator.field_flags:
+                    new_validators.append(validator)
+            field.kwargs['validators'] = new_validators
+        elif self.required:
+            # TODO: make sure an InputRequired validator is present.
+            pass
 
 
 class FormGenerator(FormGeneratorBase):
