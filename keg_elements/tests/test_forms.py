@@ -1,12 +1,31 @@
+from __future__ import absolute_import, unicode_literals
 
 from pyquery import PyQuery as pq
-from keg_elements.forms import Form, SelectField
+from keg_elements.forms import FieldMeta, Form, ModelForm, SelectField
 from werkzeug.datastructures import MultiDict
 from wtforms import validators
+
+import kegel_app.model.entities as ents
 
 
 class FormBase(object):
     form_cls = None
+    entity_cls = None
+
+    def compose_meta(self, fields_meta_cls=None, data={}):
+        assert self.entity_cls is not None, 'must set entity_cls on {}'\
+            .format(self.__class__.__name__)
+
+        class _ComposedForm(ModelForm):
+            class Meta:
+                model = self.entity_cls
+
+            if fields_meta_cls:
+                FieldsMeta = fields_meta_cls
+            else:
+                class FieldsMeta:
+                    __default__ = FieldMeta
+        return _ComposedForm(MultiDict(data))
 
     def assert_invalid(self, data):
         form = self.form_cls(MultiDict(data), csrf_enabled=False)
@@ -60,3 +79,26 @@ class TestSelectField(FormBase):
 
         # make sure we can override the int helper by passing through an explicit coerce
         self.assert_valid({'letter2': 'a', 'numstr': '1'})
+
+
+class TestFieldMeta(FormBase):
+    entity_cls = ents.Thing
+
+    def test_required_unspecified(self):
+        form = self.compose_meta()
+        assert form.name.flags.required
+        assert not form.color.flags.required
+
+    def test_required_true(self):
+        class Temp:
+            __default__ = FieldMeta(required=True)
+        form = self.compose_meta(Temp)
+        assert form.name.flags.required
+        assert form.color.flags.required
+
+    def test_required_false(self):
+        class Temp:
+            __default__ = FieldMeta(required=False)
+        form = self.compose_meta(Temp)
+        assert not form.name.flags.required
+        assert not form.color.flags.required

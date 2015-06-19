@@ -8,6 +8,7 @@ import logging
 import flask
 from flask_wtf import Form as BaseForm
 from keg.db import db
+from wtforms.validators import InputRequired, Optional
 from wtforms_alchemy import model_form_factory, FormGenerator as FormGeneratorBase
 from wtforms_components.fields import SelectField as SelectFieldBase
 
@@ -35,7 +36,7 @@ class FieldMeta(object):
         self.choices = choices
         self.required = required
 
-        assert self.required in (_not_given, None, True)
+        assert self.required in (_not_given, False, True)
 
     def apply_to_field(self, field):
         # field is a wtforms.fields.core.UnboundField instance
@@ -106,17 +107,31 @@ class FieldMeta(object):
         return choices
 
     def apply_required(self, field):
-        if self.required is None:
-            # We should remove any required validators.  None is an explicit override indicating
-            # the value should not be required.
-            new_validators = []
-            for validator in field.kwargs.get('validators', []):
-                if 'required' not in validator.field_flags:
-                    new_validators.append(validator)
-            field.kwargs['validators'] = new_validators
-        elif self.required:
-            # TODO: make sure an InputRequired validator is present.
+        validators = field.kwargs.get('validators', [])
+
+        if self.required == _not_given:
+            # required value not given on FieldMeta, don't make any changes
             pass
+        elif self.required:
+            # If a required validator isn't present, we need to add one.
+            req_val_test = lambda val: 'required' in val.field_flags
+            if not filter(req_val_test, validators):
+                validators.append(InputRequired())
+
+            # If an optional validator is present, we need to remove it.
+            not_opt_val_test = lambda val: 'optional' not in val.field_flags
+            not_opt_validators = filter(not_opt_val_test, validators)
+            field.kwargs['validators'] = not_opt_validators
+        else:
+            # If an optional validator isn't present, we need to add one.
+            opt_val_test = lambda val: 'optional' in val.field_flags
+            if not filter(opt_val_test, validators):
+                validators.append(Optional())
+
+            # If a required validator is present, we need to remove it.
+            non_req_val_test = lambda val: 'required' not in val.field_flags
+            not_req_validators = filter(non_req_val_test, validators)
+            field.kwargs['validators'] = not_req_validators
 
 
 def select_coerce(es_pass_thru, coerce, value):
