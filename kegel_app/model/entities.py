@@ -5,5 +5,5 @@ from keg.db import db
 
 class Thing(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.Unicode, nullable=False)
+    name = db.Column(db.Unicode(50), nullable=False)
     color = db.Column(db.Unicode)

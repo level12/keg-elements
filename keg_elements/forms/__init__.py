@@ -114,22 +114,24 @@ class FieldMeta(object):
             pass
         elif self.required:
             # If a required validator isn't present, we need to add one.
-            req_val_test = lambda val: 'required' in val.field_flags
+            req_val_test = lambda val: hasattr(val, 'field_flags') and 'required' in val.field_flags
             if not filter(req_val_test, validators):
                 validators.append(InputRequired())
 
             # If an optional validator is present, we need to remove it.
-            not_opt_val_test = lambda val: 'optional' not in val.field_flags
+            not_opt_val_test = lambda val: not hasattr(val, 'field_flags') or \
+                'optional' not in val.field_flags
             not_opt_validators = filter(not_opt_val_test, validators)
             field.kwargs['validators'] = not_opt_validators
         else:
             # If an optional validator isn't present, we need to add one.
-            opt_val_test = lambda val: 'optional' in val.field_flags
+            opt_val_test = lambda val: hasattr(val, 'field_flags') and 'optional' in val.field_flags
             if not filter(opt_val_test, validators):
                 validators.append(Optional())
 
             # If a required validator is present, we need to remove it.
-            non_req_val_test = lambda val: 'required' not in val.field_flags
+            non_req_val_test = lambda val: not hasattr(val, 'field_flags') or \
+                'required' not in val.field_flags
             not_req_validators = filter(non_req_val_test, validators)
             field.kwargs['validators'] = not_req_validators
 
