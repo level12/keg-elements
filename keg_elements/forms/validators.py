@@ -1,7 +1,7 @@
 from wtforms import ValidationError
 
 
-def validate_numeric(form, field):
+def numeric(form, field):
     try:
         int(field.data)
     except ValueError:
