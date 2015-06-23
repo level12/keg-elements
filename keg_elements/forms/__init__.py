@@ -8,6 +8,7 @@ import logging
 import flask
 from flask_wtf import Form as BaseForm
 from keg.db import db
+import six
 from wtforms.validators import InputRequired, Optional
 from wtforms_alchemy import model_form_factory, FormGenerator as FormGeneratorBase
 from wtforms_components.fields import SelectField as SelectFieldBase
@@ -115,24 +116,24 @@ class FieldMeta(object):
         elif self.required:
             # If a required validator isn't present, we need to add one.
             req_val_test = lambda val: hasattr(val, 'field_flags') and 'required' in val.field_flags
-            if not filter(req_val_test, validators):
+            if not list(filter(req_val_test, validators)):
                 validators.append(InputRequired())
 
             # If an optional validator is present, we need to remove it.
             not_opt_val_test = lambda val: not hasattr(val, 'field_flags') or \
                 'optional' not in val.field_flags
-            not_opt_validators = filter(not_opt_val_test, validators)
+            not_opt_validators = list(filter(not_opt_val_test, validators))
             field.kwargs['validators'] = not_opt_validators
         else:
             # If an optional validator isn't present, we need to add one.
             opt_val_test = lambda val: hasattr(val, 'field_flags') and 'optional' in val.field_flags
-            if not filter(opt_val_test, validators):
+            if not list(filter(opt_val_test, validators)):
                 validators.append(Optional())
 
             # If a required validator is present, we need to remove it.
             non_req_val_test = lambda val: not hasattr(val, 'field_flags') or \
                 'required' not in val.field_flags
-            not_req_validators = filter(non_req_val_test, validators)
+            not_req_validators = list(filter(non_req_val_test, validators))
             field.kwargs['validators'] = not_req_validators
 
 
@@ -148,7 +149,7 @@ def select_coerce(es_pass_thru, coerce, value):
     except ValueError as e:
         if 'invalid literal for int()' not in str(e):
             raise
-        return unicode(value)
+        return six.text_type(value)
 
 
 class SelectField(SelectFieldBase):
