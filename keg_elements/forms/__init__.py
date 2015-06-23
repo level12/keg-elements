@@ -9,6 +9,8 @@ import flask
 from flask_wtf import Form as BaseForm
 from keg.db import db
 import six
+import wtforms.fields
+import wtforms.form
 from wtforms.validators import InputRequired, Optional
 from wtforms_alchemy import model_form_factory, FormGenerator as FormGeneratorBase
 from wtforms_components.fields import SelectField as SelectFieldBase
@@ -221,6 +223,19 @@ class FormGenerator(FormGeneratorBase):
         return field
 
 
+def field_to_dict(field):
+    if isinstance(field, wtforms.fields.FormField):
+        return form_fields_to_dict(field)
+    try:
+        return [field_to_dict(subfield) for subfield in field]
+    except TypeError:
+        return dict(data=field.data, _errors=field.errors)
+
+
+def form_fields_to_dict(form):
+    return dict((name, field_to_dict(field)) for name, field in six.iteritems(form._fields))
+
+
 class Form(BaseForm):
     def __init__(self, *args, **kwargs):
         super(Form, self).__init__(*args, **kwargs)
@@ -228,6 +243,10 @@ class Form(BaseForm):
 
     def after_init(self, args, kwargs):
         pass
+
+    def fields_todict(self):
+        return form_fields_to_dict(self)
+
 
 BaseModelForm = model_form_factory(Form, form_generator=FormGenerator)
 
