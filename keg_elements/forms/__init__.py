@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 import functools
 import inspect
+import json
 import logging
 
 import flask
@@ -244,8 +245,14 @@ class Form(BaseForm):
     def after_init(self, args, kwargs):
         pass
 
-    def fields_todict(self):
-        return form_fields_to_dict(self)
+    def fields_todict(self, as_json=False, **json_kwargs):
+        """
+            Turns a form into dicts and lists with both data and errors for each field.
+        """
+        data = form_fields_to_dict(self)
+        if as_json:
+            return json.dumps(data, **json_kwargs)
+        return data
 
 
 BaseModelForm = model_form_factory(Form, form_generator=FormGenerator)

@@ -1,5 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
+import json
+
 from pyquery import PyQuery as pq
 from keg_elements.forms import FieldMeta, Form, ModelForm, SelectField
 import keg_elements.forms as ke_forms
@@ -136,6 +138,18 @@ class TestFieldsToDict(FormBase):
             'color': {'data': 'blue', '_errors': []},
         }
         assert form.fields_todict() == expected
+
+    def test_simple_json(self):
+        self.form_cls = FeaturesForm
+        form = self.assert_invalid(color='blue')
+        expected = {
+            'csrf_token': {'data': '', '_errors': []},
+            'name': {'data': '', '_errors': ['This field is required.']},
+            'color': {'data': 'blue', '_errors': []},
+        }
+        fields_json = form.fields_todict(as_json=True)
+        fields_data = json.loads(fields_json)
+        assert fields_data == expected
 
     def test_field_to_dict_field(self):
         form = NumbersSubForm()
