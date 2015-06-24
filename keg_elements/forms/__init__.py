@@ -227,10 +227,9 @@ class FormGenerator(FormGeneratorBase):
 def field_to_dict(field):
     if isinstance(field, wtforms.fields.FormField):
         return form_fields_to_dict(field)
-    try:
+    if isinstance(field, wtforms.fields.FieldList):
         return [field_to_dict(subfield) for subfield in field]
-    except TypeError:
-        return dict(data=field.data, _errors=field.errors)
+    return dict(data=field.data, errors=field.errors)
 
 
 def form_fields_to_dict(form):
