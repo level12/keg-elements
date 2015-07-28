@@ -2,5 +2,6 @@
 # requirements file makes it easier to build the wheelhouse.
 
 https://github.com/level12/keg/zipball/master
+arrow
 WTForms-Alchemy
 Flask-WTF

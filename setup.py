@@ -34,6 +34,7 @@ setup(
     zip_safe=False,
     include_package_data=True,
     install_requires=[
+        'arrow',
         'Keg',
         'WTForms-Alchemy',
         'Flask-WTF',
