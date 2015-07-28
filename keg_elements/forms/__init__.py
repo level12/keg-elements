@@ -9,12 +9,15 @@ import logging
 import flask
 from flask_wtf import Form as BaseForm
 from keg.db import db
+import sqlalchemy as sa
 import six
 import wtforms.fields
 import wtforms.form
 from wtforms.validators import InputRequired, Optional
 from wtforms_alchemy import model_form_factory, FormGenerator as FormGeneratorBase
 from wtforms_components.fields import SelectField as SelectFieldBase
+
+from keg_elements.forms.validators import NumberScale
 
 form_element = flask.Blueprint('form_element', __name__)
 log = logging.getLogger(__name__)
@@ -222,6 +225,12 @@ class FormGenerator(FormGeneratorBase):
         if modifier is not None:
             modifier.apply_to_field(field)
         return field
+
+    def create_validators(self, prop, column):
+        validators = super(FormGenerator, self).create_validators(prop, column)
+        if isinstance(column.type, sa.Numeric):
+            validators.append(NumberScale(column.type.scale))
+        return validators
 
 
 def field_to_dict(field):
