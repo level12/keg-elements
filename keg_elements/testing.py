@@ -85,10 +85,8 @@ class EntityBase(object):
 
     def check_unique_constraint(self, **kwargs):
         self.entity_cls.testing_create(**kwargs)
-        print(self.entity_cls.query.count())
         try:
             self.entity_cls.testing_create(**kwargs)
-            print(self.entity_cls.query.count())
             raise AssertionError('Uniqueness error was not encountered.')
         except Exception as e:
             if not validate_unique_exc(e):
