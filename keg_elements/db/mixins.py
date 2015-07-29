@@ -110,3 +110,17 @@ class MethodsMixin(object):
                 kwargs[column.key] = dt.datetime.now()
 
         return cls.add(**kwargs)
+
+    def ensure(self, key, _flush=False, _commit=True):
+        cls_columns = sainsp(self).mapper.columns
+        key_col = getattr(cls_columns, key)
+        key_val = getattr(self, key)
+        exiting_record = self.query.filter(key_col == key_val).first()
+        if not exiting_record:
+            db.session.add(self)
+            if _flush:
+                session_flush()
+            elif _commit:
+                session_commit()
+            return self
+        return exiting_record

@@ -57,6 +57,7 @@ def session_commit():
         db.session.rollback()
         raise
 
+
 def session_flush():
     try:
         db.session.flush()
