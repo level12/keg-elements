@@ -3,10 +3,10 @@ from __future__ import unicode_literals
 
 import functools
 import inspect
-import json
 import logging
 
 import flask
+import flask.json as json  # ensure we use the right json package
 from flask_wtf import Form as BaseForm
 from keg.db import db
 import six
