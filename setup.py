@@ -37,7 +37,6 @@ setup(
     install_requires=[
         'arrow',
         'Keg',
-        'Flask',
         'Flask-WTF',
         'Flask-WebTest',
         'PyQuery',

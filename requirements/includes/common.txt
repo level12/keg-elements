@@ -1,5 +1,4 @@
 arrow
-Flask
 Flask-WTF
 Flask-WebTest
 PyQuery
