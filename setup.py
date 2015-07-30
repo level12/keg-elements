@@ -4,6 +4,7 @@ from setuptools import setup, find_packages
 cdir = osp.abspath(osp.dirname(__file__))
 README = open(osp.join(cdir, 'readme.rst')).read()
 CHANGELOG = open(osp.join(cdir, 'changelog.rst')).read()
+REQUIREMENTS = open(osp.join(cdir, 'requirements', 'install.txt')).readlines()
 
 version_fpath = osp.join(cdir, 'keg_elements', 'version.py')
 version_globals = {}
@@ -35,8 +36,13 @@ setup(
     include_package_data=True,
     install_requires=[
         'Keg',
-        'WTForms-Alchemy',
+        'Flask',
         'Flask-WTF',
-
+        'Flask-WebTest',
+        'PyQuery',
+        'WTForms-Alchemy',
+        'flake8',
+        'pytest',
+        'pytest-cov',
     ]
 )

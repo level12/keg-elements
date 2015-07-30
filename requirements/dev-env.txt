@@ -1,0 +1,3 @@
+-r includes/common.txt
+-r includes/install-only.txt
+-r includes/dev.txt

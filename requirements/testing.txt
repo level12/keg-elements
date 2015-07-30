@@ -1,7 +1,0 @@
--r runtime.txt
-
-pytest
-pytest-cov
-flake8
-Flask-WebTest
-PyQuery
