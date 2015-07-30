@@ -112,6 +112,36 @@ class TestFieldMeta(FormBase):
         assert not form.color.flags.required
 
 
+class TestValidators(FormBase):
+    entity_cls = ents.Thing
+
+    def test_numeric_scale_check(self):
+        # too many places
+        form = self.compose_meta(scale_check='0.11111')
+        form.validate()
+        assert form.scale_check.errors == ['Field must have no more than 4 decimal places.']
+
+        # equal to data type
+        form = self.compose_meta(scale_check='0.1111')
+        form.validate()
+        assert form.scale_check.errors == []
+
+        # fewer places than data type
+        form = self.compose_meta(scale_check='0.111')
+        form.validate()
+        assert form.scale_check.errors == []
+
+        # integer
+        form = self.compose_meta(scale_check='5')
+        form.validate()
+        assert form.scale_check.errors == []
+
+        # test that other validation happens when type is wrong
+        form = self.compose_meta(scale_check='aaa')
+        form.validate()
+        assert form.scale_check.errors == ['Not a valid decimal value']
+
+
 class FeaturesForm(Form):
     name = wtf.StringField(validators=[validators.required()])
     color = wtf.StringField()
