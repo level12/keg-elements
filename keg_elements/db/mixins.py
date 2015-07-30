@@ -98,6 +98,11 @@ class MethodsMixin(object):
                     or column.default or column.primary_key):
                 continue
 
+            # If the column is being used for polymorphic inheritance identification, then don't
+            # set the value.
+            if insp.mapper.polymorphic_on is column:
+                continue
+
             if isinstance(column.type, sa.types.Enum):
                 kwargs[column.key] = random.choice(column.type.enums)
             elif isinstance(column.type, sa.types.String):
