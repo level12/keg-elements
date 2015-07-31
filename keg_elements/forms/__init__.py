@@ -6,7 +6,6 @@ import inspect
 import logging
 
 import flask
-import flask.json as json  # ensure we use the right json package
 from flask_wtf import Form as BaseForm
 from keg.db import db
 import six
@@ -244,14 +243,9 @@ class Form(BaseForm):
     def after_init(self, args, kwargs):
         pass
 
-    def fields_todict(self, as_json=False, **json_kwargs):
-        """
-            Turns a form into dicts and lists with both data and errors for each field.
-        """
-        data = form_fields_to_dict(self)
-        if as_json:
-            return json.dumps(data, **json_kwargs)
-        return data
+    def fields_todict(self):
+        """Turns a form into dicts and lists with both data and errors for each field."""
+        return form_fields_to_dict(self)
 
 
 BaseModelForm = model_form_factory(Form, form_generator=FormGenerator)
