@@ -195,6 +195,11 @@ class SelectField(SelectFieldBase):
             return [''] + values
         return values
 
+    @property
+    def selected_choice_label(self):
+        value_dict = dict(self.concrete_choices)
+        return value_dict.get(self.data)
+
 
 class FormGenerator(FormGeneratorBase):
     def __init__(self, form_class):
