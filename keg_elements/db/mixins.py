@@ -95,29 +95,37 @@ class MethodsMixin(object):
 
     @classmethod
     def testing_create(cls, **kwargs):
-        # automatically sets most field types. Any fields passed into the method
-        #   will override the automatic behavior
-        # subclasses need to set any necessary key values before calling this method
-        #   including primary and foreign keys
+        """Create an object for testing with default data appropriate for the field type
+
+        * Will automatically set most field types ignoring those passed in via kwargs.
+        * Subclasses that have foreign key relationships should setup those relationships before
+          calling this method.
+
+        Special kwargs:
+        _numeric_defaults_range: a tuple of (HIGH, LOW) which controls the acceptable defaults of
+                                 the two number types. Both integer and numeric (float) fields are
+                                 controlled by this setting.
+        """
+
+        NUMERIC_HIGH, NUMERIC_LOW = kwargs.get('_numeric_defaults_range', (-100, 100))
+
         insp = sainsp(cls)
         for column in insp.columns:
-            # skip fields already in kwargs, foreign key references, and any
-            #   field having a default or server_default configured
-            if (column.key in kwargs or column.foreign_keys or column.server_default
-                    or column.default or column.primary_key):
-                continue
 
-            # If the column is being used for polymorphic inheritance identification, then don't
-            # set the value.
-            if insp.mapper.polymorphic_on is column:
+            # skip fields already in kwargs, foreign key references, and any field having a default
+            # or server_default configured
+            if (column.key in kwargs or column.foreign_keys or column.server_default or
+                    column.default or column.primary_key):
                 continue
 
             if isinstance(column.type, sa.types.Enum):
                 kwargs[column.key] = random.choice(column.type.enums)
             elif isinstance(column.type, sa.types.String):
                 kwargs[column.key] = randchars(min(column.type.length or 25, 25))
-            elif isinstance(column.type, (sa.types.Integer, sa.types.Numeric)):
-                kwargs[column.key] = 0
+            elif isinstance(column.type, sa.types.Integer):
+                kwargs[column.key] = random.randint(NUMERIC_HIGH, NUMERIC_LOW)
+            elif isinstance(column.type, sa.types.Numeric):
+                kwargs[column.key] = random.uniform(NUMERIC_HIGH, NUMERIC_LOW)
             elif isinstance(column.type, sa.types.Date):
                 kwargs[column.key] = dt.date.today()
             elif isinstance(column.type, sa.types.DateTime):
