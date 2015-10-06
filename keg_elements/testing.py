@@ -5,6 +5,7 @@ import sqlalchemy as sa
 from sqlalchemy_utils import ArrowType
 
 from .db.utils import validate_unique_exc
+from .db.mixins import DefaultColsMixin
 
 ColumnCheck = namedtuple('ColumnCheck', 'name, required, fk, unique, timestamp')
 ColumnCheck.__new__.__defaults__ = (True, None, None, None)
@@ -71,6 +72,37 @@ class EntityBase(object):
         if ts_type == 'update':
             assert col.onupdate, 'Column "{}" should have onupdate set'.format(col.name)
         assert col.server_default, 'Column "{}" should have server_default set'.format(col.name)
+
+    def test_all_columns_are_constraint_tested(self):
+        """Checks that all fields declared on entity are in the constraint tests"""
+
+        expected_columns = [col.name for col in self.orm_cls.__table__.columns]
+        constraint_columns = [col[0] for col in self.constraint_tests]
+        inherited_columns = []
+
+        if isinstance(self.orm_cls(), DefaultColsMixin):
+            # Include columns from common import base classes
+            for field in vars(DefaultColsMixin):
+
+                # Ignore the usual __class__, __dict__, blah, blah blah
+                if field.startswith('__'):
+                    continue
+
+                col = getattr(DefaultColsMixin, field)
+
+                # Only consider SQLAlchemy columns
+                if isinstance(col, sa.sql.schema.Column):
+                    inherited_columns.append(field)
+
+        if len(constraint_columns + inherited_columns) != len(expected_columns):
+
+            missing = set(expected_columns) - set(constraint_columns + inherited_columns)
+
+            raise AssertionError(
+                'Missing {} constraint tests for {}.'.format(
+                    self.orm_cls.__name__,
+                    ', '.join(missing))
+            )
 
     def test_column_checks(self):
         if not self.column_checks:
