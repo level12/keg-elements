@@ -13,8 +13,36 @@
         {{caller_kwargs.pop('class_', '') }} ">
 {%- endmacro%}
 
-{% macro field(field, label_visible=true) -%}
+{% macro description(field) -%}
+  <div class="description">
+        <a type="button" class="btn btn-default" rel="kegel-field-description"
+            title="{{ field.label.text }} Field" tabindex="-1"
+            data-field-description-content="#{{ field.id }}_description_content">?</a>
+    <div id="{{ field.id }}_description_content" class="hide">
+        {% if field.description is callable %}
+            {{ field.description()|safe }}
+        {% else %}
+            {{ field.description|safe }}
+        {% endif %}
+    </div>
+  </div>
+{%- endmacro %}
 
+{% macro field(field, label_visible=true) -%}
+{# You will need javascript similar to below for descriptions to work properly
+
+    $('[rel="kegel-field-description"]').popover({
+        container: 'body',
+        html: true,
+        trigger: 'focus',
+        content: function () {
+            var clone = $($(this).data('field-description-content')).clone(true).removeClass('hide');
+            return clone;
+        }
+    }).click(function(e) {
+        e.preventDefault();
+    });
+#}
     {{div_form_group(field, kwargs)}}
         {% if (field.type != 'HiddenField' and field.type !='CSRFTokenField') and label_visible %}
             {{ field.label(class_='control-label') }}
@@ -28,12 +56,7 @@
         {% endif %}
         </div>
         {% if field.description %}
-          <div class="description">
-                <a type="button" class="btn btn-default" data-toggle="popover"
-                  title="{{ field.label.text }} Field" data-content="{{ field.description }}"
-                  data-placement="right" data-trigger="focus" tabindex="-1" data-container="body">
-                ?</a>
-          </div>
+            {{ description(field) }}
         {% endif %}
     </div>
 {%- endmacro %}
@@ -91,12 +114,7 @@
         {% endif %}
         </div>
         {% if field.description %}
-          <div class="description">
-            <a type="button" class="btn btn-default" data-toggle="popover"
-              title="{{ field.label.text }} Field" data-content="{{ field.description }}"
-              data-placement="right" data-trigger="focus" tabindex="-1" data-container="body">
-            ?</a>
-          </div>
+            {{ description(field) }}
         {% endif %}
     </div>
 {%- endmacro %}
