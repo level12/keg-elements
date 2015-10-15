@@ -29,10 +29,10 @@
         </div>
         {% if field.description %}
           <div class="description">
-            <button type="button" class="btn" data-toggle="popover"
-                    data-content="{{ field.description }}" data-placement="top">
-              ?
-            </button>
+                <a type="button" class="btn btn-default" data-toggle="popover"
+                  title="{{ field.label.text }} Field" data-content="{{ field.description }}"
+                  data-placement="right" data-trigger="focus" tabindex="-1" data-container="body">
+                ?</a>
           </div>
         {% endif %}
     </div>
@@ -92,10 +92,10 @@
         </div>
         {% if field.description %}
           <div class="description">
-            <button type="button" class="btn" data-toggle="popover"
-                    data-content="{{ field.description }}" data-placement="top">
-              ?
-            </button>
+            <a type="button" class="btn btn-default" data-toggle="popover"
+              title="{{ field.label.text }} Field" data-content="{{ field.description }}"
+              data-placement="right" data-trigger="focus" tabindex="-1" data-container="body">
+            ?</a>
           </div>
         {% endif %}
     </div>
