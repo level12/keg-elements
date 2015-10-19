@@ -1,0 +1,8 @@
+arrow
+Flask-WTF
+Flask-WebTest
+PyQuery
+WTForms-Alchemy
+flake8
+pytest
+pytest-cov
