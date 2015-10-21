@@ -177,8 +177,7 @@ class TestFieldsToDict(FormBase):
             'name': {'data': '', 'errors': ['This field is required.']},
             'color': {'data': 'blue', 'errors': []},
         }
-        fields_json = form.fields_todict(as_json=True)
-        fields_data = json.loads(fields_json)
+        fields_data = form.fields_todict()
         assert fields_data == expected
 
     def test_field_to_dict_field(self):

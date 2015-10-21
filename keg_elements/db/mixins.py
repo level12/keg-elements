@@ -8,11 +8,12 @@ import sqlalchemy as sa
 from sqlalchemy.inspection import inspect as sainsp
 import six
 import sqlalchemy.orm as saorm
-from sqlalchemy_utils import ArrowType
+from sqlalchemy_utils import ArrowType, EmailType
 
 from .utils import (
     session_commit,
     session_flush,
+    randemail,
     utcnow
 )
 
@@ -70,10 +71,8 @@ class MethodsMixin(object):
         if exclude is None:
             exclude = []
         insp = sainsp(self)
-        #for attr in insp.attrs:
-        return dict([(attr.key, attr.value)
-                     for attr in insp.attrs if attr.key not in exclude])
-
+        return dict((attr.key, attr.value)
+                    for attr in insp.attrs if attr.key not in exclude)
 
     @classmethod
     def add(cls, _commit=True, _flush=False, **kwargs):
@@ -110,18 +109,17 @@ class MethodsMixin(object):
         NUMERIC_HIGH, NUMERIC_LOW = kwargs.get('_numeric_defaults_range', (-100, 100))
 
         insp = sainsp(cls)
-        for column in insp.columns:
 
-            # skip fields already in kwargs, foreign key references, and any field having a default
-            # or server_default configured
-            if (column.key in kwargs or column.foreign_keys or column.server_default or
-                    column.default or column.primary_key):
-                continue
+        skippable = lambda column: (column.key in kwargs      # skip fields already in kwargs
+                                    or column.foreign_keys    # skip foreign keys
+                                    or column.server_default  # skip fields with server defaults
+                                    or column.default         # skip fields with defaults
+                                    or column.primary_key     # skip any primary key
+                                    )
 
+        for column in (col for col in insp.columns if not skippable(col)):
             if isinstance(column.type, sa.types.Enum):
                 kwargs[column.key] = random.choice(column.type.enums)
-            elif isinstance(column.type, sa.types.String):
-                kwargs[column.key] = randchars(min(column.type.length or 25, 25))
             elif isinstance(column.type, sa.types.Integer):
                 kwargs[column.key] = random.randint(NUMERIC_HIGH, NUMERIC_LOW)
             elif isinstance(column.type, sa.types.Numeric):
@@ -130,6 +128,10 @@ class MethodsMixin(object):
                 kwargs[column.key] = dt.date.today()
             elif isinstance(column.type, sa.types.DateTime):
                 kwargs[column.key] = dt.datetime.now()
+            elif isinstance(column.type, EmailType):
+                kwargs[column.key] = randemail(min(column.type.length or 50, 50))
+            elif isinstance(column.type, sa.types.String):
+                kwargs[column.key] = randchars(min(column.type.length or 25, 25))
 
         return cls.add(**kwargs)
 
