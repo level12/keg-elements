@@ -70,10 +70,8 @@ class MethodsMixin(object):
         if exclude is None:
             exclude = []
         insp = sainsp(self)
-        #for attr in insp.attrs:
-        return dict([(attr.key, attr.value)
-                     for attr in insp.attrs if attr.key not in exclude])
-
+        return dict((attr.key, attr.value)
+                    for attr in insp.attrs if attr.key not in exclude)
 
     @classmethod
     def add(cls, _commit=True, _flush=False, **kwargs):
