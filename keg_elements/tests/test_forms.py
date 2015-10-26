@@ -1,7 +1,5 @@
 from __future__ import absolute_import, unicode_literals
 
-import json
-
 from pyquery import PyQuery as pq
 from keg_elements.forms import FieldMeta, Form, ModelForm, SelectField
 import keg_elements.forms as ke_forms

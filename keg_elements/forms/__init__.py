@@ -14,7 +14,7 @@ import wtforms.fields
 import wtforms.form
 from wtforms import widgets
 from wtforms.validators import InputRequired, Optional
-from wtforms_alchemy import model_form_factory, ModelFormField, FormGenerator as FormGeneratorBase
+from wtforms_alchemy import model_form_factory, FormGenerator as FormGeneratorBase
 from wtforms_components.fields import SelectField as SelectFieldBase
 
 from keg_elements.forms.validators import NumberScale
