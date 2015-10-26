@@ -202,9 +202,6 @@ class SelectField(SelectFieldBase):
 
 
 class RequiredRadioBooleanField(wtforms.fields.RadioField):
-    widget = widgets.ListWidget(prefix_label=False)
-    option_widget = widgets.RadioInput()
-
     def __init__(self, *args, **kwargs):
         yes_label = kwargs.pop('yes_label', 'Yes')
         no_label = kwargs.pop('no_label', 'No')
