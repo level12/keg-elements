@@ -12,8 +12,9 @@ import sqlalchemy as sa
 import six
 import wtforms.fields
 import wtforms.form
+from wtforms import widgets
 from wtforms.validators import InputRequired, Optional
-from wtforms_alchemy import model_form_factory, FormGenerator as FormGeneratorBase
+from wtforms_alchemy import model_form_factory, ModelFormField, FormGenerator as FormGeneratorBase
 from wtforms_components.fields import SelectField as SelectFieldBase
 
 from keg_elements.forms.validators import NumberScale
@@ -176,7 +177,7 @@ class SelectField(SelectFieldBase):
             # If we are adding a blank choice, and it is selected, we want the value that comes back
             # in .data to be None -> as if no value was selected.
             #
-            # Self.filters is a tuple, so have to do some extra work.
+            # self.filters is a tuple, so have to do some extra work.
             self.filters = [lambda x: None if x == '' else x] + list(self.filters)
 
         self.coerce = functools.partial(select_coerce, self.add_blank_choice, coerce_arg)
@@ -200,6 +201,29 @@ class SelectField(SelectFieldBase):
         return value_dict.get(self.data)
 
 
+class RequiredRadioBooleanField(wtforms.fields.RadioField):
+    widget = widgets.ListWidget(prefix_label=False)
+    option_widget = widgets.RadioInput()
+
+    def __init__(self, *args, **kwargs):
+        yes_label = kwargs.pop('yes_label', 'Yes')
+        no_label = kwargs.pop('no_label', 'No')
+
+        def bool_coerce(val):
+            if val == u'True':
+                return True
+            if val == u'False':
+                return False
+            return val
+
+        kwargs['choices'] = [(True, yes_label), (False, no_label)]
+        kwargs['coerce'] = bool_coerce
+        kwargs['validators'] = [InputRequired()]
+
+        super(RequiredRadioBooleanField, self).__init__(*args, **kwargs)
+        self.type = 'RadioField'
+
+
 class FormGenerator(FormGeneratorBase):
     def __init__(self, form_class):
         super(FormGenerator, self).__init__(form_class)
@@ -209,6 +233,14 @@ class FormGenerator(FormGeneratorBase):
         field_cls = super(FormGenerator, self).get_field_class(column)
         if field_cls is SelectFieldBase:
             return SelectField
+
+        is_required_boolean = (field_cls is wtforms.fields.BooleanField
+                               and not column.nullable
+                               and (not column.default or not column.server_default))
+
+        if is_required_boolean:
+            return RequiredRadioBooleanField
+
         return field_cls
 
     def get_field_modifier(self, prop):
