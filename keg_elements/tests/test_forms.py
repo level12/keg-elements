@@ -122,7 +122,6 @@ class TestRequiredBoolRadioField(FormBase):
         form = self.assert_valid(**{'is_competent': 'False', 'statement_is': 'False'})
 
 
-
 class TestFieldMeta(FormBase):
     entity_cls = ents.Thing
 

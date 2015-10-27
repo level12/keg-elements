@@ -214,7 +214,7 @@ class RequiredBoolRadioField(wtforms.fields.RadioField):
 
         kwargs['choices'] = [(True, true_label), (False, false_label)]
         kwargs['coerce'] = bool_coerce
-        kwargs['validators'] = [InputRequired()]
+        kwargs['validators'] = [InputRequired()] + kwargs.get('validators', [])
 
         super(RequiredBoolRadioField, self).__init__(*args, **kwargs)
         self.type = 'RadioField'
