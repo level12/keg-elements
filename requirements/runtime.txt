@@ -3,6 +3,6 @@
 
 https://github.com/level12/keg/zipball/master
 arrow
-wtforms_components
+WTForms-Components
 WTForms-Alchemy
 Flask-WTF
