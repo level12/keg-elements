@@ -12,7 +12,6 @@ import sqlalchemy as sa
 import six
 import wtforms.fields
 import wtforms.form
-from wtforms import widgets
 from wtforms.validators import InputRequired, Optional
 from wtforms_alchemy import model_form_factory, FormGenerator as FormGeneratorBase
 from wtforms_components.fields import SelectField as SelectFieldBase
@@ -201,10 +200,10 @@ class SelectField(SelectFieldBase):
         return value_dict.get(self.data)
 
 
-class RequiredRadioBooleanField(wtforms.fields.RadioField):
+class RequiredBoolRadioField(wtforms.fields.RadioField):
     def __init__(self, *args, **kwargs):
-        yes_label = kwargs.pop('yes_label', 'Yes')
-        no_label = kwargs.pop('no_label', 'No')
+        true_label = kwargs.pop('true_label', 'Yes')
+        false_label = kwargs.pop('false_label', 'No')
 
         def bool_coerce(val):
             if val == u'True':
@@ -213,11 +212,11 @@ class RequiredRadioBooleanField(wtforms.fields.RadioField):
                 return False
             return val
 
-        kwargs['choices'] = [(True, yes_label), (False, no_label)]
+        kwargs['choices'] = [(True, true_label), (False, false_label)]
         kwargs['coerce'] = bool_coerce
         kwargs['validators'] = [InputRequired()]
 
-        super(RequiredRadioBooleanField, self).__init__(*args, **kwargs)
+        super(RequiredBoolRadioField, self).__init__(*args, **kwargs)
         self.type = 'RadioField'
 
 
@@ -236,7 +235,7 @@ class FormGenerator(FormGeneratorBase):
                                and (not column.default or not column.server_default))
 
         if is_required_boolean:
-            return RequiredRadioBooleanField
+            return RequiredBoolRadioField
 
         return field_cls
 
