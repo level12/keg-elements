@@ -1,0 +1,21 @@
+machine:
+  services:
+    - docker
+
+dependencies:
+  override:
+    - docker info
+    - docker build -t app .
+
+test:
+  override:
+    - "pwd"
+    - "ls -la"
+    - "docker run \
+        -a STDOUT \
+        -a STDERR \
+        -v /home/ubuntu/keg-elements:/opt/app/src \
+        -v $CIRCLE_TEST_REPORTS:/opt/app/test_reports \
+        -v $CIRCLE_ARTIFACTS:/opt/app/artifacts \
+        app
+      "
