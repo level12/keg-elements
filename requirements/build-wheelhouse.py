@@ -28,4 +28,3 @@ if __name__ == '__main__':
         build_file(osp.join(cdir, 'testing.txt'))
     else:
         build_packages(args.packages)
-

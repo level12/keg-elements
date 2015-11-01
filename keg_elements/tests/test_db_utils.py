@@ -5,7 +5,7 @@ from keg_elements.db.utils import randemail
 
 
 def test_randemail():
-    for length in xrange(0, 6):
+    for length in range(0, 6):
         with pytest.raises(ValueError):
             randemail(length)
 
