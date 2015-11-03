@@ -5,7 +5,7 @@ from keg_elements.db.utils import randemail
 
 
 def test_randemail():
-    for length in xrange(0, 6):
+    for length in range(0, 6):
         with pytest.raises(ValueError):
             randemail(length)
 
@@ -17,7 +17,7 @@ def test_randemail():
     assert not_so_rand_email(9, 'c') == 'cc@cc.ccc'
 
     # Fuzzy testing for an extra dose of confidence
-    for length in xrange(7, 50):
+    for length in range(7, 50):
         email = randemail(length)
         assert len(email) == length
         assert validators.email(email)
