@@ -76,11 +76,11 @@ class EntityBase(object):
     def test_all_columns_are_constraint_tested(self):
         """Checks that all fields declared on entity are in the constraint tests"""
 
-        expected_columns = [col.name for col in self.orm_cls.__table__.columns]
-        constraint_columns = [col[0] for col in self.constraint_tests]
+        expected_columns = [col.name for col in self.entity_cls.__table__.columns]
+        constraint_columns = [col[0] for col in self.column_checks]
         inherited_columns = []
 
-        if isinstance(self.orm_cls(), DefaultColsMixin):
+        if isinstance(self.entity_cls(), DefaultColsMixin):
             # Include columns from common import base classes
             for field in vars(DefaultColsMixin):
 
@@ -100,7 +100,7 @@ class EntityBase(object):
 
             raise AssertionError(
                 'Missing {} constraint tests for {}.'.format(
-                    self.orm_cls.__name__,
+                    self.entity_cls.__name__,
                     ', '.join(missing))
             )
 
