@@ -120,6 +120,8 @@ class MethodsMixin(object):
         for column in (col for col in insp.columns if not skippable(col)):
             if isinstance(column.type, sa.types.Enum):
                 kwargs[column.key] = random.choice(column.type.enums)
+            elif isinstance(column.type, sa.types.Boolean):
+                kwargs[column.key] = random.choice([True, False])
             elif isinstance(column.type, sa.types.Integer):
                 kwargs[column.key] = random.randint(NUMERIC_HIGH, NUMERIC_LOW)
             elif isinstance(column.type, sa.types.Numeric):
