@@ -87,6 +87,41 @@ class TestSelectField(FormBase):
         self.assert_valid(**{'letter2': 'a', 'numstr': '1'})
 
 
+class TestRequiredBoolRadioField(FormBase):
+    class RequiredBoolMockForm(Form):
+        is_competent = ke_forms.RequiredBoolRadioField()
+        statement_is = ke_forms.RequiredBoolRadioField(true_label='True', false_label='False')
+
+    form_cls = RequiredBoolMockForm
+
+    def test_required_bool_radio_rendering(self):
+        form = self.RequiredBoolMockForm(csrf_enabled=False)
+        is_competent_labels = pq(form.is_competent())('label')
+        assert is_competent_labels.length == 2
+        assert is_competent_labels.eq(0).text() == 'Yes'
+        assert is_competent_labels.eq(1).text() == 'No'
+
+        statement_is_labels = pq(form.statement_is())('label')
+        assert statement_is_labels.length == 2
+        assert statement_is_labels.eq(0).text() == 'True'
+        assert statement_is_labels.eq(1).text() == 'False'
+
+    def test_required_bool_radio_is_required(self):
+        form = self.assert_invalid()
+        assert form.is_competent.errors == ['This field is required.']
+        assert form.statement_is.errors == ['This field is required.']
+
+        form = self.assert_invalid(**{'is_competent': 'True'})
+        assert form.is_competent.errors == []
+        assert form.statement_is.errors == ['This field is required.']
+
+        form = self.assert_invalid(**{'statement_is': 'True'})
+        assert form.is_competent.errors == ['This field is required.']
+        assert form.statement_is.errors == []
+
+        form = self.assert_valid(**{'is_competent': 'False', 'statement_is': 'False'})
+
+
 class TestFieldMeta(FormBase):
     entity_cls = ents.Thing
 
