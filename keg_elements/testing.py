@@ -94,9 +94,10 @@ class EntityBase(object):
                 if isinstance(col, sa.sql.schema.Column):
                     inherited_columns.append(field)
 
-        if len(constraint_columns + inherited_columns) != len(expected_columns):
+        combined_columns = set(constraint_columns + inherited_columns)
+        if len(combined_columns) != len(expected_columns):
 
-            missing = set(expected_columns) - set(constraint_columns + inherited_columns)
+            missing = set(expected_columns) - combined_columns
 
             raise AssertionError(
                 'Missing {} constraint tests for {}.'.format(
