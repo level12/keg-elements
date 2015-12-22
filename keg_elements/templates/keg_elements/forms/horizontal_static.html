@@ -9,28 +9,30 @@
         {{ horz_form.field(form.email, placeholder='Input email', type='email') }}
 #}
 {% macro field(field, label_visible=true) -%}
-    <div class="form-group {{ kwargs.pop('class_', '') }}">
-        {% if (field.type != 'HiddenField' and field.type !='CSRFTokenField') and label_visible %}
-            {{ field.label(class_='control-label') }}
-        {% endif %}
-        <div class="labeled-group">
-            <p id="{{ field.id }}" class="form-control-static">
-                {%- if field.type == 'SelectField' -%}
-                    {{ field.selected_choice_label }}
-                {%- else -%}
-                    {{ field.data }}
-                {%- endif -%}
-            </p>
+    {% if field.type != 'HiddenField' and field.type !='CSRFTokenField' %}
+        <div class="form-group {{ kwargs.pop('class_', '') }}">
+            {% if label_visible %}
+                {{ field.label(class_='control-label') }}
+            {% endif %}
+            <div class="labeled-group">
+                <p id="{{ field.id }}" class="form-control-static">
+                    {%- if field.type == 'SelectField' -%}
+                        {{ field.selected_choice_label }}
+                    {%- else -%}
+                        {{ field.data }}
+                    {%- endif -%}
+                </p>
+            </div>
+            {% if field.description %}
+              <div class="description">
+                <button type="button" class="btn" data-toggle="popover"
+                        data-content="{{ field.description }}" data-placement="top">
+                  ?
+                </button>
+              </div>
+            {% endif %}
         </div>
-        {% if field.description %}
-          <div class="description">
-            <button type="button" class="btn" data-toggle="popover"
-                    data-content="{{ field.description }}" data-placement="top">
-              ?
-            </button>
-          </div>
-        {% endif %}
-    </div>
+    {% endif %}
 {%- endmacro %}
 
 
@@ -100,10 +102,12 @@
         action_text - text of submit button
         class_ - sets a class for form
     #}
-{% macro form(form, action_url='', action_text='Done', class_='form-horizontal', btn_class='btn btn-primary', cancel_url='') -%}
+{% macro form(form, field_names=None, action_url='', action_text='Done', class_='form-horizontal', btn_class='btn btn-primary', cancel_url='') -%}
     <div class="{{ class_ }}">
         {% if caller %}
             {{ caller() }}
+        {% elif field_names %}
+            {{ fields(form, field_names) }}
         {% else %}
             {% for f in form %}
                 {{ render_field(f) }}
@@ -113,9 +117,13 @@
     </div>
 {%- endmacro %}
 
-{% macro section(heading, form, fields) -%}
-    <h2>{{heading}}</h2>
-    {% for field_name in fields %}
+{% macro fields(form, field_names) -%}
+    {% for field_name in field_names %}
         {{ render_field(form[field_name]) }}
     {% endfor %}
+{%- endmacro %}
+
+{% macro section(heading, form, field_names) -%}
+    <h2>{{heading}}</h2>
+    {{fields(form, field_names)}}
 {%- endmacro %}
