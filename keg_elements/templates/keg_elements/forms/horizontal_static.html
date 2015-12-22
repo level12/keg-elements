@@ -9,28 +9,30 @@
         {{ horz_form.field(form.email, placeholder='Input email', type='email') }}
 #}
 {% macro field(field, label_visible=true) -%}
-    <div class="form-group {{ kwargs.pop('class_', '') }}">
-        {% if (field.type != 'HiddenField' and field.type !='CSRFTokenField') and label_visible %}
-            {{ field.label(class_='control-label') }}
-        {% endif %}
-        <div class="labeled-group">
-            <p id="{{ field.id }}" class="form-control-static">
-                {%- if field.type == 'SelectField' -%}
-                    {{ field.selected_choice_label }}
-                {%- else -%}
-                    {{ field.data }}
-                {%- endif -%}
-            </p>
+    {% if field.type != 'HiddenField' and field.type !='CSRFTokenField' %}
+        <div class="form-group {{ kwargs.pop('class_', '') }}">
+            {% if label_visible %}
+                {{ field.label(class_='control-label') }}
+            {% endif %}
+            <div class="labeled-group">
+                <p id="{{ field.id }}" class="form-control-static">
+                    {%- if field.type == 'SelectField' -%}
+                        {{ field.selected_choice_label }}
+                    {%- else -%}
+                        {{ field.data }}
+                    {%- endif -%}
+                </p>
+            </div>
+            {% if field.description %}
+              <div class="description">
+                <button type="button" class="btn" data-toggle="popover"
+                        data-content="{{ field.description }}" data-placement="top">
+                  ?
+                </button>
+              </div>
+            {% endif %}
         </div>
-        {% if field.description %}
-          <div class="description">
-            <button type="button" class="btn" data-toggle="popover"
-                    data-content="{{ field.description }}" data-placement="top">
-              ?
-            </button>
-          </div>
-        {% endif %}
-    </div>
+    {% endif %}
 {%- endmacro %}
 
 
