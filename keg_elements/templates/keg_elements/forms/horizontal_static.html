@@ -53,7 +53,7 @@
         <div class="labeled-group">
         {% for value, label, checked in field.iter_choices() %}
             {% if checked %}
-                <p id="{{ field.id }}" class="form-control-static">label</p>
+                <p id="{{ field.id }}" class="form-control-static">{{ label }}</p>
             {% endif %}
         {% endfor %}
         </div>
