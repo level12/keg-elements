@@ -184,5 +184,9 @@
 
 {% macro section(heading, form, field_names) -%}
     <h2>{{heading}}</h2>
-    {{fields(form, field_names)}}
+    {% if caller %}
+        {{ caller() }}
+    {% else %}
+        {{ fields(form, field_names) }}
+    {% endif %}
 {%- endmacro %}
