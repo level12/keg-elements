@@ -1,10 +1,6 @@
 {% import 'keg_elements/forms/horizontal.html' as dynamic_render %}
 {% import 'keg_elements/forms/horizontal_static.html' as static_render %}
 
-{%- macro doubled(value) -%}
-{{ value }}{{ value }}
-{%- endmacro -%}
-
 <div id="dynamic">
     <div id="with-caller">
         {% call dynamic_render.section('My Heading', form) %}
