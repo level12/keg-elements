@@ -22,8 +22,11 @@ class TestTemplates(object):
             'field_name': 'test'
         })
 
-        assert response('#dynamic #test')[0].value == value  # dynamic is unaffected
-        assert response('#static #test').text() == value*2   # static is doubled
+        assert response('#dynamic #default #test')[0].value == value
+        assert response('#dynamic #doubled #test')[0].value == value  # dynamic is unaffected
+
+        assert response('#static #default #test').text() == value
+        assert response('#static #doubled #test').text() == value*2   # static is doubled
 
     def test_section_macro(self):
         class TestForm(Form):

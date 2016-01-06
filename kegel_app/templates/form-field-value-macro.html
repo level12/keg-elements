@@ -6,9 +6,19 @@
 {%- endmacro -%}
 
 <div id="dynamic">
-    {{ dynamic_render.field(form[field_name], value_macro=doubled) }}
+    <div id="default">
+        {{ dynamic_render.field(form[field_name]) }}
+    </div>
+    <div id="doubled">
+        {{ dynamic_render.field(form[field_name], value_macro=doubled) }}
+    </div>
 </div>
 
 <div id="static">
-    {{ static_render.field(form[field_name], value_macro=doubled) }}
+    <div id="default">
+        {{ static_render.field(form[field_name]) }}
+    </div>
+    <div id="doubled">
+        {{ static_render.field(form[field_name], value_macro=doubled) }}
+    </div>
 </div>
