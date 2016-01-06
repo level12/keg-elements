@@ -7,4 +7,4 @@ from keg_elements.core import keg_element_blueprint
 class KegElApp(Keg):
     import_name = 'kegel_app'
     keyring_enable = False
-    blueprints = [keg_element_blueprint]
+    use_blueprints = [keg_element_blueprint]
