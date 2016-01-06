@@ -8,7 +8,10 @@
     Example usage:
         {{ horz_form.field(form.email, placeholder='Input email', type='email') }}
 #}
-{% macro field(field, label_visible=true) -%}
+
+{% macro identity(value) %}{{ value }}{% endmacro %}
+
+{% macro field(field, value_macro=identity, label_visible=true) -%}
     {% if field.type != 'HiddenField' and field.type !='CSRFTokenField' %}
         <div class="form-group {{ kwargs.pop('class_', '') }}">
             {% if label_visible %}
@@ -17,9 +20,9 @@
             <div class="labeled-group">
                 <p id="{{ field.id }}" class="form-control-static">
                     {%- if field.type == 'SelectField' -%}
-                        {{ field.selected_choice_label }}
+                        {{ value_macro(field.selected_choice_label) }}
                     {%- else -%}
-                        {{ field.data }}
+                        {{ value_macro(field.data) }}
                     {%- endif -%}
                 </p>
             </div>
@@ -125,5 +128,9 @@
 
 {% macro section(heading, form, field_names) -%}
     <h2>{{heading}}</h2>
-    {{fields(form, field_names)}}
+    {% if caller %}
+        {{ caller() }}
+    {% else %}
+        {{ fields(form, field_names) }}
+    {% endif %}
 {%- endmacro %}
