@@ -232,7 +232,7 @@ class FormGenerator(FormGeneratorBase):
 
         is_required_boolean = (field_cls is wtforms.fields.BooleanField
                                and not column.nullable
-                               and (not column.default or not column.server_default))
+                               and not column.default)
 
         if is_required_boolean:
             return RequiredBoolRadioField
