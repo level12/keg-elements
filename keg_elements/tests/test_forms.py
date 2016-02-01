@@ -122,6 +122,17 @@ class TestRequiredBoolRadioField(FormBase):
         form = self.assert_valid(**{'is_competent': 'False', 'statement_is': 'False'})
 
 
+class TestDefaultTypeOfRequiredBooleanField(FormBase):
+    entity_cls = ents.ThingWithRequiredBoolean
+
+    def test_field_types(self):
+        form = self.compose_meta(csrf_enabled=False)
+        assert type(form.nullable_boolean) == wtf.fields.BooleanField
+        assert type(form.required_boolean) == ke_forms.RequiredBoolRadioField
+        assert type(form.required_boolean_with_default) == wtf.fields.BooleanField
+        assert type(form.required_boolean_with_server_default) == ke_forms.RequiredBoolRadioField
+
+
 class TestFieldMeta(FormBase):
     entity_cls = ents.Thing
 
