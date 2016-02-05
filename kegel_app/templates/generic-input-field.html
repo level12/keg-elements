@@ -1,0 +1,10 @@
+{% import 'keg_elements/forms/horizontal.html' as dynamic_render %}
+{% import 'keg_elements/forms/horizontal_static.html' as static_render %}
+
+<div id="dynamic">
+    {{ dynamic_render.field(form[field_name]) }}
+</div>
+
+<div id="static">
+    {{ static_render.field(form[field_name]) }}
+</div>

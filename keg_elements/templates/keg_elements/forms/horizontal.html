@@ -48,7 +48,7 @@
             {{ field.label(class_='control-label') }}
         {% endif %}
         <div class="labeled-group">
-        {{ field(class_='form-control', **kwargs) }}
+        {{ field(class_='form-control', disabled=field.flags.disabled, readonly=field.flags.readonly, **kwargs) }}
         {% if field.errors %}
             {% for e in field.errors %}
                 <p class="help-block">{{ e }}</p>
@@ -103,7 +103,13 @@
         {% for value, label, checked in field.iter_choices() %}
             <div class="radio">
                 <label>
-                    <input type="radio" name="{{ field.id }}" id="{{ field.id }}" value="{{ value }}" {% if checked %} checked="checked" {% endif %}>{{ label }}
+                    <input type="radio"
+                           name="{{ field.id }}"
+                           id="{{ field.id }}"
+                           value="{{ value }}"
+                           {{ 'checked' if checked }}
+                           {{ 'disabled' if field.flags.disabled or (field.flags.readonly and not checked) }}>
+                        {{ label }}
                 </label>
             </div>
         {% endfor %}
