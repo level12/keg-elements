@@ -168,6 +168,24 @@ class TestFieldMeta(FormBase):
         form = self.compose_meta(fields_meta_cls=WidgetOverrideFieldsMeta, csrf_enabled=False)
         assert type(form.color.widget) == wtf.widgets.TextArea
 
+    def test_extra_validators(self):
+        class ExtraValidatorsFieldsMeta:
+            def _is_roy(form, field):
+                if field.data not in {'red', 'orange', 'yellow'}:
+                    raise wtf.validators.ValidationError('Not a ROY color')
+
+            __default__ = FieldMeta
+            color = FieldMeta(extra_validators=[_is_roy])
+
+        form = self.compose_meta(fields_meta_cls=ExtraValidatorsFieldsMeta, csrf_enabled=False,
+                                 name='Test', color='red')
+        assert form.validate()
+
+        form = self.compose_meta(fields_meta_cls=ExtraValidatorsFieldsMeta, csrf_enabled=False,
+                                 name='Test', color='muave')
+        assert not form.validate()
+        assert set(form.color.errors) == {'Not a ROY color'}
+
 
 class TestValidators(FormBase):
     entity_cls = ents.Thing
