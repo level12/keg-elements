@@ -34,13 +34,14 @@ _not_given = ()
 class FieldMeta(object):
 
     def __init__(self, label_text=_not_given, description=_not_given, label_modifier=_not_given,
-                 choices_modifier=_not_given, choices=None, required=_not_given):
+                 choices_modifier=_not_given, choices=None, required=_not_given, widget=_not_given):
         self.label_text = label_text
         self.label_modifier = label_modifier
         self.description = description
         self.choices_modifier = choices_modifier
         self.choices = choices
         self.required = required
+        self.widget = widget
 
         assert self.required in (_not_given, False, True)
 
@@ -50,6 +51,7 @@ class FieldMeta(object):
         self.apply_to_description(field)
         self.apply_to_choices(field)
         self.apply_required(field)
+        self.apply_widget(field)
 
     def apply_to_label(self, field):
         default_label = field.kwargs['label']
@@ -140,6 +142,10 @@ class FieldMeta(object):
                 'required' not in val.field_flags
             not_req_validators = list(filter(non_req_val_test, validators))
             field.kwargs['validators'] = not_req_validators
+
+    def apply_widget(self, field):
+        if self.widget != _not_given:
+            field.kwargs['widget'] = self.widget
 
 
 def select_coerce(es_pass_thru, coerce, value):
