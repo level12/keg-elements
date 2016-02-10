@@ -1,6 +1,13 @@
 Changelog
 =========
 
+*next*
+------
+
+* Allow FieldMeta to override default widget and add extra validators (GH-38)
+* Allow customization of readonly and disabled attributes on input, select, and radio fields (GH-37)
+* Improve the logic for when to default a form field to RequiredBoolRadioField (GH-36)
+
 0.3.0
 -----
 
