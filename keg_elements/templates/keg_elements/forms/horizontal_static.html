@@ -9,22 +9,23 @@
         {{ horz_form.field(form.email, placeholder='Input email', type='email') }}
 #}
 
+{% macro div_form_group(field) -%}
+    <div class="form-group {{ class_ or '' }}">
+        {{ caller(**kwargs) }}
+    </div>
+{%- endmacro %}
+
+
 {% macro identity(value) %}{{ value }}{% endmacro %}
 
 {% macro field(field, value_macro=identity, label_visible=true) -%}
     {% if field.type != 'HiddenField' and field.type !='CSRFTokenField' %}
-        <div class="form-group {{ kwargs.pop('class_', '') }}">
+        {% call div_form_group(field, **kwargs) %}
             {% if label_visible %}
                 {{ field.label(class_='control-label') }}
             {% endif %}
             <div class="labeled-group">
-                <p id="{{ field.id }}" class="form-control-static">
-                    {%- if field.type == 'SelectField' -%}
-                        {{ value_macro(field.selected_choice_label) }}
-                    {%- else -%}
-                        {{ value_macro(field.data) }}
-                    {%- endif -%}
-                </p>
+                {{ field_widget(field, value_macro=value_macro, **kwargs) }}
             </div>
             {% if field.description %}
               <div class="description">
@@ -34,10 +35,20 @@
                 </button>
               </div>
             {% endif %}
-        </div>
+        {% endcall %}
     {% endif %}
 {%- endmacro %}
 
+{% macro field_widget(field, value_macro=identity) %}
+    {{ '' if kwargs }} {# use kwargs so it is accepted #}
+    <p id="{{ field.id }}" class="form-control-static">
+        {%- if field.type == 'SelectField' -%}
+            {{ value_macro(field.selected_choice_label) }}
+        {%- else -%}
+            {{ value_macro(field.data) }}
+        {%- endif -%}
+    </p>
+{% endmacro %}
 
 {# Renders radio field
     Params:
@@ -49,7 +60,7 @@
         {{ horiz_form.radio_field(form.answers) }}
  #}
 {% macro radio_field(field, label_visible=true) -%}
-    <div class="form-group {{ kwargs.pop('class_', '') }}">
+    {% call div_form_group(field, **kwargs) %}
         {% if label_visible %}
             {{ field.label(class_='control-label') }}
         {% endif %}
@@ -68,14 +79,14 @@
             </button>
           </div>
         {% endif %}
-    </div>
+    {% endcall %}
 {%- endmacro %}
 
 {% macro submit_group(action_text='Done', btn_class='btn btn-primary', cancel_url='') -%}
     <div class="form-group">
-      <div class="unlabeled-group">
-        <a href="{{cancel_url}}" class="{{ btn_class }}">{{ action_text }}</a>
-      </div>
+        <div class="unlabeled-group">
+          <a href="{{cancel_url}}" class="{{ btn_class }}">{{ action_text }}</a>
+        </div>
     </div>
 {%- endmacro %}
 
