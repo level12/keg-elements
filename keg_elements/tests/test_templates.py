@@ -138,3 +138,22 @@ class TestReadonlyOrDisabledFormRender(TemplateTest):
         assert radio_at_value('C').attr.disabled
 
         assert response('#static p').text() == 'C'
+
+
+class TestFieldMacros(TemplateTest):
+    class TestForm(Form):
+        myfield = StringField('My Field')
+
+    def test_div_form_group(self):
+        response = self.render('field-macros.html', {
+            'form': self.TestForm(myfield='My Data'),
+            'field_name': 'myfield',
+            'form_group_class': None,
+            'field_kwargs': {},
+        })
+
+        assert response('#dynamic #div_form_group div.form-group').text() == 'Contents'
+        assert response('#static  #div_form_group div.form-group').text() == 'Contents'
+
+        assert response('#dynamic #field_widget #myfield')[0].value == 'My Data'
+        assert response('#static  #field_widget #myfield').text() == 'My Data'

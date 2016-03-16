@@ -8,10 +8,12 @@
     Example usage:
         {{ horz_form.field(form.email, placeholder='Input email', type='email') }}
 #}
-{% macro div_form_group(field, caller_kwargs) -%}
-     <div class="form-group {% if field.flags.required %}required{% endif %} {% if field.errors %}has-error{% endif %}
-        {{caller_kwargs.pop('class_', '') }} ">
-{%- endmacro%}
+
+{% macro div_form_group(field) -%}
+    <div class="form-group {{ 'required' if field.flags.required }} {{ 'has-error' if field.errors }} {{ kwargs.get('class_', '') }}">
+        {{ caller(**kwargs) }}
+    </div>
+{%- endmacro %}
 
 {% macro description(field) -%}
   <div class="description">
@@ -43,23 +45,27 @@
         e.preventDefault();
     });
 #}
-    {{div_form_group(field, kwargs)}}
-        {% if (field.type != 'HiddenField' and field.type !='CSRFTokenField') and label_visible %}
+    {% call div_form_group(field, **kwargs) %}
+        {% if (field.type != 'HiddenField' and field.type != 'CSRFTokenField') and label_visible %}
             {{ field.label(class_='control-label') }}
         {% endif %}
         <div class="labeled-group">
-        {{ field(class_='form-control', disabled=field.flags.disabled, readonly=field.flags.readonly, **kwargs) }}
-        {% if field.errors %}
-            {% for e in field.errors %}
-                <p class="help-block">{{ e }}</p>
-            {% endfor %}
-        {% endif %}
+            {{ field_widget(field, **kwargs) }}
         </div>
         {% if field.description %}
             {{ description(field) }}
         {% endif %}
-    </div>
+    {% endcall %}
 {%- endmacro %}
+
+{% macro field_widget(field) %}
+    {{ field(class_='form-control', disabled=field.flags.disabled, readonly=field.flags.readonly, **kwargs) }}
+    {% if field.errors %}
+        {% for e in field.errors %}
+            <p class="help-block">{{ e }}</p>
+        {% endfor %}
+    {% endif %}
+{% endmacro %}
 
 {# Renders checkbox fields since they are represented differently in bootstrap
     Params:
@@ -71,18 +77,18 @@
         {{ horiz_form.checkbox_field(form.remember_me) }}
  #}
 {% macro checkbox_field(field) -%}
-    {{div_form_group(field, kwargs)}}
-      <div class="unlabeled-group checkbox">
-        <label>
-            {{ field(type='checkbox', **kwargs) }} {{ field.label }}
-        </label>
-        {% if field.errors %}
-            {% for e in field.errors %}
-                <p class="help-block">{{ e }}</p>
-            {% endfor %}
-        {% endif %}
-      </div>
-    </div>
+    {% call div_form_group(field, **kwargs) %}
+        <div class="unlabeled-group checkbox">
+            <label>
+                {{ field(type='checkbox', **kwargs) }} {{ field.label }}
+            </label>
+            {% if field.errors %}
+                {% for e in field.errors %}
+                    <p class="help-block">{{ e }}</p>
+                {% endfor %}
+            {% endif %}
+        </div>
+    {% endcall %}
 {%- endmacro %}
 
 {# Renders radio field
@@ -95,7 +101,7 @@
         {{ horiz_form.radio_field(form.answers) }}
  #}
 {% macro radio_field(field, label_visible=true) -%}
-    {{div_form_group(field, kwargs)}}
+    {% call div_form_group(field, **kwargs) %}
         {% if label_visible %}
             {{ field.label(class_='control-label') }}
         {% endif %}
@@ -122,7 +128,7 @@
         {% if field.description %}
             {{ description(field) }}
         {% endif %}
-    </div>
+    {% endcall %}
 {%- endmacro %}
 
 {% macro submit_group(action_text='Submit', btn_class='btn btn-primary', cancel_url='') -%}
