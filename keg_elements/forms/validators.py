@@ -23,5 +23,5 @@ class NumberScale(object):
             return
         # use decimal's quantization to see if it's equal to field data at the full scale.
         #   If it isn't, user entered too many decimal places
-        if field.data != field.data.quantize(Decimal('0.{}1'.format('0'*(self.scale-1)))):
+        if field.data != field.data.quantize(Decimal('0.{}1'.format('0' * (self.scale - 1)))):
             raise ValidationError(self.message)

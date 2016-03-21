@@ -30,7 +30,7 @@ class TestGenericTemplates(TemplateTest):
         assert response('#dynamic #doubled #test')[0].value == value  # dynamic is unaffected
 
         assert response('#static #default #test').text() == value
-        assert response('#static #doubled #test').text() == value*2   # static is doubled
+        assert response('#static #doubled #test').text() == value * 2   # static is doubled
 
     def test_section_macro(self):
         class TestForm(Form):
