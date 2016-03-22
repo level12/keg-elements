@@ -5,10 +5,10 @@ Keg Elements
 
 
 .. image:: https://circleci.com/gh/level12/keg-elements.svg?style=svg
-    :target: https://circleci.com/gh/level12/keg-elements
+  :target: https://circleci.com/gh/level12/keg-elements
 
 .. image:: https://codecov.io/github/level12/keg-elements/coverage.svg?branch=master
-    :target: https://codecov.io/github/level12/keg-elements?branch=master
+  :target: https://codecov.io/github/level12/keg-elements?branch=master
 
 
 Keg Elements is the testing ground for ideas and code that will eventually make their way into
@@ -17,8 +17,8 @@ Keg Elements is the testing ground for ideas and code that will eventually make 
 
 .. _Keg: https://pypi.python.org/pypi/Keg
 
-Development (Not ready yet, currently no tests)
-===============
+Development *beta*
+==================
 
 To develop on this project, begin by running our tests::
 
@@ -57,5 +57,4 @@ https://github.com/level12/keg-elements/issues
 Current Status
 ==============
 
-Very Alpha, expect changes.
-
+Beta
