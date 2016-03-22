@@ -7,8 +7,8 @@ Keg Elements
 .. image:: https://circleci.com/gh/level12/keg-elements.svg?style=svg
     :target: https://circleci.com/gh/level12/keg-elements
 
-.. image:: https://coveralls.io/repos/level12/keg-elements/badge.svg?branch=circle-ci&service=github
-  :target: https://coveralls.io/github/level12/keg-elements?branch=circle-ci
+.. image:: https://codecov.io/github/level12/keg-elements/coverage.svg?branch=master
+    :target: https://codecov.io/github/level12/keg-elements?branch=master
 
 
 Keg Elements is the testing ground for ideas and code that will eventually make their way into

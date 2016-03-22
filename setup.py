@@ -19,7 +19,6 @@ setup(
     author_email="randy.syring@level12.io",
     url='https://github.com/level12/keg-elements',
     classifiers=[
-        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
@@ -28,6 +27,7 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
     ],
     license='BSD',
     packages=find_packages(),
