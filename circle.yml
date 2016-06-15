@@ -1,21 +1,21 @@
 machine:
   services:
     - docker
-    - postgresql
 
 dependencies:
   override:
-    # Supplment the docker container with additional dependencies
-    - docker build -t $CIRCLE_PROJECT_REPONAME .
+    # We override the dependencies section so that CircleCI doesn't find the
+    # setup.py and install the dependencies. This is mostly an issue with
+    # libraries but can carry over into applications as well. (NZ)
+    - pwd
 
 test:
   override:
-    - "DATABASE_HOST=$(ip -4 addr show docker0 | grep -Po 'inet \\K[\\d.]+') \
-       bash -c \
-       'docker run \
-       -v /home/ubuntu/$CIRCLE_PROJECT_REPONAME:/opt/src \
-       --add-host=database:$DATABASE_HOST \
-       $CIRCLE_PROJECT_REPONAME -e py27,py35,flake8'"
-  post:
-    - pip install codecov
-    - codecov
+    - ls -la
+    - /home/ubuntu/$CIRCLE_PROJECT_REPONAME/docker-run-tests
+
+deployment:
+  codecov:
+    branch: /.*/
+    commands:
+      - bash <(curl -s https://codecov.io/bash) -t  1c18e756-0bd0-4106-98be-b2fedf1f88df
