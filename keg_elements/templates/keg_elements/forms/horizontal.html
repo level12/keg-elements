@@ -135,7 +135,9 @@
     <div class="form-group">
       <div class="unlabeled-group">
         <button type="submit" class="{{ btn_class }}">{{ action_text }} </button>
-        <a href="{{cancel_url}}" class="cancel">Cancel</a>
+        {% if cancel_url %}
+            <a href="{{cancel_url}}" class="cancel">Cancel</a>
+        {% endif %}
       </div>
     </div>
 {%- endmacro %}
