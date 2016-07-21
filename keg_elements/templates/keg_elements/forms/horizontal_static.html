@@ -116,7 +116,16 @@
         action_text - text of submit button
         class_ - sets a class for form
     #}
-{% macro form(form, field_names=None, action_url='', action_text='Done', class_='form-horizontal', btn_class='btn btn-primary', cancel_url='') -%}
+{% macro form(
+    form,
+    field_names=None,
+    action_url='',
+    action_text='Done',
+    class_='form-horizontal',
+    btn_class='btn btn-primary',
+    cancel_url='',
+    dirty_check=false
+) -%}
     <div class="{{ class_ }}">
         {% if caller %}
             {{ caller() }}
