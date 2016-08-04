@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.3.2
+-----
+* Support `dirty_check` flag on form objects (GH-46)
+
+
 0.3.1
 ------
 
