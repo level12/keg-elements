@@ -1,9 +1,11 @@
 Changelog
 =========
 
-0.3.2
------
-* Support `dirty_check` flag on form objects (GH-46)
+0.3.2 - 2016-08-03
+------------------
+* Support `dirty_check` flag on form objects (GH-46_)
+
+.. _GH-46: https://github.com/level12/keg-elements/pull/46
 
 
 0.3.1
