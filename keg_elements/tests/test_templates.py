@@ -5,7 +5,11 @@ import itertools
 import keg
 from keg_elements.forms import Form
 from pyquery import PyQuery
-from wtforms import RadioField, StringField
+from wtforms import (
+    BooleanField,
+    RadioField,
+    StringField,
+)
 
 
 class TemplateTest(object):
@@ -47,9 +51,20 @@ class TestGenericTemplates(TemplateTest):
         assert response('#static #with-caller #test').text() == 'test-value'
         assert response('#static #with-field-name #test').text() == 'test-value'
 
+    def test_checkbox_with_description(self):
+        class TestForm(Form):
+            test = BooleanField(description='A description')
+
+        response = self.render('generic-form.html', {
+            'form': TestForm(test=True),
+        })
+
+        assert response('#dynamic .description')
+        assert response('#static .description')
+
 
 class TestReadonlyOrDisabledFormRender(TemplateTest):
-    class TestForm(Form):
+    class MyTestForm(Form):
         radio_options = ['A', 'B', 'C']
         radio_choices = [(x, x) for x in radio_options]
 
@@ -76,7 +91,7 @@ class TestReadonlyOrDisabledFormRender(TemplateTest):
     def test_input_fields(self):
         def assert_string_field_attr(field_name, attr_name, attr_value):
             response = self.render('generic-input-field.html', {
-                'form': self.TestForm(**{field_name: 'some-data'}),
+                'form': self.MyTestForm(**{field_name: 'some-data'}),
                 'field_name': field_name
             })
 
@@ -94,7 +109,7 @@ class TestReadonlyOrDisabledFormRender(TemplateTest):
 
     def render_radio_field(self, field_name, field_value):
         return self.render('generic-radio-field.html', {
-            'form': self.TestForm(**{field_name: field_value}),
+            'form': self.MyTestForm(**{field_name: field_value}),
             'field_name': field_name
         })
 
@@ -104,7 +119,7 @@ class TestReadonlyOrDisabledFormRender(TemplateTest):
         assert response('#dynamic input[value=A]').attr.checked == 'checked'
 
         for root, label in itertools.product({'#static', '#dynamic'},
-                                             self.TestForm.radio_options):
+                                             self.MyTestForm.radio_options):
             sel = '{} input[value={}]'.format(root, label)
             response(sel).attr.readonly is None
             response(sel).attr.disabled is None
@@ -141,12 +156,12 @@ class TestReadonlyOrDisabledFormRender(TemplateTest):
 
 
 class TestFieldMacros(TemplateTest):
-    class TestForm(Form):
+    class MyTestForm(Form):
         myfield = StringField('My Field')
 
     def test_div_form_group(self):
         response = self.render('field-macros.html', {
-            'form': self.TestForm(myfield='My Data'),
+            'form': self.MyTestForm(myfield='My Data'),
             'field_name': 'myfield',
             'form_group_class': None,
             'field_kwargs': {},

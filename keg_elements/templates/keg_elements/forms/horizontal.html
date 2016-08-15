@@ -88,6 +88,9 @@
                 {% endfor %}
             {% endif %}
         </div>
+        {% if field.description %}
+            {{ description(field) }}
+        {% endif %}
     {% endcall %}
 {%- endmacro %}
 
