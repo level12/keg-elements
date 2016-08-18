@@ -10,12 +10,17 @@ import six
 import sqlalchemy.orm as saorm
 from sqlalchemy_utils import ArrowType, EmailType
 
+import keg_elements.decorators as decor
 from .utils import (
     session_commit,
     session_flush,
     randemail,
     utcnow
 )
+
+
+might_commit = decor.keyword_optional('_commit', after=session_commit)
+might_flush = decor.keyword_optional('_flush', after=session_flush)
 
 
 class DefaultColsMixin(object):
@@ -74,23 +79,19 @@ class MethodsMixin(object):
         return dict((attr.key, attr.value)
                     for attr in insp.attrs if attr.key not in exclude)
 
+    @might_commit
+    @might_flush
     @classmethod
-    def add(cls, _commit=True, _flush=False, **kwargs):
+    def add(cls, **kwargs):
         o = cls()
         o.from_dict(kwargs)
         db.session.add(o)
-        if _flush:
-            session_flush()
-        elif _commit:
-            session_commit()
         return o
 
+    @might_commit
     @classmethod
-    def delete_all(cls, commit=True):
-        retval = cls.query.delete()
-        if commit:
-            session_commit()
-        return retval
+    def delete_all(cls):
+        return cls.query.delete()
 
     @classmethod
     def testing_create(cls, **kwargs):
@@ -137,16 +138,14 @@ class MethodsMixin(object):
 
         return cls.add(**kwargs)
 
-    def ensure(self, key, _flush=False, _commit=True):
+    @might_commit
+    @might_flush
+    def ensure(self, key):
         cls_columns = sainsp(self).mapper.columns
         key_col = getattr(cls_columns, key)
         key_val = getattr(self, key)
         exiting_record = self.query.filter(key_col == key_val).first()
         if not exiting_record:
             db.session.add(self)
-            if _flush:
-                session_flush()
-            elif _commit:
-                session_commit()
             return self
         return exiting_record
