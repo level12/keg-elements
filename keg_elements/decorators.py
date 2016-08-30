@@ -1,7 +1,8 @@
 import wrapt
 
 
-def keyword_optional(keyword, before=False, after=False, keep_keyword=False):
+def keyword_optional(keyword, before=False, after=False, keep_keyword=False,
+                     when_missing=False):
     """Execute a function before and after the decorated function if the keyword
     is in the kwargs
 
@@ -18,9 +19,9 @@ def keyword_optional(keyword, before=False, after=False, keep_keyword=False):
 
     @wrapt.decorator
     def _execute(wrapped, instance, args, kwargs):
-        do_it = (kwargs.get(keyword, False)
+        do_it = (kwargs.get(keyword, when_missing)
                  if keep_keyword
-                 else kwargs.pop(keyword, False))
+                 else kwargs.pop(keyword, when_missing))
 
         if before and do_it:
             before()

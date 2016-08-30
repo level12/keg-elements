@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from keg.app import Keg
 from keg_elements.core import keg_element_blueprint
 

@@ -48,3 +48,13 @@ class TestKeywordOptional:
 
         wrapped(test=True)
         assert run_me.called is True
+
+    def test_when_missing_executes(self):
+        run_me = self.optional_execute()
+
+        @decor.keyword_optional('test', after=run_me, when_missing=True)
+        def wrapped():
+            pass
+
+        wrapped(test=True)
+        assert run_me.called is True
