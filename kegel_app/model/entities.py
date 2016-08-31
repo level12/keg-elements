@@ -2,6 +2,7 @@ import sqlalchemy as sa
 
 from keg.db import db
 import keg_elements.db.mixins as mixins
+import keg_elements.db.columns as columns
 
 
 many_things_mapper = db.Table(
@@ -68,3 +69,9 @@ class MultiplePrimaryKeys(db.Model, mixins.DefaultMixin):
 
     other_pk = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.Unicode(50))
+
+
+class ColumnTester(db.Model, mixins.DefaultMixin):
+    __tablename__ = 'column_tester'
+
+    time_zone = db.Column(columns.TimeZoneType(length=100))

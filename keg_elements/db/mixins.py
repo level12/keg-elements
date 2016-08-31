@@ -2,14 +2,15 @@ import datetime as dt
 import operator
 import random
 
-import arrow
-from blazeutils.strings import randchars
 from keg.db import db
-import sqlalchemy as sa
-import six
 from sqlalchemy_utils import ArrowType, EmailType
+import arrow
+import pytz
+import six
+import sqlalchemy as sa
 
 import keg_elements.decorators as decor
+import keg_elements.db.columns as columns
 import keg_elements.db.utils as dbutils
 
 
@@ -223,8 +224,10 @@ class MethodsMixin:
                 kwargs[column.key] = dt.datetime.utcnow()
             elif isinstance(column.type, EmailType):
                 kwargs[column.key] = dbutils.randemail(min(column.type.length or 50, 50))
+            elif isinstance(column.type, columns.TimeZoneType):
+                kwargs[column.key] = random.choice(pytz.common_timezones)
             elif isinstance(column.type, (sa.types.String, sa.types.Unicode)):
-                kwargs[column.key] = randchars(min(column.type.length or 25, 25))
+                kwargs[column.key] = dbutils.randchars(min(column.type.length or 50, 50))
 
         return cls.add(**kwargs)
 
