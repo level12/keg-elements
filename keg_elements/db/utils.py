@@ -1,4 +1,6 @@
 import math
+import wrapt
+import sqlalchemy as sa
 from sqlalchemy.sql import expression
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.types import DateTime
@@ -25,6 +27,16 @@ def _ms_utcnow(element, compiler, **kw):
 @compiles(utcnow, 'sqlite')
 def _sqlite_utcnow(element, compiler, **kw):
     return "CURRENT_TIMESTAMP"
+
+
+@wrapt.decorator
+def no_autoflush(wrapped, instance, args, kwargs):
+    autoflush = db.session.autoflush
+    db.session.autoflush = False
+    try:
+        return wrapped(*args, **kwargs)
+    finally:
+        db.session.autoflush = autoflush
 
 
 def validate_unique_exc(exc):
@@ -82,3 +94,58 @@ def session_flush():
     except Exception:
         db.session.rollback()
         raise
+
+
+class CollectionUpdater(object):
+
+    @no_autoflush
+    def __init__(self, entity, attr_name, data):
+        self.entity = entity
+        self.attr_name = attr_name
+        self.data = data
+        self.collection = getattr(entity, attr_name)
+        self.keep_children = set()
+
+        ent_cls = entity.__class__
+        queryable_attr = getattr(ent_cls, attr_name)
+        # Unless they sent in the wrong type, rel_prop should be a
+        # sqlalchemy.orm.properties.RelationshipProperty instance
+        rel_prop = queryable_attr.property
+        # now that we have the property, go through the mapper to get to the child entity class
+        self.child_cls = rel_prop.mapper.class_
+
+    @no_autoflush
+    def find_child(self, data):
+        """Find the child record associated with the related object"""
+        child_entity_keys = self.child_cls.primary_keys()
+        supplied_keys = set(data.get(column.key)
+                            for column in child_entity_keys)
+
+        if None in supplied_keys:
+            return None
+
+        for child in self.collection:
+            record_keys = set(getattr(child, col.key)
+                              for col in child_entity_keys)
+            return child if record_keys == supplied_keys else None
+
+    @no_autoflush
+    def update(self):
+        """Update the objects associated with the entity"""
+        for record in self.data:
+            child = self.find_child(record)
+            state = sa.inspect(child) if child else None
+
+            if state and state.persistent:
+                child.edit(_commit=False, **record)
+            else:
+                child = self.child_cls.add(_commit=False, **record)
+                self.collection.append(child)
+
+            self.keep_children.add(child)
+        self.remove_umodified()
+
+    def remove_umodified(self):
+        remove_children = [child for child in self.collection if child not in self.keep_children]
+        for child in remove_children:
+            self.collection.remove(child)

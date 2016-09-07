@@ -1,96 +1,187 @@
 import datetime as dt
+import operator
 import random
 
 import arrow
 from blazeutils.strings import randchars
 from keg.db import db
 import sqlalchemy as sa
-from sqlalchemy.inspection import inspect as sainsp
 import six
-import sqlalchemy.orm as saorm
 from sqlalchemy_utils import ArrowType, EmailType
 
-from .utils import (
-    session_commit,
-    session_flush,
-    randemail,
-    utcnow
-)
+import keg_elements.decorators as decor
+import keg_elements.db.utils as dbutils
+
+
+might_commit = decor.keyword_optional('_commit', after=dbutils.session_commit, when_missing=True)
+might_flush = decor.keyword_optional('_flush', after=dbutils.session_flush)
 
 
 class DefaultColsMixin(object):
-    id = sa.Column(sa.Integer, primary_key=True)
-    created_utc = sa.Column(ArrowType, nullable=False, default=arrow.now, server_default=utcnow())
+    id = sa.Column('id', sa.Integer, primary_key=True)
+    created_utc = sa.Column(ArrowType, nullable=False, default=arrow.now,
+                            server_default=dbutils.utcnow())
     updated_utc = sa.Column(ArrowType, nullable=False, default=arrow.now, onupdate=arrow.now,
-                            server_default=utcnow())
+                            server_default=dbutils.utcnow())
 
 
-class MethodsMixin(object):
+class MethodsMixin:
     def from_dict(self, data):
-        """
-        Update an instance with data from a JSON-style nested dict/list
-        structure.
-        """
-        # surrogate can be guessed from autoincrement/sequence but I guess
-        # that's not 100% reliable, so we'll need an override
+        """Update the instance with the passed information in `data`.
 
-        mapper = saorm.object_mapper(self)
+        `from_dict` will also update relationships either, 1:1, 1:N, M:M.
+
+        .. note::
+            `from_dict` intentionally does not commit and for related entities
+            turns off auto flushing. This is to prevent premature flushes with
+            incomplete objects
+        """
+
+        @dbutils.no_autoflush
+        def update_related(key, value, prop):
+            """Update the entity based on the type of relationship it is"""
+            related_class = prop.mapper.class_
+
+            if prop.uselist:
+                new_list = list()
+                for row in value:
+                    obj = related_class.add_or_edit(row)
+                    new_list.append(obj)
+                setattr(self, key, new_list)
+            else:
+                setattr(self, key, related_class.add_or_edit(value, _commit=False))
+
+        mapper = self.__mapper__
+        entity_props = {attr.key: attr for attr in mapper.attrs}
 
         for key, value in six.iteritems(data):
-            if isinstance(value, dict):
-                dbvalue = getattr(self, key)
-                rel_class = mapper.get_property(key).mapper.class_
-                pk_props = rel_class._descriptor.primary_key_properties
+            prop = entity_props.get(key)
+            is_column = isinstance(prop, sa.orm.properties.ColumnProperty)
+            is_relationship = isinstance(prop, sa.orm.properties.RelationshipProperty)
 
-                # If the data doesn't contain any pk, and the relationship
-                # already has a value, update that record.
-                if not [1 for p in pk_props if p.key in data] and \
-                   dbvalue is not None:
-                    dbvalue.from_dict(value)
-                else:
-                    record = rel_class.update_or_create(value)
-                    setattr(self, key, record)
-            elif isinstance(value, list) and \
-                    value and isinstance(value[0], dict):
-
-                rel_class = mapper.get_property(key).mapper.class_
-                new_attr_value = []
-                for row in value:
-                    if not isinstance(row, dict):
-                        raise Exception(
-                            'Cannot send mixed (dict/non dict) data '
-                            'to list relationships in from_dict data.'
-                        )
-                    record = rel_class.update_or_create(row)
-                    new_attr_value.append(record)
-                setattr(self, key, new_attr_value)
-            else:
+            if prop is None:
+                continue
+            elif is_column:
                 setattr(self, key, value)
+            elif is_relationship:
+                update_related(key, value, prop)
+            else:
+                raise NotImplementedError(
+                    'Updating {} property types is not implemented.')
 
-    def to_dict(self, exclude=None):
-        if exclude is None:
-            exclude = []
-        insp = sainsp(self)
-        return dict((attr.key, attr.value)
-                    for attr in insp.attrs if attr.key not in exclude)
+    def to_dict(self, exclude=frozenset(), hybrids=frozenset()):
+        """Covert the object properties to a dictionary.
+
+        :param exclude: a list of columns to ignore
+        :param hybrids: a list of the hybrid properties to include in the dictionary.
+        :returns: a dictionary representation of the object
+
+        .. note: By default hybrid properties are not included in the returned dict. To add a hybrid
+        property to the returned dict pass a list of the property names and they will be included.
+        """
+        data = dict((name, getattr(self, name))
+                    for name in self.column_names()
+                    if name not in exclude)
+
+        for hybrid in hybrids:
+            data[hybrid] = getattr(self, hybrid)
+
+        return data
 
     @classmethod
-    def add(cls, _commit=True, _flush=False, **kwargs):
-        o = cls()
-        o.from_dict(kwargs)
-        db.session.add(o)
-        if _flush:
-            session_flush()
-        elif _commit:
-            session_commit()
-        return o
+    def column_names(cls):
+        return {col.key for col in cls.__mapper__.columns}
 
     @classmethod
-    def delete_all(cls, commit=True):
-        retval = cls.query.delete()
-        if commit:
-            session_commit()
-        return retval
+    def primary_keys(cls):
+        return cls.__table__.primary_key.columns
+
+    @might_commit
+    @might_flush
+    @classmethod
+    def add(cls, **kwargs):
+        obj = cls()
+        obj.from_dict(kwargs)
+        db.session.add(obj)
+        return obj
+
+    @might_commit
+    @might_flush
+    @classmethod
+    def delete(cls, oid):
+        """Delete an object from the session
+
+        :param oid: the object identifier, normally the primary key
+        :rtype: bool
+        :return: The result of the operation
+        """
+        obj = cls.query.get(oid)
+
+        if obj is None:
+            return False
+
+        db.session.delete(obj)
+        return True
+
+    @might_commit
+    @classmethod
+    def delete_cascaded(cls):
+        cls.query.delete(synchronize_session=False)
+        db.session.expire_all()
+
+    @might_commit
+    @might_flush
+    @classmethod
+    def edit(cls, oid=None, **kwargs):
+        try:
+            primary_keys = oid or [kwargs.get(x.name)
+                                   for x in cls.primary_keys()
+                                   if x is not None]
+        except KeyError:
+            raise AttributeError('No primary key was found in `oid` or `kwargs`'
+                                 ' for which to retrieve the object to edit')
+
+        obj = cls.query.get(primary_keys)
+        obj.from_dict(kwargs)
+        return obj
+
+    @classmethod
+    def get_by(cls, **kwargs):
+        """Returns the instance of this class matching the given criteria or
+        None if there is no record matching the criteria.
+
+        If multiple records are returned, an exception is raised.
+        """
+        return cls.query.filter_by(**kwargs).one_or_none()
+
+    @classmethod
+    def get_where(cls, *clauses):
+        """
+        Returns the instance of this class matching the given clause(s) or None
+        if there is no record matching the criteria.
+
+        If multiple records are returned, an exception is raised.
+        """
+        return cls.query.filter(*clauses).one_or_none()
+
+    @classmethod
+    def pairs(cls, key_field, value_field, order_by=(), query=None,
+              items=None):
+        """Return a list of two item tuples
+
+        :param key_field: string representing the key
+        :param value_field: string representing the value
+        :param order_by: iterable of columns to order the query by
+        :param query: a base query from which to generate the pairs
+        :param items: a function which takes one record returned by query and
+                      returns the tuple object
+        """
+
+        items = items if items else operator.attrgetter(key_field, value_field)
+        query = query or cls.query
+        result = query.order_by(*order_by).all()
+
+        return [items(obj) for obj in result]
 
     @classmethod
     def testing_create(cls, **kwargs):
@@ -106,9 +197,9 @@ class MethodsMixin(object):
                                  controlled by this setting.
         """
 
-        NUMERIC_HIGH, NUMERIC_LOW = kwargs.get('_numeric_defaults_range', (-100, 100))
+        NUMERIC_HIGH, NUMERIC_LOW = kwargs.pop('_numeric_defaults_range', (-100, 100))
 
-        insp = sainsp(cls)
+        insp = sa.inspection.inspect(cls)
 
         skippable = lambda column: (column.key in kwargs      # skip fields already in kwargs
                                     or column.foreign_keys    # skip foreign keys
@@ -129,24 +220,36 @@ class MethodsMixin(object):
             elif isinstance(column.type, sa.types.Date):
                 kwargs[column.key] = dt.date.today()
             elif isinstance(column.type, sa.types.DateTime):
-                kwargs[column.key] = dt.datetime.now()
+                kwargs[column.key] = dt.datetime.utcnow()
             elif isinstance(column.type, EmailType):
-                kwargs[column.key] = randemail(min(column.type.length or 50, 50))
-            elif isinstance(column.type, sa.types.String):
+                kwargs[column.key] = dbutils.randemail(min(column.type.length or 50, 50))
+            elif isinstance(column.type, (sa.types.String, sa.types.Unicode)):
                 kwargs[column.key] = randchars(min(column.type.length or 25, 25))
 
         return cls.add(**kwargs)
 
-    def ensure(self, key, _flush=False, _commit=True):
-        cls_columns = sainsp(self).mapper.columns
-        key_col = getattr(cls_columns, key)
-        key_val = getattr(self, key)
-        exiting_record = self.query.filter(key_col == key_val).first()
-        if not exiting_record:
-            db.session.add(self)
-            if _flush:
-                session_flush()
-            elif _commit:
-                session_commit()
-            return self
-        return exiting_record
+    @might_commit
+    @might_flush
+    @classmethod
+    def add_or_edit(cls, data):
+        """Creates or updates the record associated with `data`
+
+        `add_or_edit` supports multiple primary key entities.
+        """
+        if isinstance(data, db.Model) or not data:
+            return data
+
+        primary_keys = [data.get(x.name) for x in cls.primary_keys() if x
+                        is not None]
+        obj = cls.query.get(primary_keys)
+
+        return (cls.add(_commit=False, **data)
+                if obj is None
+                else cls.edit(primary_keys, _commit=False, **data))
+
+    def update_collection(self, attr_name, data):
+        dbutils.CollectionUpdater(self, attr_name, data).update()
+
+
+class DefaultMixin(DefaultColsMixin, MethodsMixin):
+    pass
