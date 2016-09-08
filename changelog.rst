@@ -1,6 +1,25 @@
 Changelog
 =========
 
+0.4.0 - 2016-09-08
+------------------
+
+* FEATURE: Port ``MethodsMixin`` with a number of helpful functions when working with
+  SQLAlchemy ORM entites. (GH-49_, GH-51_)
+* FEATURE: Add a new TimeZone Column. (GH-50_)
+
+* MAINTENANCE: Provide better testing support for polymorphic SQLAlchemy
+  ORM entities. (GH-47_)
+
+* BUG: Fix descripions when implicitly rendering checkboxes (GH-48_)
+
+.. _GH-50: https://github.com/level12/keg-elements/pull/50
+.. _GH-51: https://github.com/level12/keg-elements/pull/51
+.. _GH-49: https://github.com/level12/keg-elements/pull/49
+.. _GH-48: https://github.com/level12/keg-elements/pull/48
+.. _GH-47: https://github.com/level12/keg-elements/pull/47
+
+
 0.3.2 - 2016-08-03
 ------------------
 * Support `dirty_check` flag on form objects (GH-46_)
