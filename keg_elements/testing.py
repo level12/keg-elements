@@ -80,7 +80,10 @@ class EntityBase(object):
         constraint_columns = [col[0] for col in self.column_checks]
         inherited_columns = []
 
-        if isinstance(self.entity_cls(), DefaultColsMixin):
+        # Even if the entity class is based (eventually) on DefaultColsMixin, polymorphic subclasses
+        #   will not have the default cols, as the parent entity alone will have them
+        if isinstance(self.entity_cls(), DefaultColsMixin) and not \
+                getattr(self.entity_cls, '__mapper_args__', {}).get('polymorphic_identity', None):
             # Include columns from common import base classes
             for field in vars(DefaultColsMixin):
 
