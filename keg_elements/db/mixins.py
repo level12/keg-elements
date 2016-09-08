@@ -5,6 +5,7 @@ import random
 from keg.db import db
 from sqlalchemy_utils import ArrowType, EmailType
 import arrow
+import blazeutils.strings
 import pytz
 import six
 import sqlalchemy as sa
@@ -46,7 +47,7 @@ class MethodsMixin:
             if prop.uselist:
                 new_list = list()
                 for row in value:
-                    obj = related_class.add_or_edit(row)
+                    obj = related_class.add_or_edit(row, _commit=False)
                     new_list.append(obj)
                 setattr(self, key, new_list)
             else:
@@ -210,26 +211,37 @@ class MethodsMixin:
                                     )
 
         for column in (col for col in insp.columns if not skippable(col)):
-            if isinstance(column.type, sa.types.Enum):
-                kwargs[column.key] = random.choice(column.type.enums)
-            elif isinstance(column.type, sa.types.Boolean):
-                kwargs[column.key] = random.choice([True, False])
-            elif isinstance(column.type, sa.types.Integer):
-                kwargs[column.key] = random.randint(NUMERIC_HIGH, NUMERIC_LOW)
-            elif isinstance(column.type, sa.types.Numeric):
-                kwargs[column.key] = random.uniform(NUMERIC_HIGH, NUMERIC_LOW)
-            elif isinstance(column.type, sa.types.Date):
-                kwargs[column.key] = dt.date.today()
-            elif isinstance(column.type, sa.types.DateTime):
-                kwargs[column.key] = dt.datetime.utcnow()
-            elif isinstance(column.type, EmailType):
-                kwargs[column.key] = dbutils.randemail(min(column.type.length or 50, 50))
-            elif isinstance(column.type, columns.TimeZoneType):
-                kwargs[column.key] = random.choice(pytz.common_timezones)
-            elif isinstance(column.type, (sa.types.String, sa.types.Unicode)):
-                kwargs[column.key] = dbutils.randchars(min(column.type.length or 50, 50))
+            try:
+                kwargs[column.key] = cls.random_data_for_column(
+                    column, NUMERIC_HIGH, NUMERIC_LOW)
+            except ValueError:
+                pass
 
         return cls.add(**kwargs)
+
+    @classmethod
+    def random_data_for_column(cls, column, numeric_high, numeric_low):
+        if isinstance(column.type, sa.types.Enum):
+            return random.choice(column.type.enums)
+        elif isinstance(column.type, sa.types.Boolean):
+            return random.choice([True, False])
+        elif isinstance(column.type, sa.types.Integer):
+            return random.randint(numeric_high, numeric_low)
+        elif isinstance(column.type, sa.types.Numeric):
+            return random.uniform(numeric_high, numeric_low)
+        elif isinstance(column.type, sa.types.Date):
+            return dt.date.today()
+        elif isinstance(column.type, sa.types.DateTime):
+            return dt.datetime.utcnow()
+        elif isinstance(column.type, ArrowType):
+            return arrow.utcnow()
+        elif isinstance(column.type, EmailType):
+            return dbutils.randemail(min(column.type.length or 50, 50))
+        elif isinstance(column.type, columns.TimeZoneType):
+            return random.choice(pytz.common_timezones)
+        elif isinstance(column.type, (sa.types.String, sa.types.Unicode)):
+            return blazeutils.strings.randchars(min(column.type.length or 25, 25))
+        raise ValueError('No randomization for this column type')
 
     @might_commit
     @might_flush

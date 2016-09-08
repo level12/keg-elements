@@ -1,7 +1,14 @@
-import pytest
-import sqlalchemy as sa
+import datetime
 
 from keg.db import db
+import arrow
+import pytest
+import six
+import sqlalchemy as sa
+import sqlalchemy_utils as sautils
+import keg_elements.db.mixins as mixins
+import keg_elements.db.columns as columns
+
 import kegel_app.model.entities as ents
 
 
@@ -165,3 +172,20 @@ class TestMethodsMixin:
             'id': obj.id,
             'name_and_color': obj.name_and_color
         }
+
+    def test_random_data_for_column(self):
+        func = mixins.MethodsMixin.random_data_for_column
+
+        assert type(func(sa.Column(sa.Unicode), 0, 0)) == six.text_type
+        assert type(func(sa.Column(sa.String), 0, 0)) == six.text_type
+        assert type(func(sa.Column(sa.Integer), 0, 0)) == int
+        assert type(func(sa.Column(sa.Boolean), 0, 0)) == bool
+        assert type(func(sa.Column(sa.Numeric), 0, 0)) == float
+        assert type(func(sa.Column(sa.Date), 0, 0)) == datetime.date
+        assert type(func(sa.Column(sa.DateTime), 0, 0)) == datetime.datetime
+        assert type(func(sa.Column(sautils.ArrowType), 0, 0)) == arrow.Arrow
+        assert isinstance(func(sa.Column(sautils.EmailType), 0, 0), six.text_type)
+        assert isinstance(func(sa.Column(columns.TimeZoneType), 0, 0), str)
+
+        with pytest.raises(ValueError):
+            assert type(func(sa.Column(sa.LargeBinary), 0, 0))
