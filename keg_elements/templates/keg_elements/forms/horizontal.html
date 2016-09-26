@@ -158,6 +158,16 @@
 {%- endmacro %}
 
 
+{% macro form_errors(form) -%}
+    {% if form.form_errors %}
+        <div class="has-error">
+            {% for e in form.form_errors %}
+                <p class="help-block">{{ e }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endmacro %}
+
 
 {# Renders WTForm in bootstrap way. There are two ways to call function:
      - as macros: it will render all field forms using cycle to iterate over them
@@ -195,6 +205,9 @@
           {% if dirty_check %}data-dirty-check="on"{% endif %}
     >
         {{ form.hidden_tag() if form.hidden_tag }}
+
+        {{ form_errors(form) }}
+
         {% if caller %}
             {{ caller() }}
         {% elif field_names %}
