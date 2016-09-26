@@ -359,7 +359,7 @@ class Form(BaseForm):
     @property
     def errors(self):
         if self._errors is None:
-            self._errors = dict((name, f.errors) for name, f in six.iteritems(self._fields) if f.errors)
+            self._errors = {name: f.errors for name, f in six.iteritems(self._fields) if f.errors}
         return self._errors
 
     @property
