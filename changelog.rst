@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.4.1 - 2016-10-19
+------------------
+
+* Add unique form validator (a0c7447_)
+
+.. _a0c7447: https://github.com/level12/keg-elements/commit/a0c7447
+
+
 0.4.0 - 2016-09-08
 ------------------
 
