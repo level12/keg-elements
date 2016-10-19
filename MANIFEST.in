@@ -1,2 +1,3 @@
 include *.rst
 recursive-include keg_elements/templates *
+prune requirements
