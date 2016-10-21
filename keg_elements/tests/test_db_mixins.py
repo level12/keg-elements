@@ -189,3 +189,13 @@ class TestMethodsMixin:
 
         with pytest.raises(ValueError):
             assert type(func(sa.Column(sa.LargeBinary), 0, 0))
+
+    def test_check_kwargs_in_testing_create(self):
+        ents.Thing.testing_create(name='a')
+
+        with pytest.raises(AssertionError) as excinfo:
+            ents.Thing.testing_create(foo=1, bar=2, name='b')
+        assert str(excinfo.value) == \
+            'Unknown column or relationship names in kwargs: [\'bar\', \'foo\']'
+
+        ents.Thing.testing_create(foo=1, bar=2, name='b', _check_kwargs=False)

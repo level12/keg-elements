@@ -210,6 +210,12 @@ class MethodsMixin:
                                     or column.primary_key     # skip any primary key
                                     )
 
+        if kwargs.pop('_check_kwargs', True):
+            allowed_keys = {col.key for col in insp.columns} | set(insp.relationships.keys())
+            extra_kwargs = set(kwargs) - allowed_keys
+            assert not extra_kwargs, 'Unknown column or relationship names in kwargs: {!r}'.format(
+                sorted(extra_kwargs))
+
         for column in (col for col in insp.columns if not skippable(col)):
             try:
                 kwargs[column.key] = cls.random_data_for_column(
