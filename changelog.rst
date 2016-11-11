@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.4.2 - 2016-11-11
+------------------
+
+* FEATURE: Verify kwargs correspond to columns and relationships in `testing_create`. (db533dd_)
+* FEATURE: Add support for form-level validation. (GH-53_)
+
+.. _db533dd: https://github.com/level12/keg-elements/commit/db533dd
+.. _GH-53: https://github.com/level12/keg-elements/pull/53
+
+
 0.4.1 - 2016-10-19
 ------------------
 
