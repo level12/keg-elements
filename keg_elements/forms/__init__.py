@@ -4,6 +4,8 @@ from __future__ import unicode_literals
 import functools
 import inspect
 import logging
+from collections import namedtuple
+from operator import attrgetter
 
 import flask
 from flask_wtf import Form as BaseForm
@@ -12,7 +14,7 @@ import sqlalchemy as sa
 import six
 import wtforms.fields
 import wtforms.form
-from wtforms.validators import InputRequired, Optional
+from wtforms.validators import InputRequired, Optional, StopValidation
 from wtforms_alchemy import model_form_factory, FormGenerator as FormGeneratorBase
 from wtforms_components.fields import SelectField as SelectFieldBase
 
@@ -290,9 +292,30 @@ def form_fields_to_dict(form):
     return dict((name, field_to_dict(field)) for name, field in six.iteritems(form._fields))
 
 
+___validator_creation_counter = 0
+
+
+def form_validator(func=None, only_when_fields_valid=False):
+    """Decorator used to mark a method as a form level validator"""
+    if func is None:
+        return functools.partial(form_validator, only_when_fields_valid=only_when_fields_valid)
+
+    @functools.wraps(func)
+    def wrapper(form):
+        if not only_when_fields_valid or not form.errors:
+            return func(form)
+
+    global ___validator_creation_counter
+    wrapper.___form_validator = True
+    ___validator_creation_counter += 1
+    wrapper.___creation_counter = ___validator_creation_counter
+    return wrapper
+
+
 class Form(BaseForm):
     def __init__(self, *args, **kwargs):
         super(Form, self).__init__(*args, **kwargs)
+        self._form_level_errors = []
         self.after_init(args, kwargs)
 
     def after_init(self, args, kwargs):
@@ -301,6 +324,47 @@ class Form(BaseForm):
     def fields_todict(self):
         """Turns a form into dicts and lists with both data and errors for each field."""
         return form_fields_to_dict(self)
+
+    def validate(self):
+        fields_valid = super(Form, self).validate()
+
+        form_validators = {}
+        # Traverse the MRO so we can get validators in parent classes.
+        # Do so in reverse order so child classes can override parents' validators.
+        # WTForms will not include the methods on form instances so we get them from the classes.
+        for cls in reversed(self.__class__.__mro__):
+            cls_validators = {
+                name: attr for name, attr in six.iteritems(cls.__dict__)
+                if getattr(attr, '___form_validator', False)
+            }
+            form_validators.update(cls_validators)
+
+        self._form_level_errors = []
+        for validator in sorted(form_validators.values(), key=attrgetter('___creation_counter')):
+            try:
+                validator(self)
+            except StopValidation as e:
+                if e.args and e.args[0]:
+                    self._form_level_errors.append(e.args[0])
+                break
+            except ValueError as e:
+                self._form_level_errors.append(e.args[0])
+
+        return fields_valid and not self._form_level_errors
+
+    @property
+    def form_errors(self):
+        return self._form_level_errors
+
+    @property
+    def errors(self):
+        if self._errors is None:
+            self._errors = {name: f.errors for name, f in six.iteritems(self._fields) if f.errors}
+        return self._errors
+
+    @property
+    def all_errors(self):
+        return namedtuple('Errors', ['field', 'form'])(self.errors, self.form_errors)
 
 
 BaseModelForm = model_form_factory(Form, form_generator=FormGenerator)

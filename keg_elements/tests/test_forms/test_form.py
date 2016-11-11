@@ -32,7 +32,8 @@ class FormBase(object):
         return _ComposedForm(MultiDict(data))
 
     def create_form(self, **data):
-        return self.form_cls(MultiDict(data))
+        form_cls = data.pop('form_cls', self.form_cls)
+        return form_cls(MultiDict(data))
 
     def assert_invalid(self, **data):
         form = self.create_form(**data)
@@ -307,3 +308,117 @@ class TestFieldsToDict(FormBase):
         }
         fields_dict = form.fields_todict()
         assert fields_dict == expected, fields_dict
+
+
+class TestFormLevelValidation(FormBase):
+    class MyForm(Form):
+        num1 = wtf.IntegerField()
+        num2 = wtf.IntegerField()
+        num3 = wtf.IntegerField()
+
+        @ke_forms.form_validator
+        def equal_42(self):
+            if self.num1.data + self.num2.data != 42:
+                raise wtf.ValidationError('Does not add up')
+
+        @ke_forms.form_validator
+        def in_order(self):
+            if not (self.num1.data <= self.num2.data <= self.num3.data):
+                raise wtf.ValidationError('Out of order')
+
+    form_cls = MyForm
+
+    def test_form_valid(self):
+        form = self.assert_valid(num1=5, num2=37, num3=100)
+        assert form.form_errors == []
+        assert form.all_errors == ({}, [])
+
+    def test_form_invalid(self):
+        form = self.assert_invalid(num1=40, num2=3, num3=50)
+        assert form.form_errors == ['Does not add up', 'Out of order']
+        assert form.all_errors == ({}, ['Does not add up', 'Out of order'])
+
+    def test_stop_validation_with_error(self):
+        class StopValidationForm(Form):
+            s1 = wtf.StringField()
+            s2 = wtf.StringField()
+
+            @ke_forms.form_validator
+            def fields_equal(self):
+                if self.s1.data != self.s2.data:
+                    raise wtf.validators.StopValidation('not equal')
+
+            @ke_forms.form_validator
+            def other_validator(self):
+                assert False, 'Validation should have stopped'  # pragma: no cover
+
+        form = self.assert_invalid(form_cls=StopValidationForm, s1='v1', s2='v2')
+        assert form.form_errors == ['not equal']
+        assert form.all_errors == ({}, ['not equal'])
+
+    def test_stop_validation_no_error(self):
+        class StopValidationForm(Form):
+            s1 = wtf.StringField()
+            s2 = wtf.StringField()
+
+            @ke_forms.form_validator
+            def fields_equal(self):
+                if self.s1.data != self.s2.data:
+                    raise wtf.validators.StopValidation
+
+            @ke_forms.form_validator
+            def other_validator(self):
+                assert False, 'Validation should have stopped'  # pragma: no cover
+
+        form = self.assert_valid(form_cls=StopValidationForm, s1='v1', s2='v2')
+        assert form.form_errors == []
+        assert form.all_errors == ({}, [])
+
+    def test_invalid_with_field_errors(self):
+        class InvalidFieldsForm(Form):
+            s1 = wtf.StringField(validators=[wtf.validators.Length(max=3)])
+            s2 = wtf.StringField()
+
+            @ke_forms.form_validator
+            def fields_equal(self):
+                if self.s1.data != self.s2.data:
+                    raise wtf.ValidationError('not equal')
+
+        form = self.assert_invalid(form_cls=InvalidFieldsForm, s1='1234', s2='4321')
+        assert form.form_errors == ['not equal']
+        assert form.all_errors == (
+            {'s1': ['Field cannot be longer than 3 characters.']}, ['not equal'])
+
+    def test_do_not_validate_with_field_errors(self):
+        class InvalidFieldsForm(Form):
+            s1 = wtf.StringField(validators=[wtf.validators.Length(max=3)])
+            s2 = wtf.StringField()
+
+            @ke_forms.form_validator(only_when_fields_valid=True)
+            def my_validator(self):
+                assert False, 'Validation should not run'  # pragma: no cover
+
+        form = self.assert_invalid(form_cls=InvalidFieldsForm, s1='1234', s2='4321')
+        assert form.form_errors == []
+        assert form.all_errors == (
+            {'s1': ['Field cannot be longer than 3 characters.']}, [])
+
+    def test_validators_inherited(self):
+        class SubclassForm(self.MyForm):
+            @ke_forms.form_validator
+            def num3_is_even(self):
+                if self.num3.data % 2:
+                    raise wtf.ValidationError('Num3 is odd')
+
+            @ke_forms.form_validator
+            def equal_42(self):
+                if self.num1.data * self.num2.data != 42:
+                    raise wtf.ValidationError('Does not compute')
+
+        form = self.assert_invalid(num1=7, num2=5, num3=51, form_cls=SubclassForm)
+        assert form.form_errors == ['Out of order', 'Num3 is odd', 'Does not compute']
+        assert form.all_errors == ({}, ['Out of order', 'Num3 is odd', 'Does not compute'])
+
+        form = self.assert_valid(num1=6, num2=7, num3=50, form_cls=SubclassForm)
+        assert form.form_errors == []
+        assert form.all_errors == ({}, [])
