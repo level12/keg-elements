@@ -194,8 +194,24 @@ class TestMethodsMixin:
         ents.Thing.testing_create(name='a')
 
         with pytest.raises(AssertionError) as excinfo:
-            ents.Thing.testing_create(foo=1, bar=2, name='b')
+            ents.Thing.testing_create(foo=1, bar=2, _baz=3, name='b')
         assert str(excinfo.value) == \
             'Unknown column or relationship names in kwargs: [\'bar\', \'foo\']'
 
-        ents.Thing.testing_create(foo=1, bar=2, name='b', _check_kwargs=False)
+        ents.Thing.testing_create(foo=1, bar=2, _baz=3, name='b', _check_kwargs=False)
+
+    def test_testing_create_flush_and_commit(self):
+        obj = ents.Thing.testing_create(_flush=False, _commit=False)
+        assert sa.inspect(obj).pending
+        db.session.rollback()
+        assert sa.inspect(obj).transient
+
+        obj = ents.Thing.testing_create(_flush=True, _commit=False)
+        assert sa.inspect(obj).persistent
+        db.session.rollback()
+        assert sa.inspect(obj).transient
+
+        obj = ents.Thing.testing_create(_flush=False, _commit=True)
+        assert sa.inspect(obj).persistent
+        db.session.rollback()
+        assert sa.inspect(obj).persistent
