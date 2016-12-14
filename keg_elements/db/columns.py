@@ -1,5 +1,6 @@
 """Common SQLAlchemy column types."""
 import binascii
+
 import sqlalchemy as sa
 
 from keg_elements import crypto
@@ -29,7 +30,7 @@ class EncryptedUnicode(sa.TypeDecorator):
     def process_bind_param(self, value, dialect):
         if value is None:
             return None
-        return crypto.aes_encrypt_str(value, self.key).hex()
+        return binascii.hexlify(crypto.aes_encrypt_str(value, self.key)).decode()
 
     def process_result_value(self, value, dialect):
         if value is None:
