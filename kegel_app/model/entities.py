@@ -75,3 +75,5 @@ class ColumnTester(db.Model, mixins.DefaultMixin):
     __tablename__ = 'column_tester'
 
     time_zone = db.Column(columns.TimeZoneType(length=100))
+    encrypted1 = db.Column(columns.EncryptedUnicode(key=lambda: b'a' * 32))
+    encrypted2 = db.Column(columns.EncryptedUnicode(key=b'b' * 32))
