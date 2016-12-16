@@ -1,6 +1,4 @@
 """Common SQLAlchemy column types."""
-import binascii
-
 import sqlalchemy as sa
 
 from keg_elements import crypto
@@ -17,7 +15,17 @@ class EncryptedUnicode(sa.TypeDecorator):
     impl = sa.UnicodeText
 
     def __init__(self, *args, **kwargs):
+        """
+        Constructor for encrypted unicode type
+        :param key: A bytes object containing the encryption key or a callable that returns the key
+        :param encrypt: A callable that takes a unicode string and the encryption key as arguments
+            and returns the encrypted data as a bytes object.
+        :param decrypt: A callable that takes a bytes object and the encryption key as arguments
+            and returns the decrypted data as a unicode string.
+        """
         self._key = kwargs.pop('key')
+        self._encrypt = kwargs.pop('encrypt', crypto.encrypt_str)
+        self._decrypt = kwargs.pop('decrypt', crypto.decrypt_str)
         super(EncryptedUnicode, self).__init__(*args, **kwargs)
 
     @property
@@ -30,9 +38,9 @@ class EncryptedUnicode(sa.TypeDecorator):
     def process_bind_param(self, value, dialect):
         if value is None:
             return None
-        return binascii.hexlify(crypto.aes_encrypt_str(value, self.key)).decode()
+        return self._encrypt(value, self.key).decode()
 
     def process_result_value(self, value, dialect):
         if value is None:
             return None
-        return crypto.aes_decrypt_str(binascii.unhexlify(value), self.key)
+        return self._decrypt(value.encode(), self.key)

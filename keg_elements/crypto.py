@@ -1,5 +1,7 @@
 import os
+import base64
 
+import cryptography.fernet as fernet
 import cryptography.hazmat.primitives.ciphers as ciphers
 from cryptography.hazmat.backends import default_backend
 
@@ -10,38 +12,58 @@ def aes_cipher(key, iv, mode=None):
     return ciphers.Cipher(algo, mode, backend=default_backend())
 
 
-def aes_encryptor(key, iv, mode=None):
-    return aes_cipher(key, iv, mode=mode).encryptor()
+def aes_encryptor(key, mode=None):
+    iv = os.urandom(ciphers.algorithms.AES.block_size // 8)
+    cipher = aes_cipher(key, iv, mode=mode)
+    return cipher.encryptor(), iv
 
 
 def aes_decryptor(key, iv, mode=None):
-    return aes_cipher(key, iv, mode=mode).decryptor()
+    cipher = aes_cipher(key, iv=iv, mode=mode)
+    return cipher.decryptor()
 
 
-def aes_encrypt_str(data, key):
+def fernet_cipher(key):
+    return fernet.Fernet(base64.urlsafe_b64encode(key))
+
+
+def encrypt(data, key):
     """
-    Function that handles the most common case of encrypting a string with AES in CBC mode
-    :param data: A unicode string to be encrypted. This string will be converted to utf-8.
-    :param key: A bytes object containing the encryption key
-    :returns: The encrypted data as a bytes object. The first 16 bytes are the IV
+    Encrypts binary data using cryptography's default fernet algorithm
+    :param data: plaintext data to encrypt
+    :param key: encryption key
+    :return: encrypted data as a fernet token (a signed, base64 encoded string)
     """
-    iv = os.urandom(16)
-    encryptor = aes_encryptor(key, iv)
+    return fernet_cipher(key).encrypt(data)
+
+
+def decrypt(data, key):
+    """
+    Decrypts binary data using cryptography's default fernet algorithm
+    :param data: a fernet token to decrypt
+    :param key: encryption key
+    :return: decrypted data
+    """
+    return fernet_cipher(key).decrypt(data)
+
+
+def encrypt_str(data, key):
+    """
+    Encrypts a unicode string using cryptography's default fernet algorithm
+    :param data: unicode string to encrypt
+    :param key: encryption key
+    :return: encrypted utf-8 string as a fernet token
+    """
     bin_data = data.encode('utf-8')
-    bin_data += b' ' * (16 - (len(bin_data) % 16))  # pad string to multiple of block size
-    encrypted = encryptor.update(bin_data) + encryptor.finalize()
-    return iv + encrypted
+    return encrypt(bin_data, key)
 
 
-def aes_decrypt_str(data, key):
+def decrypt_str(cipher_text, key):
     """
-    Function that handles the most common case of decrypting a string with AES in CBC mode
-    :param data: A bytes object containing the data to be decrypted.
-        The first 16 bytes should be the IV. The data is assumed to be encoded as utf-8
-    :param key: A bytes object containing the encryption key
-    :returns: The decrypted value as a unicode string
+    Decrypts a unicode string using cryptography's default fernet algorithm
+    :param cipher_text: a utf-8 string as a fernet token to decrypt
+    :param key: encryption key
+    :return: decrypted unicode string
     """
-    iv, data = data[:16], data[16:]
-    decryptor = aes_decryptor(key, iv)
-    decrypted = decryptor.update(data) + decryptor.finalize()
-    return decrypted.decode('utf-8').rstrip()
+    bin_data = decrypt(cipher_text, key)
+    return bin_data.decode('utf-8')

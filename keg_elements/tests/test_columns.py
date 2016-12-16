@@ -16,31 +16,36 @@ class TestColumns(object):
 
     def test_encrypted_null(self):
         ents.ColumnTester.delete_cascaded()
-        obj = ents.ColumnTester.testing_create(encrypted1=None, encrypted2=None)
+        obj = ents.ColumnTester.testing_create(encrypted1=None, encrypted2=None, encrypted3=None)
         assert obj.encrypted1 is None
         assert obj.encrypted2 is None
+        assert obj.encrypted3 is None
         results = db.session.execute('select * from column_tester').fetchall()
         assert results[0].encrypted1 is None
         assert results[0].encrypted2 is None
+        assert results[0].encrypted3 is None
 
     def test_store_encrypted(self):
         ents.ColumnTester.delete_cascaded()
-        obj = ents.ColumnTester.testing_create(encrypted1='Foo', encrypted2='Bar')
+        obj = ents.ColumnTester.testing_create(encrypted1='Foo', encrypted2='Bar', encrypted3='Baz')
         assert obj.encrypted1 == 'Foo'
         assert obj.encrypted2 == 'Bar'
+        assert obj.encrypted3 == 'Baz'
         results = db.session.execute('select * from column_tester').fetchall()
         assert 'Foo' not in results[0].encrypted1
-        assert len(results[0].encrypted1) == 64
         assert 'Bar' not in results[0].encrypted2
-        assert len(results[0].encrypted2) == 64
+        assert results[0].encrypted3 == 'Onm'
 
     def test_load_encrypted(self):
         ents.ColumnTester.delete_cascaded()
         db.session.execute('''
-        insert into column_tester (encrypted1, encrypted2) values
-            ('8858927315c990890a2f621f6da8bd132e19d8e21e51493c8ec4d36299036c24',
-            'ab5bfc5d35f04500aac1cccbca3ac7176324bc6149c0a2b9eeba0fe1b8609283')
+        insert into column_tester (encrypted1, encrypted2, encrypted3) values
+            ('gAAAAABYVFHtgRTQJyzkIF5bQ0TiLA3Dm0kfDF5pvSLrZUBrpZiq_f3g3-jUUj8vPmTw2Uf3SW3u73fJNO9ER46xpW9_41IdaQ==',
+            'gAAAAABYVFHtbibu6P-oroQ7UYj7g5oiZPqsbeAmxNAIz3wiEjc236bP7c2Ubsf1-S-ANt2r2WNQytxIfwxoE9VyNQmtihCCwA==',
+            'Onm'
+            )
         ''')
         obj = ents.ColumnTester.query.one()
-        assert obj.encrypted1 == 'foo'
-        assert obj.encrypted2 == 'bar'
+        assert obj.encrypted1 == 'Foo'
+        assert obj.encrypted2 == 'Bar'
+        assert obj.encrypted3 == 'Baz'

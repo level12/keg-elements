@@ -1,3 +1,5 @@
+import codecs
+
 import sqlalchemy as sa
 
 from keg.db import db
@@ -71,9 +73,22 @@ class MultiplePrimaryKeys(db.Model, mixins.DefaultMixin):
     name = db.Column(db.Unicode(50))
 
 
+def super_secure_encrypt(data, key):
+    return codecs.encode(data, 'rot_13').encode()
+
+
+def super_secure_decrypt(data, key):
+    return codecs.encode(data.decode(), 'rot_13')
+
+
 class ColumnTester(db.Model, mixins.DefaultMixin):
     __tablename__ = 'column_tester'
 
     time_zone = db.Column(columns.TimeZoneType(length=100))
     encrypted1 = db.Column(columns.EncryptedUnicode(key=lambda: b'a' * 32))
     encrypted2 = db.Column(columns.EncryptedUnicode(key=b'b' * 32))
+    encrypted3 = db.Column(columns.EncryptedUnicode(
+        key=b'c' * 32,
+        encrypt=super_secure_encrypt,
+        decrypt=super_secure_decrypt
+    ))
