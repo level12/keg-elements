@@ -9,6 +9,7 @@ import blazeutils.strings
 import pytz
 import six
 import sqlalchemy as sa
+import wrapt
 
 import keg_elements.decorators as decor
 import keg_elements.db.columns as columns
@@ -17,6 +18,26 @@ import keg_elements.db.utils as dbutils
 
 might_commit = decor.keyword_optional('_commit', after=dbutils.session_commit, when_missing=True)
 might_flush = decor.keyword_optional('_flush', after=dbutils.session_flush)
+
+
+@wrapt.decorator
+def kwargs_match_entity(wrapped, instance, args, kwargs):
+    """
+    Asserts that the kwargs passed to the wrapped method match the columns/relationships
+    of the entity.
+    """
+    if kwargs.get('_check_kwargs', True):
+        insp = sa.inspection.inspect(instance)
+
+        # Only allow kwargs that correspond to a column or relationship on the entity
+        allowed_keys = {col.key for col in insp.columns} | set(insp.relationships.keys())
+
+        # Ignore kwargs starting with "_"
+        kwarg_keys = set(key for key in kwargs if not key.startswith('_'))
+        extra_kwargs = kwarg_keys - allowed_keys
+        assert not extra_kwargs, 'Unknown column or relationship names in kwargs: {!r}'.format(
+            sorted(extra_kwargs))
+    return wrapped(*args, **kwargs)
 
 
 class DefaultColsMixin(object):
@@ -185,6 +206,7 @@ class MethodsMixin:
 
         return [items(obj) for obj in result]
 
+    @kwargs_match_entity
     @classmethod
     def testing_create(cls, **kwargs):
         """Create an object for testing with default data appropriate for the field type
@@ -209,12 +231,6 @@ class MethodsMixin:
                                     or column.default         # skip fields with defaults
                                     or column.primary_key     # skip any primary key
                                     )
-
-        if kwargs.pop('_check_kwargs', True):
-            allowed_keys = {col.key for col in insp.columns} | set(insp.relationships.keys())
-            extra_kwargs = set(kwargs) - allowed_keys
-            assert not extra_kwargs, 'Unknown column or relationship names in kwargs: {!r}'.format(
-                sorted(extra_kwargs))
 
         for column in (col for col in insp.columns if not skippable(col)):
             try:
