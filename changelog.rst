@@ -1,5 +1,12 @@
-Changelog
-=========
+0.5.0 - 2016-12-19
+-------------------
+
+* FEAT: Create crypto primitives (5a981b5_)
+* Refactor testing_create kwargs validation and ignore "_" prefixed keys (484d032_)
+
+.. _5a981b5: https://github.com/level12/keg-elements/commit/5a981b5
+.. _484d032: https://github.com/level12/keg-elements/commit/484d032
+
 
 0.4.2 - 2016-11-11
 ------------------
