@@ -37,5 +37,6 @@ setup(
         'Keg',
         'pytz',
         'WTForms-Alchemy',
+        'cryptography',
     ]
 )

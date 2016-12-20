@@ -6,3 +6,4 @@ arrow
 WTForms-Components
 WTForms-Alchemy
 Flask-WTF
+cryptography
