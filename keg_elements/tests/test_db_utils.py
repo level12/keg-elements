@@ -50,17 +50,27 @@ class TestUpdateCollection(object):
 
     def test_edit(self):
         thing = ents.Thing.testing_create()
-        related = ents.RelatedThing.testing_create(thing=thing, name='a')
+        related1_id = ents.RelatedThing.testing_create(thing=thing, name='a').id
+        related2_id = ents.RelatedThing.testing_create(thing=thing, name='x').id
 
         data = [
-            {'id': related.id, 'name': 'b', 'is_enabled': False}
+            {'id': related1_id, 'name': 'b', 'is_enabled': False},
+            {'id': related2_id, 'name': 'y', 'is_enabled': False},
         ]
         thing.update_collection('related_things', data)
 
-        assert len(thing.related_things) == 1
-        related = thing.related_things[0]
-        assert related.name == 'b'
-        assert not related.is_enabled
+        keg.db.db.session.flush()
+
+        assert len(thing.related_things) == 2
+        related1 = thing.related_things[0]
+        assert related1.id == related1_id
+        assert related1.name == 'b'
+        assert not related1.is_enabled
+
+        related2 = thing.related_things[1]
+        assert related2.id == related2_id
+        assert related2.name == 'y'
+        assert not related2.is_enabled
 
     def test_append_id_none(self):
         thing = ents.Thing.testing_create()

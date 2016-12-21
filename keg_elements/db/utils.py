@@ -127,7 +127,9 @@ class CollectionUpdater(object):
         for child in self.collection:
             record_keys = set(getattr(child, col.key)
                               for col in child_entity_keys)
-            return child if record_keys == supplied_keys else None
+            if record_keys == supplied_keys:
+                return child
+        return None
 
     @no_autoflush
     def update(self):
