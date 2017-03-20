@@ -1,9 +1,16 @@
 import os
 import base64
 
+from keg_elements.encoding import force_bytes
+
 import cryptography.fernet as fernet
 import cryptography.hazmat.primitives.ciphers as ciphers
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import (
+    constant_time,
+    hashes,
+    hmac,
+)
 
 
 def aes_cipher(key, iv, mode=None):
@@ -67,3 +74,21 @@ def decrypt_str(cipher_text, key):
     """
     bin_data = decrypt(cipher_text, key)
     return bin_data.decode('utf-8')
+
+
+def constant_time_compare(a, b):
+    return constant_time.bytes_eq(a, b)
+
+
+def salted_hmac(salt, value, secret):
+    salt = force_bytes(salt)
+    secret = force_bytes(secret)
+    value = force_bytes(value)
+
+    hasher = hashes.Hash(hashes.SHA512(), backend=default_backend())
+    hasher.update(salt + secret)
+    key = hasher.finalize()
+
+    hmacer = hmac.HMAC(key, hashes.SHA512(), backend=default_backend())
+    hmacer.update(value)
+    return hmacer.finalize()
