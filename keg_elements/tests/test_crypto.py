@@ -57,6 +57,28 @@ def test_decrypt_str():
     ) == 'foo'
 
 
+def test_constant_time_compare():
+    # Known cases
+    assert crypto.constant_time_compare(b'a', b'a')
+    assert not crypto.constant_time_compare(b'aa', b'c')
+    try:
+        assert crypto.constant_time_compare('a', True)
+    except TypeError:
+        pass
+    else:
+        raise AssertionError('Should have raised a TypeError')
+
+    # Fuzz Test
+    rando1 = randchars(200).encode()
+    rando2 = randchars(200).encode()
+    rando3 = randchars(201).encode()
+    assert crypto.constant_time_compare(rando1, rando1)
+    assert crypto.constant_time_compare(rando2, rando2)
+    assert crypto.constant_time_compare(rando3, rando3)
+    assert not crypto.constant_time_compare(rando1, rando2)
+    assert not crypto.constant_time_compare(rando1, rando3)
+
+
 class TestCryptors:
     def enc_algo(self, encryptor):
         return encryptor._ctx._cipher.name, encryptor._ctx._mode.name
