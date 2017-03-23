@@ -1,3 +1,13 @@
+0.5.2 - 2017-03-23
+------------------
+
+* FEAT: Add additional utility functions (2e27a60_)
+* BUG: Check all records when updating a collection (fffb7c8_)
+
+.. _2e27a60: https://github.com/level12/keg-elements/commit/2e27a60
+.. _fffb7c8: https://github.com/level12/keg-elements/commit/fffb7c8
+
+
 0.5.0 - 2016-12-19
 -------------------
 
