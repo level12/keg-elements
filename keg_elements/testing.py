@@ -11,6 +11,23 @@ ColumnCheck = namedtuple('ColumnCheck', 'name, required, fk, unique, timestamp')
 ColumnCheck.__new__.__defaults__ = (True, None, None, None)
 
 
+class DontCare(object):  # pragma: no cover
+    """A placeholder object that can conform to almost anything and is always
+    equal to anything it is compared against.
+
+    Examples:
+
+        assert [1, 2, 3] == [1, DontCare(), 3]
+    """
+    __eq__ = lambda *_: True
+    __ne__ = lambda *_: False
+    __repr__ = lambda *_: '_'
+
+    __getattr__ = lambda *_: DontCare()
+    __getitem__ = lambda *_: DontCare()
+    __call__ = lambda *a, **kw: DontCare()
+
+
 class EntityBase(object):
     entity_cls = None
     column_checks = None
