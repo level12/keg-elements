@@ -1,3 +1,11 @@
+0.5.3 - 2017-04-26
+==================
+
+* FEAT: Add DontCare for Easy Testing (28643d6_)
+
+.. _28643d6: https://github.com/level12/keg-elements/commit/28643d6
+
+
 0.5.2 - 2017-03-23
 ------------------
 
