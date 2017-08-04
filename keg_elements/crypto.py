@@ -1,5 +1,7 @@
+import io
 import os
 import base64
+from pathlib import Path
 
 from keg_elements.encoding import force_bytes
 
@@ -10,6 +12,7 @@ from cryptography.hazmat.primitives import (
     constant_time,
     hashes,
     hmac,
+    padding
 )
 
 
@@ -74,6 +77,96 @@ def decrypt_str(cipher_text, key):
     """
     bin_data = decrypt(cipher_text, key)
     return bin_data.decode('utf-8')
+
+
+def encrypt_file(key, in_fpath, out_fpath=None, chunksize=64 * 1024):
+    """ Encrypts a file using AES (CBC mode) with the
+        given key.
+
+        key:
+            The encryption key - a string that must be
+            either 16, 24 or 32 bytes long. Longer keys
+            are more secure.
+
+        in_fpath:
+            Full path of the input file
+
+        out_fpath:
+            Full path of the output file.
+
+            If None, '<in_fpath>.enc' will be used.
+
+        chunksize:
+            Sets the size of the chunk which the function
+            uses to read and encrypt the file. Larger chunk
+            sizes can be faster for some files and machines.
+            chunksize must be divisible by 16.
+    """
+    if not out_fpath:
+        out_fpath = in_fpath + '.enc'
+
+    with open(in_fpath, 'rb') as infile, open(out_fpath, 'wb') as outfile:
+        for chunk in encrypt_fileobj(key, infile, chunksize):
+            outfile.write(chunk)
+
+    return out_fpath
+
+
+def encrypt_fileobj(key, in_fileobj, chunksize=64 * 1024):
+    encryptor, iv = aes_encryptor(key)
+    padder = padding.PKCS7(encryptor._ctx._cipher.block_size).padder()
+
+    yield iv
+    for chunk in iter(lambda: in_fileobj.read(chunksize), b''):
+        data = padder.update(chunk)
+        data = encryptor.update(data)
+        yield data
+    data = padder.finalize()
+    yield encryptor.update(data)
+    yield encryptor.finalize()
+
+
+def decrypt_file(key, in_fpath, out_fpath=None, chunksize=24 * 1024):
+    """ Decrypts a file using AES (CBC mode) with the
+        given key. Parameters are similar to encrypt_file,
+        with one difference: out_filename, if not supplied
+        will be in_filename without its last extension
+        (i.e. if in_filename is 'aaa.zip.enc' then
+        out_filename will be 'aaa.zip')
+    """
+    if out_fpath is None:
+        if Path(in_fpath).suffix == '.enc':
+            out_fpath = Path(in_fpath).stem
+        else:
+            raise ValueError('If input file name doesn\'t end in ".enc" then output filename must '
+                             'be given.')
+    with open(in_fpath, 'rb') as infile, open(out_fpath, 'wb') as outfile:
+        decrypt_fileobj(key, infile, outfile, chunksize)
+
+    return out_fpath
+
+
+def decrypt_bytesio(key, in_fpath, chunksize=24 * 1024):
+    with open(in_fpath, 'rb') as infile:
+        bytes_fobj = io.BytesIO()
+        decrypt_fileobj(key, infile, bytes_fobj, chunksize)
+    # prep for reading from the start of the file
+    bytes_fobj.seek(0)
+    return bytes_fobj
+
+
+def decrypt_fileobj(key, in_fileobj, out_fileobj, chunksize):
+    iv = in_fileobj.read(16)
+    decryptor = aes_decryptor(key, iv)
+    unpadder = padding.PKCS7(decryptor._ctx._cipher.block_size).unpadder()
+
+    for chunk in iter(lambda: in_fileobj.read(chunksize), b''):
+        data = decryptor.update(chunk)
+        data = unpadder.update(data)
+        out_fileobj.write(data)
+
+    out_fileobj.write(unpadder.update(decryptor.finalize()))
+    out_fileobj.write(unpadder.finalize())
 
 
 def constant_time_compare(a, b):
