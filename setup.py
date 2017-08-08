@@ -5,6 +5,10 @@ cdir = osp.abspath(osp.dirname(__file__))
 README = open(osp.join(cdir, 'readme.rst')).read()
 CHANGELOG = open(osp.join(cdir, 'changelog.rst')).read()
 
+version = {}
+with open(osp.join(cdir, 'keg_elements', 'version.py')) as version_fp:
+    exec(version_fp.read(), version)
+
 setup(
     name="KegElements",
     description=("A testing ground for Keg related code and ideas."),
@@ -30,7 +34,7 @@ setup(
     setup_requires=[
         'setuptools_scm',
     ],
-    use_scm_version=True,
+    version=version['VERSION'],
     install_requires=[
         'arrow',
         'Flask-WTF',

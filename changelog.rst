@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.5.4 released 2017-08-08
+-------------------------
+
+- Use pyp to manage releases (5b11356_)
+- FEAT: Add file/stream encryption methods (aeab61a_)
+
+.. _5b11356: https://github.com/level12/keg-elements/commit/5b11356
+.. _aeab61a: https://github.com/level12/keg-elements/commit/aeab61a
+
+
 0.5.3 - 2017-04-26
 ------------------
 
