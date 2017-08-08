@@ -1,5 +1,8 @@
+Changelog
+=========
+
 0.5.3 - 2017-04-26
-==================
+------------------
 
 * FEAT: Add DontCare for Easy Testing (28643d6_)
 
