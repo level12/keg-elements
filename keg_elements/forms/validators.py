@@ -47,8 +47,18 @@ class ValidateUnique(object):
     def __init__(self, object_html_link=None):
         self.object_html_link = object_html_link
 
+    def get_obj(self, form):
+        if hasattr(form, 'obj'):
+            return form.obj
+        if hasattr(form, '_obj'):
+            return form._obj
+
+        raise AttributeError(
+            'Form must provide either `obj` or `_obj` property for uniqueness validation.'
+        )
+
     def __call__(self, form, field):
-        obj = getattr(form, 'obj')
+        obj = self.get_obj(form)
         other = form.get_object_by_field(field)
 
         both_exist = None not in (obj, other)
@@ -57,7 +67,7 @@ class ValidateUnique(object):
 
         if (both_exist and not same_record) or another_exists_with_value:
             link = (' to {}.'.format(self.object_html_link(other))
-                    if hasattr(self, 'object_html_link') else '.')
+                    if self.object_html_link is not None else '.')
             msg = jinja2.Markup('This value must be unique but is already assigned'
                                 '{}'.format(link))
             raise ValidationError(msg)
