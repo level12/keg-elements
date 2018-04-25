@@ -4,6 +4,7 @@ from keg import current_app
 import sqlalchemy as sa
 from sqlalchemy_utils import ArrowType
 
+from keg_elements.sentry import SentryClient
 from .db.utils import validate_unique_exc
 from .db.mixins import DefaultColsMixin
 
@@ -144,3 +145,17 @@ class EntityBase(object):
         except Exception as e:
             if not validate_unique_exc(e):
                 raise
+
+
+class SentryCapture:
+    def __enter__(self):
+        SentryClient.__log_reports__ = True
+        SentryClient.__report_log__ = []
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        SentryClient.__log_reports__ = False
+
+    @property
+    def reports(self):
+        return SentryClient.__report_log__

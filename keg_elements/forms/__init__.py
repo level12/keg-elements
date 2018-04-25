@@ -37,7 +37,7 @@ class FieldMeta(object):
 
     def __init__(self, label_text=_not_given, description=_not_given, label_modifier=_not_given,
                  choices_modifier=_not_given, choices=None, required=_not_given, widget=_not_given,
-                 extra_validators=[]):
+                 extra_validators=tuple()):
         self.label_text = label_text
         self.label_modifier = label_modifier
         self.description = description
@@ -167,7 +167,7 @@ def select_coerce(es_pass_thru, coerce, value):
     try:
         return int(value)
     except ValueError as e:
-        if 'invalid literal for int()' not in str(e):
+        if 'invalid literal for int()' not in six.text_type(e):
             raise
         return six.text_type(value)
 
@@ -285,11 +285,12 @@ def field_to_dict(field):
         return form_fields_to_dict(field)
     if isinstance(field, wtforms.fields.FieldList):
         return [field_to_dict(subfield) for subfield in field]
-    return dict(data=field.data, errors=field.errors)
+    return {'data': field.data, 'errors': field.errors}
 
 
 def form_fields_to_dict(form):
-    return dict((name, field_to_dict(field)) for name, field in six.iteritems(form._fields))
+    return dict((six.text_type(name), field_to_dict(field))
+                for name, field in six.iteritems(form._fields))
 
 
 ___validator_creation_counter = 0
@@ -372,5 +373,5 @@ BaseModelForm = model_form_factory(Form, form_generator=FormGenerator)
 
 class ModelForm(BaseModelForm):
     @classmethod
-    def get_session(self):
+    def get_session(cls):
         return db.session

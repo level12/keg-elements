@@ -42,5 +42,6 @@ setup(
         'pytz',
         'WTForms-Alchemy',
         'cryptography',
+        'raven',
     ]
 )
