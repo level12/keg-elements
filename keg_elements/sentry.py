@@ -30,12 +30,14 @@ class FilteringManager(SerializationManager):
 
     def __init__(self, extra_serializers=tuple()):
         self.extra_serializers = extra_serializers
-        super().__init__()
+        super(FilteringManager, self).__init__()
 
     @property
     def serializers(self):
-        yield from self.extra_serializers
-        yield from SerializationManager.serializers.fget(self)
+        for es in self.extra_serializers:
+            yield es
+        for s in SerializationManager.serializers.fget(self):
+            yield s
 
 
 class SentryClient(raven.base.Client):
@@ -53,7 +55,7 @@ class SentryClient(raven.base.Client):
 
     def __init__(self, *args, **kwargs):
         self.extra_serializers = kwargs.pop('extra_serializers', [TypeFilterSerializer])
-        super().__init__(*args, **kwargs)
+        super(SentryClient, self).__init__(*args, **kwargs)
 
     def transform(self, data):
         # Called by sentry to convert data into a JSON friendly format that can be sent to their API
@@ -69,6 +71,6 @@ class SentryClient(raven.base.Client):
         if self.__log_reports__:
             # Report logging is enabled. Store the report in __report_log__
             self.__report_log__.append(data)
-        elif not current_app.config.get('TESTING'):
+        elif not current_app.config.get('TESTING'):  # pragma: no cover
             # Disable actually reporting to the API when we are testing
-            return super().send(auth_header=auth_header, **data)  # pragma: no cover
+            return super(SentryClient, self).send(auth_header=auth_header, **data)
