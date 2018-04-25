@@ -35,7 +35,7 @@ class TestFilterConfig:
         assert self.check_config_filtered_in_stack(stack, 'config', 'foo') == 2
 
     def test_filtering_serializer(self):
-        serializer = sentry.TypeFilterSerializer(None)
+        serializer = sentry.ConfigTypeFilterSerializer(None)
 
         assert serializer.can(current_app.config)
         assert not serializer.can({})

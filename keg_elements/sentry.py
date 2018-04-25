@@ -4,7 +4,7 @@ from raven.utils.serializer.base import Serializer
 from raven.utils.serializer.manager import transform, SerializationManager
 
 
-class TypeFilterSerializer(Serializer):
+class ConfigTypeFilterSerializer(Serializer):
     """
     Sentry serializer for the Config type that will hide the contents
     """
@@ -54,7 +54,7 @@ class SentryClient(raven.base.Client):
     __report_log__ = []
 
     def __init__(self, *args, **kwargs):
-        self.extra_serializers = kwargs.pop('extra_serializers', [TypeFilterSerializer])
+        self.extra_serializers = kwargs.pop('extra_serializers', [ConfigTypeFilterSerializer])
         super(SentryClient, self).__init__(*args, **kwargs)
 
     def transform(self, data):
