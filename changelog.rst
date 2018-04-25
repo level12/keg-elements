@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.5.5 released 2018-04-25
+-------------------------
+
+- FEAT: Add custom Sentry client to filter out flask config object from reports (927e012_)
+
+.. _927e012: https://github.com/level12/keg-elements/commit/927e012
+
+
 0.5.4 released 2017-08-08
 -------------------------
 
