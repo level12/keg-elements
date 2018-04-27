@@ -215,7 +215,30 @@ class TestValidators(FormBase):
         # test that other validation happens when type is wrong
         form = self.compose_meta(scale_check='aaa')
         form.validate()
-        assert form.scale_check.errors == ['Not a valid decimal value']
+        assert 'Not a valid decimal value' in form.scale_check.errors
+
+    def test_numeric_range_check(self):
+        message = 'Number must be between -9999.9999 and 9999.9999.'
+
+        # too high
+        form = self.compose_meta(scale_check='10000.0000')
+        form.validate()
+        assert form.scale_check.errors == [message]
+
+        # too low
+        form = self.compose_meta(scale_check='-10000.0000')
+        form.validate()
+        assert form.scale_check.errors == [message]
+
+        # top limit
+        form = self.compose_meta(scale_check='9999.9999')
+        form.validate()
+        assert form.scale_check.errors == []
+
+        # bottom limit
+        form = self.compose_meta(scale_check='-9999.9999')
+        form.validate()
+        assert form.scale_check.errors == []
 
 
 class FeaturesForm(Form):
