@@ -8,13 +8,14 @@ from collections import namedtuple
 from operator import attrgetter
 
 import flask
+from decimal import Decimal
 from flask_wtf import Form as BaseForm
 from keg.db import db
 import sqlalchemy as sa
 import six
 import wtforms.fields
 import wtforms.form
-from wtforms.validators import InputRequired, Optional, StopValidation
+from wtforms.validators import InputRequired, Optional, StopValidation, NumberRange
 from wtforms_alchemy import model_form_factory, FormGenerator as FormGeneratorBase
 from wtforms_components.fields import SelectField as SelectFieldBase
 
@@ -235,6 +236,10 @@ class RequiredBoolRadioField(wtforms.fields.RadioField):
         self.type = 'RadioField'
 
 
+def _max_for_numeric(digits, scale):
+    return Decimal('{}.{}'.format('9' * (digits - scale), '9' * scale))
+
+
 class FormGenerator(FormGeneratorBase):
     def __init__(self, form_class):
         super(FormGenerator, self).__init__(form_class)
@@ -276,6 +281,8 @@ class FormGenerator(FormGeneratorBase):
     def create_validators(self, prop, column):
         validators = super(FormGenerator, self).create_validators(prop, column)
         if isinstance(column.type, sa.Numeric):
+            max_ = _max_for_numeric(column.type.precision, column.type.scale)
+            validators.append(NumberRange(min=-max_, max=max_))
             validators.append(NumberScale(column.type.scale))
         return validators
 
