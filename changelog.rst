@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.5.6 released 2018-04-30
+-------------------------
+
+- FEAT: Automatically generate range validators for numeric fields in `ModelForm`s (48a3827_)
+- Improvements to the uniqueness form validator (29937c5_)
+
+.. _48a3827: https://github.com/level12/keg-elements/commit/48a3827
+.. _29937c5: https://github.com/level12/keg-elements/commit/29937c5
+
+
 0.5.5 released 2018-04-25
 -------------------------
 
