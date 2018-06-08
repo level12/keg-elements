@@ -38,7 +38,10 @@ class RelatedThing(db.Model, mixins.DefaultMixin):
                            server_default=sa.text('FALSE'))
 
     thing_id = sa.Column(sa.Integer, sa.ForeignKey(Thing.id), nullable=False)
-    thing = sa.orm.relationship(lambda: Thing, backref='related_things')
+    thing = sa.orm.relationship(lambda: Thing, backref=sa.orm.backref(
+        'related_things',
+        cascade='all, delete-orphan'
+    ))
 
     @classmethod
     def testing_create(cls, **kwargs):
@@ -92,3 +95,62 @@ class ColumnTester(db.Model, mixins.DefaultMixin):
         encrypt=super_secure_encrypt,
         decrypt=super_secure_decrypt
     ))
+
+
+class AncillaryA(mixins.DefaultMixin, db.Model):
+    __tablename__ = 'ancillary_as'
+
+    thing_id = sa.Column(sa.Integer, sa.ForeignKey(Thing.id), nullable=False)
+
+    @classmethod
+    def testing_create(cls, **kwargs):
+        if 'thing_id' not in kwargs:
+            kwargs['thing_id'] = Thing.testing_create().id
+
+        return super(AncillaryA, cls).testing_create(**kwargs)
+
+
+class AncillaryB(mixins.DefaultMixin, db.Model):
+    __tablename__ = 'ancillary_bs'
+
+    thing_id = sa.Column(sa.Integer, sa.ForeignKey(Thing.id), nullable=False)
+
+    @classmethod
+    def testing_create(cls, **kwargs):
+        if 'thing_id' not in kwargs:
+            kwargs['thing_id'] = Thing.testing_create().id
+
+        return super(AncillaryB, cls).testing_create(**kwargs)
+
+
+class UsesBoth(mixins.DefaultMixin, db.Model):
+    __tablename__ = 'uses_boths'
+    __table_args__ = (
+        sa.ForeignKeyConstraint(
+            ('thing_id', 'ancillary_a_id'),
+            (AncillaryA.thing_id, AncillaryA.id)
+        ),
+        sa.ForeignKeyConstraint(
+            ('thing_id', 'ancillary_b_id'),
+            (AncillaryB.thing_id, AncillaryB.id)
+        ),
+    )
+
+    thing_id = sa.Column(sa.Integer, nullable=False)
+    ancillary_a_id = sa.Column(sa.Integer, nullable=False)
+    ancillary_b_id = sa.Column(sa.Integer, nullable=False)
+
+    @classmethod
+    def testing_create(cls, **kwargs):
+        if 'thing_id' not in kwargs:
+            kwargs['thing_id'] = Thing.testing_create().id
+
+        thing_id = kwargs['thing_id']
+
+        if 'ancillary_a_id' not in kwargs:
+            kwargs['ancillary_a_id'] = AncillaryA.testing_create(thing_id=thing_id).id
+
+        if 'ancillary_b_id' not in kwargs:
+            kwargs['ancillary_b_id'] = AncillaryB.testing_create(thing_id=thing_id).id
+
+        return super(UsesBoth, cls).testing_create(**kwargs)
