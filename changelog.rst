@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.5.7 released 2018-06-19
+-------------------------
+
+- BUG: Verify that there is a current app context before attempting to access config in Sentry client to prevent missed reports when outside of an app context.(1d0f3d8_)
+
+.. _1d0f3d8: https://github.com/level12/keg-elements/commit/1d0f3d8
+
+
 0.5.6 released 2018-04-30
 -------------------------
 
