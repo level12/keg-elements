@@ -68,9 +68,16 @@ class SentryClient(raven.base.Client):
 
     def send(self, auth_header=None, **data):
         from keg import current_app
+
         if self.__log_reports__:
             # Report logging is enabled. Store the report in __report_log__
             self.__report_log__.append(data)
-        elif not current_app.config.get('TESTING'):  # pragma: no cover
-            # Disable actually reporting to the API when we are testing
-            return super(SentryClient, self).send(auth_header=auth_header, **data)
+            return
+
+        if flask.has_app_context() and current_app.config.get('TESTING'):
+            # We are in a test. Don't pass on the report to Sentry.
+            return
+
+        # If we are not testing or we cannot determine that because we are not within an
+        # app context, pass the report through
+        return super(SentryClient, self).send(auth_header=auth_header, **data)  # pragma: no cover
