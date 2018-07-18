@@ -4,6 +4,35 @@ from decimal import Decimal
 
 import jinja2
 from wtforms import ValidationError
+import re
+
+
+class ValidateAlphaNumeric(object):
+    """
+        A validator to make sure than a form field contains only alphanumeric data
+
+        usage example:
+            import keg_elements.forms.validators as validators
+
+            wtforms.StringField('AlphaNumeric', validators=[
+                            validators.ValidateAlphaNumeric()
+                        ])
+    """
+    regex = re.compile(r'^[a-zA-Z0-9][a-zA-Z0-9\s]*$')
+    
+    def __init__(self, message=None):
+        self.message = message
+
+
+    def __call__(self, form, field):
+        value = field.data
+
+        message = self.message
+        if message is None:
+            message = field.gettext("Must only contain alphanumeric data.")
+    
+        if not self.regex.match(value):
+            raise ValidationError(message)
 
 
 def numeric(form, field):
