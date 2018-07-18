@@ -117,6 +117,6 @@ class TestAlphaNumericValidator(object):
         form.validate()
         assert form.errors['alpha_numeric_field'] == [message]
 
-        form = AlphaNumericMockForm(alpha_numeric_field='åfasdf')
+        form = AlphaNumericMockForm(alpha_numeric_field=u'åfasdf')
         form.validate()
         assert form.errors['alpha_numeric_field'] == [message]
