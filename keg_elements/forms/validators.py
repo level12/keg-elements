@@ -19,10 +19,9 @@ class ValidateAlphaNumeric(object):
                         ])
     """
     regex = re.compile(r'^[a-zA-Z0-9][a-zA-Z0-9\s]*$')
-    
+
     def __init__(self, message=None):
         self.message = message
-
 
     def __call__(self, form, field):
         value = field.data
@@ -30,7 +29,7 @@ class ValidateAlphaNumeric(object):
         message = self.message
         if message is None:
             message = field.gettext("Must only contain alphanumeric data.")
-    
+
         if not self.regex.match(value):
             raise ValidationError(message)
 

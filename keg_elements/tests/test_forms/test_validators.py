@@ -69,14 +69,14 @@ class TestUniqueValidator(object):
 
 class TestAlphaNumericValidator(object):
 
-
     def test_alphanumeric(self):
         message = 'Must only contain alphanumeric data.'
+
         class AlphaNumericMockForm(wtforms.Form):
             alpha_numeric_field = wtforms.StringField('AlphaNumeric', validators=[
                 validators.ValidateAlphaNumeric()
             ])
-    
+
         form = AlphaNumericMockForm(alpha_numeric_field='123456asb')
         form.validate()
         assert form.errors == {}
@@ -92,7 +92,6 @@ class TestAlphaNumericValidator(object):
         form = AlphaNumericMockForm(alpha_numeric_field='123456!')
         form.validate()
         assert form.errors['alpha_numeric_field'] == [message]
-
 
         form = AlphaNumericMockForm(alpha_numeric_field='123456!')
         form.validate()
