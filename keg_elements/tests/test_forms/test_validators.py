@@ -104,3 +104,19 @@ class TestAlphaNumericValidator(object):
         form = AlphaNumericMockForm(alpha_numeric_field=' ')
         form.validate()
         assert form.errors['alpha_numeric_field'] == [message]
+
+        form = AlphaNumericMockForm(alpha_numeric_field='123dsaf4 ')
+        form.validate()
+        assert form.errors['alpha_numeric_field'] == [message]
+
+        form = AlphaNumericMockForm(alpha_numeric_field=' 123afd4')
+        form.validate()
+        assert form.errors['alpha_numeric_field'] == [message]
+
+        form = AlphaNumericMockForm(alpha_numeric_field='1 23fdas4')
+        form.validate()
+        assert form.errors['alpha_numeric_field'] == [message]
+
+        form = AlphaNumericMockForm(alpha_numeric_field='åfasdf')
+        form.validate()
+        assert form.errors['alpha_numeric_field'] == [message]

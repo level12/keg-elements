@@ -18,7 +18,7 @@ class ValidateAlphaNumeric(object):
                             validators.ValidateAlphaNumeric()
                         ])
     """
-    regex = re.compile(r'^[a-zA-Z0-9][a-zA-Z0-9\s]*$')
+    regex = re.compile(r'^[a-zA-Z0-9][a-zA-Z0-9]*$')
 
     def __init__(self, message=None):
         self.message = message
