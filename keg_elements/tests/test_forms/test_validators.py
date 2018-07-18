@@ -1,3 +1,4 @@
+# coding=utf-8
 import jinja2
 import pytest
 import wtforms
