@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.5.7 released 2018-07-19
+-------------------------
+
+- Merge pull request #82 from level12/add-alphanumeric-validator (bbf43ec_)
+- Merge pull request #80 from level12/check-for-missing-app-ctx (1d0f3d8_)
+
+.. _bbf43ec: https://github.com/level12/keg-elements/commit/bbf43ec
+.. _1d0f3d8: https://github.com/level12/keg-elements/commit/1d0f3d8
+
+
 0.5.6 released 2018-04-30
 -------------------------
 
