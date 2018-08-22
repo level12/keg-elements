@@ -15,6 +15,8 @@ from cryptography.hazmat.primitives import (
     padding
 )
 
+from keg_elements.extensions import lazy_gettext as _
+
 
 def aes_cipher(key, iv, mode=None):
     algo = ciphers.algorithms.AES(key)
@@ -138,8 +140,8 @@ def decrypt_file(key, in_fpath, out_fpath=None, chunksize=24 * 1024):
         if Path(in_fpath).suffix == '.enc':
             out_fpath = Path(in_fpath).stem
         else:
-            raise ValueError('If input file name doesn\'t end in ".enc" then output filename must '
-                             'be given.')
+            raise ValueError(_('If input file name doesn\'t end in ".enc" then output '
+                               'filename must be given.'))
     with open(in_fpath, 'rb') as infile, open(out_fpath, 'wb') as outfile:
         decrypt_fileobj(key, infile, outfile, chunksize)
 

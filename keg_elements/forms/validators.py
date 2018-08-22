@@ -6,6 +6,8 @@ import jinja2
 from wtforms import ValidationError
 import re
 
+from keg_elements.extensions import lazy_gettext as _
+
 
 class ValidateAlphaNumeric(object):
     """
@@ -28,7 +30,7 @@ class ValidateAlphaNumeric(object):
 
         message = self.message
         if message is None:
-            message = field.gettext("Must only contain alphanumeric data.")
+            message = field.gettext(_("Must only contain alphanumeric data."))
 
         if not self.regex.match(value):
             raise ValidationError(message)
@@ -38,14 +40,14 @@ def numeric(form, field):
     try:
         int(field.data)
     except ValueError:
-        raise ValidationError('Value is not numeric.')
+        raise ValidationError(_('Value is not numeric.'))
 
 
 class NumberScale(object):
     def __init__(self, scale=-1, message=None):
         self.scale = scale
         if not message:
-            message = u'Field must have no more than {} decimal places.'.format(scale)
+            message = _(u'Field must have no more than {scale} decimal places.', scale=scale)
         self.message = message
 
     def __call__(self, form, field):
@@ -83,9 +85,9 @@ class ValidateUnique(object):
         if hasattr(form, '_obj'):
             return form._obj
 
-        raise AttributeError(
+        raise AttributeError(_(
             'Form must provide either `obj` or `_obj` property for uniqueness validation.'
-        )
+        ))
 
     def __call__(self, form, field):
         obj = self.get_obj(form)
@@ -96,9 +98,11 @@ class ValidateUnique(object):
         another_exists_with_value = obj is None and other  # new obj with existing object with value
 
         if (both_exist and not same_record) or another_exists_with_value:
-            link = (' to {}.'.format(self.object_html_link(other))
-                    if self.object_html_link is not None else '.')
-            msg = jinja2.Markup('This value must be unique but is already assigned'
-                                '{}'.format(link))
+            if self.object_html_link is None:
+                text = _('This value must be unique but it is already assigned.')
+            else:
+                text = _('This value must be unique but it is already assigned to {link}.',
+                         link=self.object_html_link(other))
+            msg = jinja2.Markup(text)
             raise ValidationError(msg)
         return True
