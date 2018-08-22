@@ -99,9 +99,9 @@ class ValidateUnique(object):
 
         if (both_exist and not same_record) or another_exists_with_value:
             if self.object_html_link is None:
-                text = _('This value must be unique but it is already assigned.')
+                text = _('This value must be unique but is already assigned.')
             else:
-                text = _('This value must be unique but it is already assigned to {link}.',
+                text = _('This value must be unique but is already assigned to {link}.',
                          link=self.object_html_link(other))
             msg = jinja2.Markup(text)
             raise ValidationError(msg)

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: KegElements 0.5.8\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2018-08-22 12:55-0400\n"
+"POT-Creation-Date: 2018-08-22 14:00-0400\n"
 "PO-Revision-Date: 2018-08-22 09:06-0400\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -84,11 +84,11 @@ msgstr ""
 "validación de unicidad."
 
 #: keg_elements/forms/validators.py:102
-msgid "This value must be unique but it is already assigned."
+msgid "This value must be unique but is already assigned."
 msgstr "Este valor debe ser único pero ya está asignado."
 
 #: keg_elements/forms/validators.py:105
-msgid "This value must be unique but it is already assigned to {link}."
+msgid "This value must be unique but is already assigned to {link}."
 msgstr "Este valor debe ser exclusivo, pero ya tiene asignado a {link}."
 
 #: keg_elements/templates/keg_elements/forms/horizontal.html:148
