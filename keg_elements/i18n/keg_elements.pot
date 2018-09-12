@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: KegElements 0.5.8\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2018-08-22 14:00-0400\n"
+"POT-Creation-Date: 2018-09-12 14:18-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -56,6 +56,14 @@ msgstr ""
 
 #: keg_elements/db/utils.py:76
 msgid "length must be at least 7"
+msgstr ""
+
+#: keg_elements/forms/__init__.py:222
+msgid "Yes"
+msgstr ""
+
+#: keg_elements/forms/__init__.py:223
+msgid "No"
 msgstr ""
 
 #: keg_elements/forms/validators.py:33

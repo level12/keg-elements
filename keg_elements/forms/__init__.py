@@ -19,6 +19,7 @@ from wtforms.validators import InputRequired, Optional, StopValidation, NumberRa
 from wtforms_alchemy import model_form_factory, FormGenerator as FormGeneratorBase
 from wtforms_components.fields import SelectField as SelectFieldBase
 
+from keg_elements.extensions import lazy_gettext as _
 from keg_elements.forms.validators import NumberScale
 
 form_element = flask.Blueprint('form_element', __name__)
@@ -218,8 +219,8 @@ class SelectField(SelectFieldBase):
 
 class RequiredBoolRadioField(wtforms.fields.RadioField):
     def __init__(self, *args, **kwargs):
-        true_label = kwargs.pop('true_label', 'Yes')
-        false_label = kwargs.pop('false_label', 'No')
+        true_label = kwargs.pop('true_label', _('Yes'))
+        false_label = kwargs.pop('false_label', _('No'))
 
         def bool_coerce(val):
             if val == u'True':
