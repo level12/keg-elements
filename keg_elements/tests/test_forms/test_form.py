@@ -247,13 +247,13 @@ class FeaturesForm(Form):
 
 
 class NumbersSubForm(wtf.Form):
-    number = wtf.StringField(validators=[validators.required()])
-    color = wtf.StringField()
+    number = wtf.StringField('Number', validators=[validators.required()])
+    color = wtf.StringField('Color')
 
 
 class NumbersForm(Form):
     numbers = wtf.FieldList(wtf.FormField(NumbersSubForm), min_entries=2)
-    numbers2 = wtf.FieldList(wtf.StringField(), min_entries=2)
+    numbers2 = wtf.FieldList(wtf.StringField('Number'), min_entries=2)
 
 
 class TestFieldsToDict(FormBase):
@@ -262,9 +262,24 @@ class TestFieldsToDict(FormBase):
         self.form_cls = FeaturesForm
         form = self.assert_invalid(color='blue')
         expected = {
-            'csrf_token': {'data': '', 'errors': []},
-            'name': {'data': '', 'errors': ['This field is required.']},
-            'color': {'data': 'blue', 'errors': []},
+            'csrf_token': {
+                'data': '',
+                'errors': [],
+                'label': 'Csrf Token',
+                'required': False,
+            },
+            'name': {
+                'data': '',
+                'errors': ['This field is required.'],
+                'label': 'Name',
+                'required': True,
+            },
+            'color': {
+                'data': 'blue',
+                'errors': [],
+                'label': 'Color',
+                'required': False
+            },
         }
         assert form.fields_todict() == expected
 
@@ -272,9 +287,24 @@ class TestFieldsToDict(FormBase):
         self.form_cls = FeaturesForm
         form = self.assert_invalid(color='blue')
         expected = {
-            'csrf_token': {'data': '', 'errors': []},
-            'name': {'data': '', 'errors': ['This field is required.']},
-            'color': {'data': 'blue', 'errors': []},
+            'csrf_token': {
+                'data': '',
+                'errors': [],
+                'label': 'Csrf Token',
+                'required': False,
+            },
+            'name': {
+                'data': '',
+                'errors': ['This field is required.'],
+                'label': 'Name',
+                'required': True,
+            },
+            'color': {
+                'data': 'blue',
+                'errors': [],
+                'label': 'Color',
+                'required': False
+            },
         }
         fields_data = form.fields_todict()
         assert fields_data == expected
@@ -282,21 +312,42 @@ class TestFieldsToDict(FormBase):
     def test_field_to_dict_field(self):
         form = NumbersSubForm()
         form.validate()
-        assert ke_forms.field_to_dict(form.number) == \
-            {'data': None, 'errors': ['This field is required.']}
+        assert ke_forms.field_to_dict(form.number) == {
+            'data': None,
+            'errors': ['This field is required.'],
+            'label': 'Number',
+            'required': True
+        }
 
     def test_field_to_dict_select(self):
         form = FruitForm(letter='b')
         form.validate()
         assert ke_forms.field_to_dict(form.letter) == \
-            {'data': 'b', 'errors': []}
-        assert ke_forms.field_to_dict(form.letter2) == \
-            {'data': None, 'errors': ['This field is required.']}
+            {'data': 'b', 'errors': [], 'label': 'Letter', 'required': False}
+        assert ke_forms.field_to_dict(form.letter2) == {
+            'data': None,
+            'errors': ['This field is required.'],
+            'label': 'Letter2',
+            'required': True
+        }
 
     def test_field_to_dict_fieldlist(self):
         form = NumbersForm()
         form.validate()
-        expected = [{'data': None, 'errors': []}, {'data': None, 'errors': []}]
+        expected = [
+            {
+                'data': None,
+                'errors': [],
+                'label': 'Number',
+                'required': False,
+            },
+            {
+                'data': None,
+                'errors': [],
+                'label': 'Number',
+                'required': False,
+            }
+        ]
         assert ke_forms.field_to_dict(form.numbers2) == expected
 
     def test_field_to_dict_form_fieldlist(self):
@@ -307,9 +358,34 @@ class TestFieldsToDict(FormBase):
         form = NumbersForm(MultiDict(data))
         form.validate()
         expected = [
-            {'number': {'data': '123', 'errors': []}, 'color': {'data': '', 'errors': []}},
-            {'number': {'data': '', 'errors': ['This field is required.']},
-                'color': {'data': 'blue', 'errors': []}},
+            {
+                'number': {
+                    'data': '123',
+                    'errors': [],
+                    'label': 'Number',
+                    'required': True
+                },
+                'color': {
+                    'data': '',
+                    'errors': [],
+                    'label': 'Color',
+                    'required': False
+                }
+            },
+            {
+                'number': {
+                    'data': '',
+                    'errors': ['This field is required.'],
+                    'label': 'Number',
+                    'required': True
+                },
+                'color': {
+                    'data': 'blue',
+                    'errors': [],
+                    'label': 'Color',
+                    'required': False
+                }
+            },
         ]
         assert ke_forms.field_to_dict(form.numbers) == expected
 
@@ -321,13 +397,56 @@ class TestFieldsToDict(FormBase):
         }
         form = self.assert_invalid(**data)
         expected = {
-            'csrf_token': {'data': '', 'errors': []},
+            'csrf_token': {
+                'data': '',
+                'errors': [],
+                'label': 'Csrf Token',
+                'required': False,
+            },
             'numbers': [
-                {'number': {'data': '123', 'errors': []}, 'color': {'data': '', 'errors': []}},
-                {'number': {'data': '', 'errors': ['This field is required.']},
-                    'color': {'data': 'blue', 'errors': []}},
+                {
+                    'number': {
+                        'data': '123',
+                        'errors': [],
+                        'label': 'Number',
+                        'required': True,
+                    },
+                    'color': {
+                        'data': '',
+                        'errors': [],
+                        'label': 'Color',
+                        'required': False,
+                    }
+                },
+                {
+                    'number': {
+                        'data': '',
+                        'errors': ['This field is required.'],
+                        'label': 'Number',
+                        'required': True,
+                    },
+                    'color': {
+                        'data': 'blue',
+                        'errors': [],
+                        'label': 'Color',
+                        'required': False,
+                    }
+                },
             ],
-            'numbers2': [{'data': '', 'errors': []}, {'data': '', 'errors': []}]
+            'numbers2': [
+                {
+                    'data': '',
+                    'errors': [],
+                    'label': 'Number',
+                    'required': False,
+                },
+                {
+                    'data': '',
+                    'errors': [],
+                    'label': 'Number',
+                    'required': False
+                }
+            ]
         }
         fields_dict = form.fields_todict()
         assert fields_dict == expected, fields_dict

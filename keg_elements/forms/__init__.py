@@ -292,7 +292,12 @@ def field_to_dict(field):
         return form_fields_to_dict(field)
     if isinstance(field, wtforms.fields.FieldList):
         return [field_to_dict(subfield) for subfield in field]
-    return {'data': field.data, 'errors': field.errors}
+    return {
+        'data': field.data,
+        'errors': field.errors,
+        'label': field.label.text,
+        'required': field.flags.required,
+    }
 
 
 def form_fields_to_dict(form):
