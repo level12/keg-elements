@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.5.9 released 2018-09-19
+-------------------------
+
+- FEAT: Add additional metadata to the results of Form.fields_todict (2f863f1_)
+
+.. _2f863f1: https://github.com/level12/keg-elements/commit/2f863f1
 
 
 0.5.8 released 2018-07-19
