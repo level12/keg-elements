@@ -1,3 +1,9 @@
+{%- if _ is not defined -%}
+    {% macro _(message) -%}
+        {{ message }}
+    {%- endmacro %}
+{%- endif -%}
+
 {# Renders field for bootstrap 3 standards.
 
     Params:
@@ -82,7 +88,7 @@
     {% endcall %}
 {%- endmacro %}
 
-{% macro submit_group(action_text='Done', btn_class='btn btn-primary', cancel_url='') -%}
+{% macro submit_group(action_text=_('Done'), btn_class='btn btn-primary', cancel_url='') -%}
     <div class="form-group">
         <div class="unlabeled-group">
           <a href="{{cancel_url}}" class="{{ btn_class }}">{{ action_text }}</a>
@@ -120,7 +126,7 @@
     form,
     field_names=None,
     action_url='',
-    action_text='Done',
+    action_text=_('Done'),
     class_='form-horizontal',
     btn_class='btn btn-primary',
     cancel_url='',

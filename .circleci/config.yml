@@ -1,0 +1,29 @@
+version: 2
+
+jobs:
+  build:
+    docker:
+      - image: level12/python-test-multi
+
+    steps:
+      - checkout
+
+      - run:
+          name: install tox and upgrade pip
+          command: pip install -U pip tox
+
+      - run:
+          name: version checks
+          command: |
+            python --version
+            pip --version
+            virtualenv --version
+            tox --version
+
+      - run:
+          name: run tox
+          command: tox
+
+      - run:
+          name: upload code coverage
+          command: bash <(curl -s https://codecov.io/bash) -t  1c18e756-0bd0-4106-98be-b2fedf1f88df

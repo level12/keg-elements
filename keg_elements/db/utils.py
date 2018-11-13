@@ -8,6 +8,7 @@ from sqlalchemy.types import DateTime
 from blazeutils.strings import randchars
 
 from keg.db import db
+from keg_elements.extensions import lazy_gettext as _
 
 
 class utcnow(expression.FunctionElement):
@@ -72,7 +73,7 @@ def randemail(length, randomizer=randchars):
                       interface to `randchars`. The default function is `randchars`.
     """
     if length < 7:
-        raise ValueError('length must be at least 7')
+        raise ValueError(_('length must be at least 7'))
 
     half = (length - 2 - 3) / 2.0  # 2 characters for @ and . and 3 for TLD
     return (randomizer(int(math.floor(half)), 'alphanumeric')

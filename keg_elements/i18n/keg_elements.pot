@@ -1,0 +1,107 @@
+# Translations template for KegElements.
+# Copyright (C) 2018 ORGANIZATION
+# This file is distributed under the same license as the KegElements
+# project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2018.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: KegElements 0.5.8\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2018-09-12 14:18-0400\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.6.0\n"
+
+#: keg_elements/crypto.py:143
+msgid ""
+"If input file name doesn't end in \".enc\" then output filename must be "
+"given."
+msgstr ""
+
+#: keg_elements/http.py:15
+msgid "Base36 input too large"
+msgstr ""
+
+#: keg_elements/http.py:26
+msgid "Negative base36 conversion input."
+msgstr ""
+
+#: keg_elements/db/columns.py:36
+msgid "Key must be at least 32 bytes long"
+msgstr ""
+
+#: keg_elements/db/mixins.py:40
+msgid "Unknown column or relationship names in kwargs: {kwargs!r}"
+msgstr ""
+
+#: keg_elements/db/mixins.py:94
+msgid "Updating property types is not implemented."
+msgstr ""
+
+#: keg_elements/db/mixins.py:165
+msgid ""
+"No primary key was found in `oid` or `kwargs` for which to retrieve the "
+"object to edit"
+msgstr ""
+
+#: keg_elements/db/mixins.py:267
+msgid "No randomization for this column type"
+msgstr ""
+
+#: keg_elements/db/utils.py:76
+msgid "length must be at least 7"
+msgstr ""
+
+#: keg_elements/forms/__init__.py:222
+msgid "Yes"
+msgstr ""
+
+#: keg_elements/forms/__init__.py:223
+msgid "No"
+msgstr ""
+
+#: keg_elements/forms/validators.py:33
+msgid "Must only contain alphanumeric data."
+msgstr ""
+
+#: keg_elements/forms/validators.py:43
+msgid "Value is not numeric."
+msgstr ""
+
+#: keg_elements/forms/validators.py:50
+msgid "Field must have no more than {scale} decimal places."
+msgstr ""
+
+#: keg_elements/forms/validators.py:88
+msgid ""
+"Form must provide either `obj` or `_obj` property for uniqueness "
+"validation."
+msgstr ""
+
+#: keg_elements/forms/validators.py:102
+msgid "This value must be unique but is already assigned."
+msgstr ""
+
+#: keg_elements/forms/validators.py:105
+msgid "This value must be unique but is already assigned to {link}."
+msgstr ""
+
+#: keg_elements/templates/keg_elements/forms/horizontal.html:148
+msgid "Cancel"
+msgstr ""
+
+#: keg_elements/templates/keg_elements/forms/horizontal.html:198
+msgid "Submit"
+msgstr ""
+
+#: keg_elements/templates/keg_elements/forms/horizontal_static.html:91
+#: keg_elements/templates/keg_elements/forms/horizontal_static.html:129
+msgid "Done"
+msgstr ""
+

@@ -2,6 +2,7 @@
 import sqlalchemy as sa
 
 from keg_elements import crypto
+from keg_elements.extensions import lazy_gettext as _
 
 
 class TimeZoneType(sa.Unicode):
@@ -32,7 +33,7 @@ class EncryptedUnicode(sa.TypeDecorator):
     def key(self):
         key_val = self._key() if callable(self._key) else self._key
         if len(key_val) < 32:
-            raise ValueError('Key must be at least 32 bytes long')
+            raise ValueError(_('Key must be at least 32 bytes long'))
         return key_val[:32]
 
     def process_bind_param(self, value, dialect):

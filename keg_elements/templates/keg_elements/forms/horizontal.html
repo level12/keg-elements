@@ -1,3 +1,9 @@
+{%- if _ is not defined -%}
+    {% macro _(message) -%}
+        {{ message }}
+    {%- endmacro %}
+{%- endif -%}
+
 {# Renders field for bootstrap 3 standards.
 
     Params:
@@ -139,7 +145,7 @@
       <div class="unlabeled-group">
         <button type="submit" class="{{ btn_class }}">{{ action_text }} </button>
         {% if cancel_url %}
-            <a href="{{cancel_url}}" class="cancel">Cancel</a>
+            <a href="{{cancel_url}}" class="cancel">{{ _('Cancel') }}</a>
         {% endif %}
       </div>
     </div>
@@ -189,7 +195,7 @@
     form,
     field_names=None,
     action_url='',
-    action_text='Submit',
+    action_text=_('Submit'),
     class_='form-horizontal',
     btn_class='btn btn-primary',
     cancel_url='',

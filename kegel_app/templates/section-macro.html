@@ -1,24 +1,30 @@
 {% import 'keg_elements/forms/horizontal.html' as dynamic_render %}
 {% import 'keg_elements/forms/horizontal_static.html' as static_render %}
 
+{%- if _ is not defined -%}
+    {% macro _(message) -%}
+        {{ message }}
+    {%- endmacro %}
+{%- endif -%}
+
 <div id="dynamic">
     <div id="with-caller">
-        {% call dynamic_render.section('My Heading', form) %}
+        {% call dynamic_render.section(_('My Heading'), form) %}
             {{ dynamic_render.field(form[field_name]) }}
         {% endcall %}
     </div>
     <div id="with-field-name">
-        {{ dynamic_render.section('My Heading', form, [field_name]) }}
+        {{ dynamic_render.section(_('My Heading'), form, [field_name]) }}
     </div>
 </div>
 
 <div id="static">
     <div id="with-caller">
-        {% call static_render.section('My Heading', form) %}
+        {% call static_render.section(_('My Heading'), form) %}
             {{ static_render.field(form[field_name]) }}
         {% endcall %}
     </div>
     <div id="with-field-name">
-        {{ static_render.section('My Heading', form, [field_name]) }}
+        {{ static_render.section(_('My Heading'), form, [field_name]) }}
     </div>
 </div>

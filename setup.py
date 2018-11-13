@@ -43,5 +43,10 @@ setup(
         'WTForms-Alchemy',
         'cryptography',
         'raven',
-    ]
+    ],
+    extras_require={
+        'i18n': [
+            'morphi'
+        ]
+    }
 )

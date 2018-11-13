@@ -14,6 +14,7 @@ import wrapt
 import keg_elements.decorators as decor
 import keg_elements.db.columns as columns
 import keg_elements.db.utils as dbutils
+from keg_elements.extensions import lazy_gettext as _
 
 
 might_commit = decor.keyword_optional('_commit', after=dbutils.session_commit, when_missing=True)
@@ -35,8 +36,8 @@ def kwargs_match_entity(wrapped, instance, args, kwargs):
         # Ignore kwargs starting with "_"
         kwarg_keys = set(key for key in kwargs if not key.startswith('_'))
         extra_kwargs = kwarg_keys - allowed_keys
-        assert not extra_kwargs, 'Unknown column or relationship names in kwargs: {!r}'.format(
-            sorted(extra_kwargs))
+        assert not extra_kwargs, _('Unknown column or relationship names in kwargs: {kwargs!r}',
+                                   kwargs=sorted(extra_kwargs))
     return wrapped(*args, **kwargs)
 
 
@@ -90,7 +91,7 @@ class MethodsMixin:
                 update_related(key, value, prop)
             else:
                 raise NotImplementedError(
-                    'Updating {} property types is not implemented.')
+                    _('Updating property types is not implemented.'))
 
     def to_dict(self, exclude=frozenset(), hybrids=frozenset()):
         """Covert the object properties to a dictionary.
@@ -161,8 +162,8 @@ class MethodsMixin:
                                    for x in cls.primary_keys()
                                    if x is not None]
         except KeyError:
-            raise AttributeError('No primary key was found in `oid` or `kwargs`'
-                                 ' for which to retrieve the object to edit')
+            raise AttributeError(_('No primary key was found in `oid` or `kwargs`'
+                                   ' for which to retrieve the object to edit'))
 
         obj = cls.query.get(primary_keys)
         obj.from_dict(kwargs)
@@ -263,7 +264,7 @@ class MethodsMixin:
             return random.choice(pytz.common_timezones)
         elif isinstance(column.type, (sa.types.String, sa.types.Unicode)):
             return blazeutils.strings.randchars(min(column.type.length or 25, 25))
-        raise ValueError('No randomization for this column type')
+        raise ValueError(_('No randomization for this column type'))
 
     @might_commit
     @might_flush
