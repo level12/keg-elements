@@ -1,6 +1,18 @@
 Changelog
 =========
 
+0.5.10 released 2018-11-13
+--------------------------
+
+- Added template support for adding tab indexes when creating wtforms (f36997e_)
+- Add support for multiple-column keys in ColumnCheck (8dc840b_)
+- Add optional i18n support using morphi (46229a4_)
+
+.. _f36997e: https://github.com/level12/keg-elements/commit/f36997e
+.. _8dc840b: https://github.com/level12/keg-elements/commit/8dc840b
+.. _46229a4: https://github.com/level12/keg-elements/commit/46229a4
+
+
 0.5.9 released 2018-09-19
 -------------------------
 
