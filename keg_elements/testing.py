@@ -1,6 +1,7 @@
 from collections import namedtuple
 
 from keg import current_app
+import six
 import sqlalchemy as sa
 from sqlalchemy_utils import ArrowType
 
@@ -78,8 +79,23 @@ class EntityBase(object):
     def check_column_fk(self, col, fk):
         fk_count = len(col.foreign_keys)
         if fk:
-            assert fk_count == 1, 'check_column_fk() can not handle colums w/ multiple FKs'
-            assert fk == list(col.foreign_keys)[0]._get_colspec()
+            # normalize `fk` into a set
+            if isinstance(fk, six.string_types):
+                # 'foo.bar' => {'foo.bar'}
+                # 'foo.bar,baz.qux' => {'foo.bar', 'baz.qux'}
+                # 'foo.bar, baz.qux' => {'foo.bar', 'baz.qux'}
+                fk_set = {partial.strip() for partial in fk.split(',')}
+
+            elif isinstance(fk, set):
+                fk_set = fk
+
+            else:
+                # ['foo.bar', 'baz.qux'] => {'foo.bar', 'baz.qux'}
+                fk_set = set(fk)
+
+            assert fk_count == len(fk_set)
+            assert fk_set == {fk._get_colspec() for fk in col.foreign_keys}
+
         else:
             assert not fk_count, 'Didn\'t expect column "{}" to have a foreign key'.format(col.name)
 
