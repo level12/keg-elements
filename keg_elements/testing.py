@@ -52,6 +52,15 @@ class EntityBase(object):
             cls.ent_delete_all()
 
     @classmethod
+    def column_check_generator(cls):
+        for col_check in cls.column_checks or []:
+            yield col_check
+        if cls.timestamp_cols:
+            createdts_col_name, updatedts_col_name = cls.timestamp_cols
+            yield ColumnCheck(createdts_col_name, timestamp='create')
+            yield ColumnCheck(updatedts_col_name, timestamp='update')
+
+    @classmethod
     def ent_delete_all(cls):
         if hasattr(cls.entity_cls, 'delete_cascaded'):
             cls.entity_cls.delete_cascaded()
@@ -69,43 +78,57 @@ class EntityBase(object):
         if hasattr(self.entity_cls, 'id'):
             assert o.id
 
-    def check_column_null(self, col, is_required):
-        assert col.nullable != is_required
+    def test_column_null(self):
+        for col_check in self.column_check_generator():
+            col = getattr(self.entity_cls, col_check.name)
+            assert col.nullable != col_check.required, \
+                'Expected colum "{}" to match null requirement'.format(col.name)
 
-    def check_column_unique(self, col, is_unique):
-        assert col.unique == is_unique, 'Expected column "{}" to have unique={}'.format(
-            col.name, is_unique)
+    def test_column_unique(self):
+        for col_check in self.column_check_generator():
+            col = getattr(self.entity_cls, col_check.name)
+            assert col.unique == col_check.unique, 'Expected column "{}" to have unique={}'.format(
+                col.name, col_check.unique)
 
-    def check_column_fk(self, col, fk):
-        fk_count = len(col.foreign_keys)
-        if fk:
-            # normalize `fk` into a set
-            if isinstance(fk, six.string_types):
-                # 'foo.bar' => {'foo.bar'}
-                # 'foo.bar,baz.qux' => {'foo.bar', 'baz.qux'}
-                # 'foo.bar, baz.qux' => {'foo.bar', 'baz.qux'}
-                fk_set = {partial.strip() for partial in fk.split(',')}
+    def test_column_fk(self):
+        for col_check in self.column_check_generator():
+            col = getattr(self.entity_cls, col_check.name)
+            fk_count = len(col.foreign_keys)
+            if col_check.fk:
+                # normalize `fk` into a set
+                if isinstance(col_check.fk, six.string_types):
+                    # 'foo.bar' => {'foo.bar'}
+                    # 'foo.bar,baz.qux' => {'foo.bar', 'baz.qux'}
+                    # 'foo.bar, baz.qux' => {'foo.bar', 'baz.qux'}
+                    fk_set = {partial.strip() for partial in col_check.fk.split(',')}
 
-            elif isinstance(fk, set):
-                fk_set = fk
+                elif isinstance(col_check.fk, set):
+                    fk_set = col_check.fk
+
+                else:
+                    # ['foo.bar', 'baz.qux'] => {'foo.bar', 'baz.qux'}
+                    fk_set = set(col_check.fk)
+
+                assert fk_count == len(fk_set), 'FK count does not match for {}'.format(col.name)
+                assert fk_set == {fk._get_colspec() for fk in col.foreign_keys}, \
+                    'FK set does not match for {}'.format(col.name)
 
             else:
-                # ['foo.bar', 'baz.qux'] => {'foo.bar', 'baz.qux'}
-                fk_set = set(fk)
+                assert not fk_count, \
+                    'Didn\'t expect column "{}" to have a foreign key'.format(col.name)
 
-            assert fk_count == len(fk_set)
-            assert fk_set == {fk._get_colspec() for fk in col.foreign_keys}
-
-        else:
-            assert not fk_count, 'Didn\'t expect column "{}" to have a foreign key'.format(col.name)
-
-    def check_column_timestamp(self, col, ts_type):
-        if not isinstance(col.type, (ArrowType, sa.DateTime)):
-            raise AssertionError('Column "{}" is not a recognized timestamp type.'.format(col.name))
-        assert col.default
-        if ts_type == 'update':
-            assert col.onupdate, 'Column "{}" should have onupdate set'.format(col.name)
-        assert col.server_default, 'Column "{}" should have server_default set'.format(col.name)
+    def test_column_timestamp(self):
+        for col_check in self.column_check_generator():
+            if not col_check.timestamp:
+                continue
+            col = getattr(self.entity_cls, col_check.name)
+            if not isinstance(col.type, (ArrowType, sa.DateTime)):
+                raise AssertionError(
+                    'Column "{}" is not a recognized timestamp type.'.format(col.name))
+            assert col.default
+            if col_check.timestamp == 'update':
+                assert col.onupdate, 'Column "{}" should have onupdate set'.format(col.name)
+            assert col.server_default, 'Column "{}" should have server_default set'.format(col.name)
 
     def test_all_columns_are_constraint_tested(self):
         """Checks that all fields declared on entity are in the constraint tests"""
@@ -141,17 +164,6 @@ class EntityBase(object):
                     self.entity_cls.__name__,
                     ', '.join(missing))
             )
-
-    def test_column_checks(self):
-        if not self.column_checks:
-            return
-        for col_check in self.column_checks:
-            col = getattr(self.entity_cls, col_check.name)
-            yield self.check_column_null, col, col_check.required
-            yield self.check_column_unique, col, col_check.unique
-            yield self.check_column_fk, col, col_check.fk
-            if col_check.timestamp:
-                yield self.check_column_timestamp, col, col_check.timestamp
 
     def check_unique_constraint(self, **kwargs):
         self.entity_cls.testing_create(**kwargs)
