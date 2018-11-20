@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.5.11 released 2018-11-20
+--------------------------
+
+- Switch yield tests to loops to resolve pytest warning (a3e1b5c_)
+
+.. _a3e1b5c: https://github.com/level12/keg-elements/commit/a3e1b5c
+
+
 0.5.10 released 2018-11-13
 --------------------------
 
