@@ -9,7 +9,7 @@ from operator import attrgetter
 
 import flask
 from decimal import Decimal
-from flask_wtf import Form as BaseForm
+from flask_wtf import FlaskForm as BaseForm
 from keg.db import db
 import sqlalchemy as sa
 import six
