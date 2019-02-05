@@ -29,4 +29,4 @@ python3.5 -m pip install --upgrade --force-reinstall \
 # DO NOT CHANGE this to just run tox's default environments.  Tox's defaults environments should
 # be what a developer would want to run (tests & flake8 usually).
 # Below is where we codify the environments that need to run in CI.
-python3.5 -m tox -e py27,py34,py35,flake8
+python3.5 -m tox -e "py{27,34,35,36,37}-{base,i18n},flake8"
