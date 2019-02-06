@@ -21,12 +21,11 @@ export PIP_DISABLE_PIP_VERSION_CHECK=1
 # You could skip this step and use the tox installed in the docker image.  I (RS) like this option
 # b/c it gives me control over what version of tox I'm using without having to rebuild the
 # docker image.
-python3.5 -m pip install --upgrade --force-reinstall \
-    --quiet --no-index --find-links=requirements/wheelhouse tox
+python3.5 -m pip install --upgrade --quiet tox pipenv
 
 # Run the tests using our target python version.
 #
 # DO NOT CHANGE this to just run tox's default environments.  Tox's defaults environments should
 # be what a developer would want to run (tests & flake8 usually).
 # Below is where we codify the environments that need to run in CI.
-python3.5 -m tox -e "py{27,34,35,36,37}-{base,i18n},flake8"
+python3.5 -m tox -e "py{27,34,35,36}-{base,i18n},flake8"
