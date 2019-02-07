@@ -262,12 +262,6 @@ class TestFieldsToDict(FormBase):
         self.form_cls = FeaturesForm
         form = self.assert_invalid(color='blue')
         expected = {
-            'csrf_token': {
-                'data': '',
-                'errors': [],
-                'label': 'Csrf Token',
-                'required': False,
-            },
             'name': {
                 'data': '',
                 'errors': ['This field is required.'],
@@ -287,12 +281,6 @@ class TestFieldsToDict(FormBase):
         self.form_cls = FeaturesForm
         form = self.assert_invalid(color='blue')
         expected = {
-            'csrf_token': {
-                'data': '',
-                'errors': [],
-                'label': 'Csrf Token',
-                'required': False,
-            },
             'name': {
                 'data': '',
                 'errors': ['This field is required.'],
@@ -397,12 +385,6 @@ class TestFieldsToDict(FormBase):
         }
         form = self.assert_invalid(**data)
         expected = {
-            'csrf_token': {
-                'data': '',
-                'errors': [],
-                'label': 'Csrf Token',
-                'required': False,
-            },
             'numbers': [
                 {
                     'number': {
