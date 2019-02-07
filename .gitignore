@@ -9,3 +9,4 @@ dist
 .pytests.xml
 coverage.xml
 /.eggs
+Pipfile.lock
