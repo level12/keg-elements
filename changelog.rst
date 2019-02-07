@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.5.12 released 2019-02-07
+--------------------------
+
+- Fix Deprecation Warnings and Remove Wheelhouse (7af6f55_)
+
+.. _7af6f55: https://github.com/level12/keg-elements/commit/7af6f55
+
+
 0.5.11 released 2018-11-20
 --------------------------
 
