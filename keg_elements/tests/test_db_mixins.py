@@ -1,3 +1,4 @@
+from unittest import mock
 import datetime
 
 from keg.db import db
@@ -173,6 +174,27 @@ class TestMethodsMixin:
             'name_and_color': obj.name_and_color
         }
 
+    def test_safe_random_for_numeric_column(self):
+        func = mixins.MethodsMixin.safe_random_for_numeric_column
+
+        # List of scenarios containing the column and expected ranges for the random number
+        SCENARIOS = [
+        #    |    SA Numeric type Column with     | Fraction   | Whole Num |
+        #    |    optional precision and scale    |(min, max)  |(min, max) |
+            ( sa.Column(sa.Numeric),               (0, 99999),  (-5E4, 5E4) ),  # noqa: E201,E241,E202,E501
+            ( sa.Column(sa.Numeric(precision=1)),  (0, 9),      (0, 0)      ),  # noqa: E201,E241,E202,E501
+            ( sa.Column(sa.Numeric(scale=1)),      (0, 9),      (-5E8, 5E8) ),  # noqa: E201,E241,E202,E501
+            ( sa.Column(sa.Numeric(11, 2)),        (0, 99),     (-5E8, 5E8) ),  # noqa: E201,E241,E202,E501
+            ( sa.Column(sa.Numeric(4, 2)),         (0, 99),     (-50, 50)   ),  # noqa: E201,E241,E202,E501
+        ]
+
+        for scenario in SCENARIOS:
+            column, expected_fraction_range, expected_whole_range = scenario
+            with mock.patch('random.randint', autospec=True, spec_set=True) as m_random:
+                m_random.return_value = 0  # always safe return value
+                func(column)
+            assert m_random.call_args_list == [(expected_fraction_range,), (expected_whole_range,)]
+
     def test_random_data_for_column(self):
         func = mixins.MethodsMixin.random_data_for_column
 
@@ -181,6 +203,10 @@ class TestMethodsMixin:
         assert type(func(sa.Column(sa.Integer), 0, 0)) == int
         assert type(func(sa.Column(sa.Boolean), 0, 0)) == bool
         assert type(func(sa.Column(sa.Numeric), 0, 0)) == float
+        assert type(func(sa.Column(sa.Numeric(precision=1)), 0, 0)) == float
+        assert type(func(sa.Column(sa.Numeric(scale=1)), 0, 0)) == float
+        assert type(func(sa.Column(sa.Numeric(1, 1)), 0, 0)) == float
+        assert type(func(sa.Column(sa.Numeric(0, 0)), 0, 0)) == float  # will fallback to defaults
         assert type(func(sa.Column(sa.Date), 0, 0)) == datetime.date
         assert type(func(sa.Column(sa.DateTime), 0, 0)) == datetime.datetime
         assert type(func(sa.Column(sautils.ArrowType), 0, 0)) == arrow.Arrow

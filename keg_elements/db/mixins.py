@@ -1,4 +1,6 @@
+from decimal import Decimal
 import datetime as dt
+import math
 import operator
 import random
 
@@ -251,7 +253,7 @@ class MethodsMixin:
         elif isinstance(column.type, sa.types.Integer):
             return random.randint(numeric_high, numeric_low)
         elif isinstance(column.type, sa.types.Numeric):
-            return random.uniform(numeric_high, numeric_low)
+            return cls.safe_random_for_numeric_column(column)
         elif isinstance(column.type, sa.types.Date):
             return dt.date.today()
         elif isinstance(column.type, sa.types.DateTime):
@@ -265,6 +267,23 @@ class MethodsMixin:
         elif isinstance(column.type, (sa.types.String, sa.types.Unicode)):
             return blazeutils.strings.randchars(min(column.type.length or 25, 25))
         raise ValueError(_('No randomization for this column type'))
+
+    @classmethod
+    def safe_random_for_numeric_column(cls, column):
+        """Use Numeric column properties to generate a safe random number"""
+        if not isinstance(column.type, sa.types.Numeric):
+            raise TypeError('Range can only be calculated for columns of type Numeric')
+
+        precision = column.type.precision or 10
+        scale = column.type.scale or math.ceil(precision / 2)
+
+        fractional = Decimal(random.randint(0, 10 ** scale - 1)) / 10 ** scale
+        max_whole = 10 ** (precision - scale) - 1
+        # Since these values are used for testing, we're going to half the max whole
+        #  make overflow less common
+        half_max_whole = math.ceil(max_whole / 2.0)
+        whole = random.randint(-half_max_whole, half_max_whole)
+        return float(fractional + whole)
 
     @might_commit
     @might_flush
