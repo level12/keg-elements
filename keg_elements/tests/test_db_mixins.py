@@ -1,3 +1,4 @@
+from random import randint
 from unittest import mock
 import datetime
 
@@ -176,24 +177,35 @@ class TestMethodsMixin:
 
     def test_safe_random_for_numeric_column(self):
         func = mixins.MethodsMixin.safe_random_for_numeric_column
+        FIVE_MIL = int(5E8)
+        FIFTY_K = int(5E4)
 
         # List of scenarios containing the column and expected ranges for the random number
         SCENARIOS = [
         #    |    SA Numeric type Column with     | Fraction   | Whole Num |
         #    |    optional precision and scale    |(min, max)  |(min, max) |
-            ( sa.Column(sa.Numeric),               (0, 99999),  (-5E4, 5E4) ),  # noqa: E201,E241,E202,E501
+            ( sa.Column(sa.Numeric),               (0, 99999),  (-FIFTY_K, FIFTY_K) ),  # noqa: E201,E241,E202,E501
             ( sa.Column(sa.Numeric(precision=1)),  (0, 9),      (0, 0)      ),  # noqa: E201,E241,E202,E501
-            ( sa.Column(sa.Numeric(scale=1)),      (0, 9),      (-5E8, 5E8) ),  # noqa: E201,E241,E202,E501
-            ( sa.Column(sa.Numeric(11, 2)),        (0, 99),     (-5E8, 5E8) ),  # noqa: E201,E241,E202,E501
+            ( sa.Column(sa.Numeric(scale=1)),      (0, 9),      (-FIVE_MIL, FIVE_MIL) ),  # noqa: E201,E241,E202,E501
+            ( sa.Column(sa.Numeric(11, 2)),        (0, 99),     (-FIVE_MIL, FIVE_MIL) ),  # noqa: E201,E241,E202,E501
             ( sa.Column(sa.Numeric(4, 2)),         (0, 99),     (-50, 50)   ),  # noqa: E201,E241,E202,E501
         ]
 
         for scenario in SCENARIOS:
-            column, expected_fraction_range, expected_whole_range = scenario
+            column, exp_fraction_rng, exp_whole_rng = scenario
+            rnd_whole, rnd_fract = [randint(*rng) for rng in [exp_whole_rng, exp_fraction_rng]]
+
+            # Mock random.randint and test the ranges passed into it
             with mock.patch('random.randint', autospec=True, spec_set=True) as m_random:
-                m_random.return_value = 0  # always safe return value
-                func(column)
-            assert m_random.call_args_list == [(expected_fraction_range,), (expected_whole_range,)]
+                m_random.side_effect = [rnd_fract, rnd_whole]  # values to be returned from random
+                result = func(column)
+                assert m_random.call_args_list == [(exp_fraction_rng,), (exp_whole_rng,)]
+
+            scale = len(str(max(exp_fraction_rng)))  # length of largest fraction
+            assert result == round(float(rnd_whole + rnd_fract / 10 ** scale), scale)
+
+            exp_min, exp_max = (min(exp_whole_rng) - 1, max(exp_whole_rng) + 1)
+            assert exp_min < result < exp_max
 
     def test_random_data_for_column(self):
         func = mixins.MethodsMixin.random_data_for_column
