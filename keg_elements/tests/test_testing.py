@@ -19,7 +19,8 @@ class TestEntityBaseThing(testing.EntityBase):
     column_checks = [
         testing.ColumnCheck('name'),
         testing.ColumnCheck('color', required=False),
-        testing.ColumnCheck('scale_check', required=False)
+        testing.ColumnCheck('scale_check', required=False),
+        testing.ColumnCheck('float_check', required=False),
     ]
 
 

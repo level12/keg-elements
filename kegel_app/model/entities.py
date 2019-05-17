@@ -1,4 +1,5 @@
 import codecs
+import random
 
 import sqlalchemy as sa
 
@@ -20,6 +21,7 @@ class Thing(db.Model, mixins.DefaultMixin):
     name = db.Column(db.Unicode(50), nullable=False)
     color = db.Column(db.Unicode)
     scale_check = db.Column(db.Numeric(8, 4))
+    float_check = db.Column(db.Float)
 
     @sa.ext.hybrid.hybrid_property
     def name_and_color(self):
@@ -154,3 +156,21 @@ class UsesBoth(mixins.DefaultMixin, db.Model):
             kwargs['ancillary_b_id'] = AncillaryB.testing_create(thing_id=thing_id).id
 
         return super(UsesBoth, cls).testing_create(**kwargs)
+
+
+class ConstraintTester(mixins.DefaultMixin, db.Model):
+    unique1 = sa.Column(sa.Integer, nullable=False, unique=True)
+    unique2 = sa.Column(sa.Integer, nullable=False)
+
+    check = sa.Column(sa.Integer, nullable=False)
+
+    __tablename__ = 'constraint_tester'
+    __table_args__ = (
+        sa.UniqueConstraint(unique2, name='uq_constraint_tester_unique2'),
+        sa.CheckConstraint(check <= 100, name='ck_constraint_tester_check'),
+    )
+
+    @classmethod
+    def testing_create(cls, **kwargs):
+        kwargs.setdefault('check', random.randint(0, 100))
+        return super(ConstraintTester, cls).testing_create(**kwargs)

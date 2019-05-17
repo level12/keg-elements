@@ -1,4 +1,7 @@
+import contextlib
 import math
+
+import pytest
 import wrapt
 import sqlalchemy as sa
 from sqlalchemy.sql import expression
@@ -40,30 +43,55 @@ def no_autoflush(wrapped, instance, args, kwargs):
         db.session.autoflush = autoflush
 
 
-def validate_unique_exc(exc):
-    return _validate_unique_msg(db.engine.dialect.name, str(exc))
+def validate_unique_exc(exc, constraint_name=None):
+    return _validate_unique_msg(db.engine.dialect.name, str(exc), constraint_name)
 
 
-def _validate_unique_msg(dialect, msg):
+def _validate_unique_msg(dialect, msg, constraint_name=None):
     """
         Does the heavy lifting for validate_unique_exception().
 
         Broken out separately for easier unit testing.  This function takes string args.
     """
-    if 'IntegrityError' not in msg:
-        raise ValueError('"IntegrityError" exception not found')
+    if constraint_name is not None and dialect != 'sqlite' and constraint_name not in msg:
+        return False
+
     if dialect == 'postgresql':
-        if 'duplicate key value violates unique constraint' in msg:
-            return True
+        return 'duplicate key value violates unique constraint' in msg
     elif dialect == 'mssql':
-        if 'Cannot insert duplicate key' in msg:
-            return True
+        return 'Cannot insert duplicate key' in msg
     elif dialect == 'sqlite':
-        if 'UNIQUE constraint failed' in msg:
-            return True
+        return 'UNIQUE constraint failed' in msg
     else:
         raise ValueError('is_unique_exc() does not yet support dialect: %s' % dialect)
-    return False
+
+
+@contextlib.contextmanager
+def raises_unique_exc(constraint_name):
+    with pytest.raises(sa.exc.IntegrityError) as exc:
+        yield
+    assert validate_unique_exc(exc.value, constraint_name)
+
+
+@contextlib.contextmanager
+def raises_check_exc(contraint_name):
+    with pytest.raises(sa.exc.IntegrityError) as exc:
+        yield
+    assert _is_check_const(db.engine.dialect.name, str(exc.value), contraint_name)
+
+
+def _is_check_const(dialect, msg, constraint_name):
+    if dialect == 'mssql':
+        return 'conflicted with the CHECK constraint' in msg and constraint_name in msg
+    elif dialect == 'sqlite':
+        return (
+            'CHECK constraint {} failed'.format(constraint_name) in msg
+            or 'CHECK constraint failed' in msg
+        )
+    elif dialect == 'postgresql':
+        return 'violates check constraint' in msg and constraint_name in msg
+    else:
+        raise ValueError('is_constraint_exc() does not yet support dialect: %s' % dialect)
 
 
 def randemail(length, randomizer=randchars):

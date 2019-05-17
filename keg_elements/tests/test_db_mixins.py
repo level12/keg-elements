@@ -160,12 +160,13 @@ class TestMethodsMixin:
     def test_to_dict(self):
         obj = ents.Thing.testing_create()
 
-        expected = {'id', 'name', 'color', 'scale_check', 'updated_utc', 'created_utc'}
+        expected = {'id', 'name', 'color', 'scale_check', 'float_check', 'updated_utc',
+                    'created_utc'}
         assert set(obj.to_dict().keys()) == expected
         assert set(obj.to_dict(exclude={'id'}).keys()) == expected - {'id'}
 
-        hybrids, exclude = (['name_and_color'],
-                            ['name', 'scale_check', 'color', 'updated_utc', 'created_utc'])
+        hybrids = ['name_and_color']
+        exclude = ['name', 'scale_check', 'float_check', 'color', 'updated_utc', 'created_utc']
         dictionary = obj.to_dict(hybrids=hybrids, exclude=exclude)
 
         assert dictionary == {
@@ -181,6 +182,7 @@ class TestMethodsMixin:
         assert type(func(sa.Column(sa.Integer), 0, 0)) == int
         assert type(func(sa.Column(sa.Boolean), 0, 0)) == bool
         assert type(func(sa.Column(sa.Numeric), 0, 0)) == float
+        assert type(func(sa.Column(sa.Float), 0, 0)) == float
         assert type(func(sa.Column(sa.Date), 0, 0)) == datetime.date
         assert type(func(sa.Column(sa.DateTime), 0, 0)) == datetime.datetime
         assert type(func(sa.Column(sautils.ArrowType), 0, 0)) == arrow.Arrow

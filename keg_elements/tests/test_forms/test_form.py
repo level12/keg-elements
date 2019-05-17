@@ -1,5 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
+import sys
+
 from pyquery import PyQuery as pq
 from keg_elements.forms import FieldMeta, Form, ModelForm, SelectField
 import keg_elements.forms as ke_forms
@@ -239,6 +241,17 @@ class TestValidators(FormBase):
         form = self.compose_meta(scale_check='-9999.9999')
         form.validate()
         assert form.scale_check.errors == []
+
+    def test_validators_not_added_for_float(self):
+        form = self.compose_meta(float_check=sys.float_info.max)
+        form.validate()
+        assert form.float_check.errors == []
+
+        form = self.compose_meta(float_check=sys.float_info.min)
+        form.validate()
+        assert form.float_check.errors == []
+
+        assert len(form.float_check.validators) == 1
 
 
 class FeaturesForm(Form):

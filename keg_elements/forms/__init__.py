@@ -281,7 +281,7 @@ class FormGenerator(FormGeneratorBase):
 
     def create_validators(self, prop, column):
         validators = super(FormGenerator, self).create_validators(prop, column)
-        if isinstance(column.type, sa.Numeric):
+        if isinstance(column.type, sa.Numeric) and not isinstance(column.type, sa.Float):
             max_ = _max_for_numeric(column.type.precision, column.type.scale)
             validators.append(NumberRange(min=-max_, max=max_))
             validators.append(NumberScale(column.type.scale))
