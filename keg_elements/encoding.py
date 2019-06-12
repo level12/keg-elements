@@ -2,7 +2,7 @@ import six
 
 
 def force_bytes(s, encoding='utf-8', errors='strict'):
-    """Force objects to byte respresentation"""
+    """Force objects to byte representation"""
     # Handle the common case first for performance reasons.
     if isinstance(s, bytes):
         if encoding == 'utf-8':

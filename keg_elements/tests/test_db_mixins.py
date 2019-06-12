@@ -17,7 +17,7 @@ class TestDefaultColsMixin:
     def setup_method(self, fn):
         ents.Thing.delete_cascaded()
 
-    def test_default_odering(self):
+    def test_default_ordering(self):
         thing1 = ents.Thing.testing_create(id=6)
         thing2 = ents.Thing.testing_create(id=5)
         thing3 = ents.Thing.testing_create(id=7)
@@ -137,7 +137,7 @@ class TestMethodsMixin:
         with pytest.raises(sa.orm.exc.MultipleResultsFound):
             ents.Thing.get_where(ents.Thing.color == 'black')
 
-    def test_pairs_takes_name_and_value_and_retuns_list_of_tuples(self):
+    def test_pairs_takes_name_and_value_and_returns_list_of_tuples(self):
         thing1 = ents.Thing.testing_create(name='A', color='orange')
         thing2 = ents.Thing.testing_create(name='B', color='black')
 

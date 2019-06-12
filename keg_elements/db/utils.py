@@ -68,8 +68,8 @@ def _validate_unique_msg(dialect, msg):
 
 def randemail(length, randomizer=randchars):
     """Generate a random email address at the given length.
-    :param length: must be at least 7 or the funuction will throw a ValueError.
-    :param randomzer: is a function for generating random characters. It must have an identical
+    :param length: must be at least 7 or the function will throw a ValueError.
+    :param randomizer: is a function for generating random characters. It must have an identical
                       interface to `randchars`. The default function is `randchars`.
     """
     if length < 7:
@@ -146,9 +146,9 @@ class CollectionUpdater(object):
                 self.collection.append(child)
 
             self.keep_children.add(child)
-        self.remove_umodified()
+        self.remove_unmodified()
 
-    def remove_umodified(self):
+    def remove_unmodified(self):
         remove_children = [child for child in self.collection if child not in self.keep_children]
         for child in remove_children:
             self.collection.remove(child)

@@ -179,8 +179,8 @@ class SelectField(SelectFieldBase):
         Provides helpful features above wtforms_components SelectField which it is based on:
 
         1) Adds a blank choice by default at the front of the choices.  This results in your user
-           being forced to select something if the field is required, which avoids unintial
-           deaulting of the first value in the field getting submitted.
+           being forced to select something if the field is required, which avoids initial
+           defaulting of the first value in the field getting submitted.
         2) The coerce function used for the choices will automatically convert to int if possible,
            falling back to unicode if the value is not an integer.
     """
