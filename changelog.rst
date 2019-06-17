@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.5.13 released 2019-06-17
+--------------------------
+
+- Add additional testing helpers and fix float field form generation issue (4b725fd_)
+
+.. _4b725fd: https://github.com/level12/keg-elements/commit/4b725fd
+
+
 0.5.12 released 2019-02-07
 --------------------------
 
