@@ -139,13 +139,13 @@ Changelog
 ------------------
 
 * FEATURE: Port ``MethodsMixin`` with a number of helpful functions when working with
-  SQLAlchemy ORM entites. (GH-49_, GH-51_)
+  SQLAlchemy ORM entities. (GH-49_, GH-51_)
 * FEATURE: Add a new TimeZone Column. (GH-50_)
 
 * MAINTENANCE: Provide better testing support for polymorphic SQLAlchemy
   ORM entities. (GH-47_)
 
-* BUG: Fix descripions when implicitly rendering checkboxes (GH-48_)
+* BUG: Fix descriptions when implicitly rendering checkboxes (GH-48_)
 
 .. _GH-50: https://github.com/level12/keg-elements/pull/50
 .. _GH-51: https://github.com/level12/keg-elements/pull/51
@@ -173,9 +173,9 @@ Changelog
 -----
 
 * Allow static renders to be configured with custom macros. (GH-34)
-* Syncronize static templates with dynamic templates. (GH-31)
+* Synchronize static templates with dynamic templates. (GH-31)
 * You can now give a field a description with a string or callback. (GH-23, GH-22)
-* Introduced a RequiredBoolReadioField for use with boolean columns. (GH-25)
+* Introduced a RequiredBoolRadioField for use with boolean columns. (GH-25)
 * Support randomly filling EmailTypes. (GH-24)
 * Support additional parameters for randomizing integers. (GH-19)
 * ``testing_create`` will randomly select a boolean value for SQLAlchemy boolean
@@ -188,7 +188,7 @@ Changelog
 * ``MethodsMixin`` has a new ``ensure`` method. (e5687ed)
 
 
-* Fix bug where static renderes whould not output the label. (GH-33)
+* Fix bug where static renders would not output the label. (GH-33)
 * Fix property names when using automatic test cases. (GH-29)
 * Fix issue where we wouldn't use a consistent json parser. (GH-13)
 * Fix a bug where polymorphic columns are included in ``testing_create``. (147c23)

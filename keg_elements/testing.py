@@ -82,7 +82,7 @@ class EntityBase(object):
         for col_check in self.column_check_generator():
             col = getattr(self.entity_cls, col_check.name)
             assert col.nullable != col_check.required, \
-                'Expected colum "{}" to match null requirement'.format(col.name)
+                'Expected column "{}" to match null requirement'.format(col.name)
 
     def test_column_unique(self):
         for col_check in self.column_check_generator():

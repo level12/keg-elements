@@ -185,7 +185,7 @@ class TestFieldMeta(FormBase):
         assert form.validate()
 
         form = self.compose_meta(fields_meta_cls=ExtraValidatorsFieldsMeta, csrf_enabled=False,
-                                 name='Test', color='muave')
+                                 name='Test', color='mauve')
         assert not form.validate()
         assert set(form.color.errors) == {'Not a ROY color'}
 
