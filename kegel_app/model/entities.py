@@ -1,4 +1,5 @@
 import codecs
+import enum
 import random
 
 import sqlalchemy as sa
@@ -15,6 +16,12 @@ many_things_mapper = db.Table(
 )
 
 
+class Units(enum.Enum):
+    feet = 'ft'
+    inches = 'in'
+    meters = 'm'
+
+
 class Thing(db.Model, mixins.DefaultMixin):
     __tablename__ = 'things'
 
@@ -22,6 +29,7 @@ class Thing(db.Model, mixins.DefaultMixin):
     color = db.Column(db.Unicode)
     scale_check = db.Column(db.Numeric(8, 4))
     float_check = db.Column(db.Float)
+    units = db.Column(sa.Enum(Units, name='enum_units'))
 
     @sa.ext.hybrid.hybrid_property
     def name_and_color(self):
