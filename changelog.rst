@@ -1,6 +1,17 @@
 Changelog
 =========
 
+0.5.14 released 2019-06-28
+--------------------------
+
+- Add features to form's FieldMeta overrides and improve support for enum columns in model forms (c7ddf0d_)
+- Drop 2.7 support and add 3.7 support (c7ddf0d_)
+- Fix spelling errors (be0334f_)
+
+.. _c7ddf0d: https://github.com/level12/keg-elements/commit/c7ddf0d
+.. _be0334f: https://github.com/level12/keg-elements/commit/be0334f
+
+
 0.5.13 released 2019-06-17
 --------------------------
 
