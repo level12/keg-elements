@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 import sys
 
+import pytest
 from pyquery import PyQuery as pq
 from keg_elements.forms import FieldMeta, Form, ModelForm, SelectField
 import keg_elements.forms as ke_forms
@@ -189,6 +190,36 @@ class TestFieldMeta(FormBase):
         assert not form.validate()
         assert set(form.color.errors) == {'Not a ROY color'}
 
+    def test_coerce(self):
+        class CoerceFieldsMeta:
+            __default__ = FieldMeta
+            units = FieldMeta(coerce=lambda x: ents.Units[x.lower()] if x else x,
+                              choices=[(x, x.value) for x in ents.Units])
+
+        form = self.compose_meta(fields_meta_cls=CoerceFieldsMeta, csrf_enabled=False,
+                                 name='Test', units='FEET')
+        assert isinstance(form.units, wtf.SelectField)
+        assert form.validate()
+        assert isinstance(form.units.data, ents.Units)
+        assert form.units.data == ents.Units.feet
+
+        # coerce not allowed for non-select fields
+        class BadCoerceFieldsMeta:
+            __default__ = FieldMeta
+            name = FieldMeta(coerce=lambda x: x)
+        with pytest.raises(ValueError) as exc:
+            self.compose_meta(fields_meta_cls=BadCoerceFieldsMeta)
+        assert str(exc.value) == '`coerce` argument may only be used for select fields'
+
+    def test_default(self):
+        class DefaultFieldsMeta:
+            __default__ = FieldMeta
+            name = FieldMeta(default='foo')
+
+        form = self.compose_meta(fields_meta_cls=DefaultFieldsMeta, csrf_enabled=False)
+        assert form.name.default == 'foo'
+        assert form.color.default is None
+
 
 class TestValidators(FormBase):
     entity_cls = ents.Thing
@@ -252,6 +283,11 @@ class TestValidators(FormBase):
         assert form.float_check.errors == []
 
         assert len(form.float_check.validators) == 1
+
+    def test_length_validation_not_applied_for_enums(self):
+        form = self.compose_meta(csrf_enabled=False)
+        for validator in form.units.validators:
+            assert not isinstance(validator, wtf.validators.Length)
 
 
 class FeaturesForm(Form):

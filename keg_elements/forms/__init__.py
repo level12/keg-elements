@@ -39,7 +39,7 @@ class FieldMeta(object):
 
     def __init__(self, label_text=_not_given, description=_not_given, label_modifier=_not_given,
                  choices_modifier=_not_given, choices=None, required=_not_given, widget=_not_given,
-                 extra_validators=tuple()):
+                 extra_validators=tuple(), coerce=_not_given, default=_not_given):
         self.label_text = label_text
         self.label_modifier = label_modifier
         self.description = description
@@ -48,6 +48,8 @@ class FieldMeta(object):
         self.required = required
         self.widget = widget
         self.extra_validators = extra_validators
+        self.coerce = coerce
+        self.default = default
 
         assert self.required in (_not_given, False, True)
 
@@ -59,6 +61,8 @@ class FieldMeta(object):
         self.apply_required(field)
         self.apply_widget(field)
         self.apply_extra_validators(field)
+        self.apply_coerce(field)
+        self.apply_default(field)
 
     def apply_to_label(self, field):
         default_label = field.kwargs['label']
@@ -120,6 +124,18 @@ class FieldMeta(object):
 
     def modify_choices(self, choices):
         return choices
+
+    def apply_coerce(self, field):
+        if self.coerce is _not_given:
+            return
+        if not issubclass(field.field_class, wtforms.SelectField):
+            raise ValueError('`coerce` argument may only be used for select fields')
+        field.kwargs['coerce'] = self.coerce
+
+    def apply_default(self, field):
+        if self.default is _not_given:
+            return
+        field.kwargs['default'] = self.default
 
     def apply_required(self, field):
         validators = field.kwargs.get('validators', [])
@@ -286,6 +302,11 @@ class FormGenerator(FormGeneratorBase):
             validators.append(NumberRange(min=-max_, max=max_))
             validators.append(NumberScale(column.type.scale))
         return validators
+
+    def length_validator(self, column):
+        if isinstance(column.type, sa.types.Enum):
+            return None
+        return super(FormGenerator, self).length_validator(column)
 
 
 def field_to_dict(field):
