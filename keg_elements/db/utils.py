@@ -1,5 +1,7 @@
 import contextlib
 import math
+import random
+from decimal import Decimal
 
 import pytest
 import wrapt
@@ -41,6 +43,19 @@ def no_autoflush(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
     finally:
         db.session.autoflush = autoflush
+
+
+def random_numeric(column):
+    fractional_digits = column.type.scale
+    whole_digits = column.type.precision - fractional_digits
+
+    # only use about half the digits to make arithmetic done with this less likely to overflow
+    max_whole = 10 ** math.ceil(whole_digits / 2.0) - 1
+
+    whole = random.randint(-max_whole, max_whole)
+
+    fractional = Decimal(random.randint(0, 10 ** fractional_digits - 1)) / 10 ** fractional_digits
+    return fractional + whole
 
 
 def validate_unique_exc(exc, constraint_name=None):

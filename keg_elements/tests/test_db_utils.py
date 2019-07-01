@@ -1,9 +1,11 @@
 import sys
+from decimal import Decimal
 
 import _pytest
 import pytest
 import validators
 import keg
+import sqlalchemy as sa
 
 import keg_elements.db.utils as dbutils
 import kegel_app.model.entities as ents
@@ -275,3 +277,25 @@ class TestExceptionHelpers:
 
         with pytest.raises(AssertionError):
             make_uq()
+
+
+# Repeat parameter used to somewhat counteract the non-deterministic nature of the tested function
+@pytest.mark.parametrize('repeat', range(1, 20))
+@pytest.mark.parametrize('scale,prec,max', [
+    (1, 1, Decimal('0.9')),
+    (2, 1, Decimal('9.9')),
+    (3, 3, Decimal('0.999')),
+    (3, 2, Decimal('9.99')),
+    (3, 1, Decimal('9.9')),
+    (3, 0, Decimal('99.0')),
+    (4, 4, Decimal('0.9999')),
+    (4, 3, Decimal('9.999')),
+    (4, 2, Decimal('99.99')),
+    (4, 1, Decimal('99.9')),
+    (4, 0, Decimal('99.0')),
+])
+def test_random_numeric(scale, prec, max, repeat):
+    col = sa.Column(sa.Numeric(scale, prec))
+    value = dbutils.random_numeric(col)
+    assert value <= max
+    assert value >= -max

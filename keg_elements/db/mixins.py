@@ -222,7 +222,7 @@ class MethodsMixin:
                                  controlled by this setting.
         """
 
-        NUMERIC_HIGH, NUMERIC_LOW = kwargs.pop('_numeric_defaults_range', (-100, 100))
+        numeric_range = kwargs.pop('_numeric_defaults_range', None)
 
         insp = sa.inspection.inspect(cls)
 
@@ -236,22 +236,27 @@ class MethodsMixin:
         for column in (col for col in insp.columns if not skippable(col)):
             try:
                 kwargs[column.key] = cls.random_data_for_column(
-                    column, NUMERIC_HIGH, NUMERIC_LOW)
+                    column, numeric_range)
             except ValueError:
                 pass
 
         return cls.add(**kwargs)
 
     @classmethod
-    def random_data_for_column(cls, column, numeric_high, numeric_low):
+    def random_data_for_column(cls, column, numeric_range):
+        default_range = (-100, 100) if numeric_range is None else numeric_range
         if isinstance(column.type, sa.types.Enum):
             return random.choice(column.type.enums)
         elif isinstance(column.type, sa.types.Boolean):
             return random.choice([True, False])
         elif isinstance(column.type, sa.types.Integer):
-            return random.randint(numeric_high, numeric_low)
+            return random.randint(*default_range)
+        elif isinstance(column.type, sa.types.Float):
+            return random.uniform(*default_range)
         elif isinstance(column.type, sa.types.Numeric):
-            return random.uniform(numeric_high, numeric_low)
+            if numeric_range is not None or column.type.scale is None:
+                return random.uniform(*default_range)
+            return dbutils.random_numeric(column)
         elif isinstance(column.type, sa.types.Date):
             return dt.date.today()
         elif isinstance(column.type, sa.types.DateTime):
