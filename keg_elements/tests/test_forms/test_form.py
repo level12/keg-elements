@@ -482,6 +482,64 @@ class TestFieldsToDict(FormBase):
         fields_dict = form.fields_todict()
         assert fields_dict == expected, fields_dict
 
+class TestFieldOrder():
+
+    def test_field_missing_in_order(self):
+        class MissingFields(Form):
+            __field_order = ('num3', 'num2', 'num4')
+            num1 = wtf.IntegerField()
+            num2 = wtf.IntegerField()
+            num3 = wtf.IntegerField()
+
+        form = MissingFields()
+
+        with pytest.raises(ValueError) as e:
+            list(form)
+
+        assert 'num1' in str(e.value)
+        assert 'num4' in str(e.value)
+
+    def test_with_csrf(self):
+        class CSRFImpl(wtf.csrf.core.CSRF):
+            def generate_csrf_token(self, token):
+                return 'token'
+
+        class CSRF(Form):
+            __field_order = ('num2', 'num1',)
+
+            class Meta:
+                csrf = True
+                csrf_class = CSRFImpl
+                csrf_secret = '123'
+
+            num1 = wtf.IntegerField()
+            num2 = wtf.IntegerField()
+
+        form = CSRF()
+        assert [x.name for x in form] == ['num2', 'num1', 'csrf_token']
+
+
+    def test_field_order(self):
+        class OrderedForm(Form):
+            __field_order = ('num3', 'num1', 'num2',)
+            num1 = wtf.IntegerField()
+            num2 = wtf.IntegerField()
+            num3 = wtf.IntegerField()
+
+        form = OrderedForm()
+
+        assert [x.name for x in form] == ['num3', 'num1', 'num2']
+
+    def test_field_unorder(self):
+        class UnorderedForm(Form):
+            num1 = wtf.IntegerField()
+            num2 = wtf.IntegerField()
+            num3 = wtf.IntegerField()
+
+        form = UnorderedForm()
+
+        assert [x.name for x in form] == ['num1', 'num2', 'num3']
+
 
 class TestFormLevelValidation(FormBase):
     class MyForm(Form):
