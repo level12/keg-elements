@@ -1,7 +1,12 @@
+from unittest import mock
+
+import pytest
 from keg.db import db
 
 import kegel_app.model.entities as ents
 import pytz
+
+from keg_elements.db import columns
 
 
 class TestColumns(object):
@@ -49,3 +54,66 @@ class TestColumns(object):
         assert obj.encrypted1 == 'Foo'
         assert obj.encrypted2 == 'Bar'
         assert obj.encrypted3 == 'Baz'
+
+
+class TestDBEnum:
+    class Status(columns.DBEnum):
+        active = 'Active'
+        inactive = 'Inactive'
+        other = 'Other'
+
+        @classmethod
+        def db_name(cls):
+            return 'enum_status'
+
+    def test_db_type(self):
+        type_ = self.Status.db_type()
+        assert type_.name == 'enum_status'
+        assert type_.enums == ['active', 'inactive', 'other']
+
+    def test_db_name_required(self):
+        class Unnamed(columns.DBEnum):
+            pass
+
+        with pytest.raises(NotImplementedError):
+            Unnamed.db_name()
+
+    def test_option_pairs(self):
+        assert self.Status.option_pairs() == [
+            ('active', 'Active'),
+            ('inactive', 'Inactive'),
+            ('other', 'Other'),
+        ]
+
+    def test_form_options(self):
+        assert self.Status.form_options() == [
+            (self.Status.active, 'Active'),
+            (self.Status.inactive, 'Inactive'),
+            (self.Status.other, 'Other'),
+        ]
+
+    def test_coerce(self):
+        assert self.Status.coerce(None) is None
+
+        assert self.Status.coerce(self.Status.active) == self.Status.active
+
+        assert self.Status.coerce('inactive') == self.Status.inactive
+
+        with pytest.raises(ValueError) as exc:
+            self.Status.coerce('foo')
+        assert str(exc.value) == 'Not a valid selection'
+
+    def test_str(self):
+        assert str(self.Status.active) == 'active'
+        assert str(self.Status.inactive) == 'inactive'
+
+        assert self.Status.active.__json__() == 'active'
+        assert self.Status.inactive.__json__() == 'inactive'
+
+    @mock.patch('keg_elements.db.columns.random', autospec=True, spec_set=True)
+    def test_random(self, m_random):
+        m_random.choice.side_effect = lambda l: l[1]
+        assert self.Status.random() == self.Status.inactive
+
+        m_random.choice.side_effect = lambda l: l[2]
+        assert self.Status.random() == self.Status.other

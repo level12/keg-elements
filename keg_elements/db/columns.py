@@ -1,4 +1,7 @@
 """Common SQLAlchemy column types."""
+import enum
+import random
+
 import sqlalchemy as sa
 
 from keg_elements import crypto
@@ -45,3 +48,69 @@ class EncryptedUnicode(sa.TypeDecorator):
         if value is None:
             return None
         return self._decrypt(value.encode(), self.key)
+
+
+class DBEnum(enum.Enum):
+    """
+    Base class for all database enum types.
+
+    To create a new enum, subclass this, add the enum values, and implement db_name().
+
+    class MyEnum(DBEnum):
+        option1 = 'Option 1'
+        option2 = 'Option 2'
+
+        @classmethod
+        def db_name(cls):
+            return 'my_enum_db_name'
+
+    To declare a DB column of this type:
+
+    class MyEntity(db.Model):
+        option = sa.Column(MyEnum.db_type())
+
+    To set the choices on a form field:
+
+    class MyEntityForm(wtforms.Form):
+        option = wtforms.SelectField(
+            'Option',
+            choices=MyEnum.form_options()
+            coerce=MyEnum.coerce
+        )
+    """
+    @classmethod
+    def db_name(cls):
+        raise NotImplementedError
+
+    @classmethod
+    def db_type(cls):
+        return sa.Enum(cls, name=cls.db_name())
+
+    @classmethod
+    def option_pairs(cls):
+        return [(o.name, o.value) for o in cls]
+
+    @classmethod
+    def form_options(cls):
+        return [(o, o.value) for o in cls]
+
+    @classmethod
+    def coerce(cls, value):
+        if value is None:
+            return None
+        if isinstance(value, cls):
+            return value
+        try:
+            return cls[value]
+        except KeyError:
+            raise ValueError('Not a valid selection')
+
+    @classmethod
+    def random(cls):
+        return random.choice(list(cls))
+
+    def __str__(self):
+        return self.name
+
+    def __json__(self):
+        return str(self)
