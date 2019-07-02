@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.5.15 released 2019-07-02
+--------------------------
+
+- Add base class for enum types used by database entities (49e4cf3_)
+- Improve random number generation in testing defaults for numeric columns (25321c1_)
+
+.. _49e4cf3: https://github.com/level12/keg-elements/commit/49e4cf3
+.. _25321c1: https://github.com/level12/keg-elements/commit/25321c1
+
+
 0.5.14 released 2019-06-28
 --------------------------
 
