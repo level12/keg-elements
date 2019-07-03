@@ -482,8 +482,8 @@ class TestFieldsToDict(FormBase):
         fields_dict = form.fields_todict()
         assert fields_dict == expected, fields_dict
 
-class TestFieldOrder():
 
+class TestFieldOrder():
     def test_field_missing_in_order(self):
         class MissingFields(Form):
             __field_order = ('num3', 'num2', 'num4')
@@ -517,7 +517,6 @@ class TestFieldOrder():
 
         form = CSRF()
         assert [x.name for x in form] == ['num2', 'num1', 'csrf_token']
-
 
     def test_field_order(self):
         class OrderedForm(Form):
