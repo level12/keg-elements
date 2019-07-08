@@ -182,3 +182,7 @@ class ConstraintTester(mixins.DefaultMixin, db.Model):
     def testing_create(cls, **kwargs):
         kwargs.setdefault('check', random.randint(0, 100))
         return super(ConstraintTester, cls).testing_create(**kwargs)
+
+
+class SoftDeleteTester(mixins.SoftDeleteMixin, mixins.DefaultMixin, db.Model):
+    __tablename__ = 'softdelete_tester'

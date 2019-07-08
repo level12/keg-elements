@@ -296,3 +296,85 @@ class MethodsMixin:
 
 class DefaultMixin(DefaultColsMixin, MethodsMixin):
     pass
+
+
+class SoftDeleteProhibitedError(Exception):
+    pass
+
+
+class SoftDeleteMixin:
+    """SoftDeleteMixin alters the way deletes are performed by adding a deleted_utc column
+
+    A soft-delete doesn't actually remove the row, instead, it adds a time to the ``deleted_utc``
+    column which indicates when it was deleted.
+
+    .. note (NZ): This can complicate unique constraints, joins, and general business logic, but is
+    rather useful when you can't delete an object outright because it is connected to other
+    permanent objects which should never be deleted.
+
+    .. note (NZ): ``SoftDeleteMixin`` should appear before ``MethodsMixin`` as the parent class of
+    the created entity so that the ``delete`` and ``testing_create`` methods are called in the
+    correct order.
+
+        class MyTable(SoftDeleteMixin, MethodsMixin, Model):
+            column1 = sa.Column(sa.Numeric)
+
+
+    .. note (NZ): ``testing_create`` takes a special ``_is_deleted`` flag which enables you to
+    create an already deleted record or you can pass ``deleted_utc`` manually.
+
+    .. note (NZ): There is a new event registered within SQLAlchemy to prevent accidental deletions
+    of entities that inherit from this class.
+
+    This event is not fired for bulk operations (``session.delete``) and makes it possible to delete
+    everything.
+
+    To have finer grained control of this event for every entity, you can override the behavior by
+    implementing ``before_delete_event`` on the entity.
+
+        class MyEntity(SoftDeleteMixin, Model):
+            column1 = sa.Column(sa.Numeric)
+
+            # `mapper` and `connection` are passed through from the parent handler
+            def before_delete_event(self, mapper, connection):
+                # .. custom logic
+    """
+
+    deleted_utc = sa.Column(ArrowType, nullable=True)
+
+    @might_commit
+    @might_flush
+    @classmethod
+    def delete(cls, oid):
+        """Add the deleted_utc timestamp
+
+        :param oid: the object identifier, normally the primary key
+        :rtype: bool
+        :return: The result of the operation
+        """
+        obj = cls.query.get(oid)
+
+        if obj is None:
+            return False
+
+        obj.deleted_utc = arrow.utcnow()
+        return True
+
+    @might_commit
+    @might_flush
+    @classmethod
+    def testing_create(cls, *args, _is_deleted=False, **kwargs):
+        kwargs.setdefault('deleted_utc', arrow.utcnow() if _is_deleted else None)
+        return super().testing_create(*args, **kwargs)
+
+    @staticmethod
+    def sqla_before_delete_event(mapper, connection, target):
+        if hasattr(target, 'before_delete_event'):
+            target.before_delete_event(mapper, connection)
+        else:
+            raise SoftDeleteProhibitedError(
+                'Unable to delete {}, this object implements soft-deletes.'.format(target))
+
+
+sa.event.listen(SoftDeleteMixin, 'before_delete', SoftDeleteMixin.sqla_before_delete_event,
+                propagate=True)
