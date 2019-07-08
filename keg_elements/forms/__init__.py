@@ -380,7 +380,7 @@ class Form(BaseForm):
             return super().__iter__()
 
         has_csrf = hasattr(self, 'csrf_token')
-        order =  (['csrf_token'] if has_csrf else []) + list(order)
+        order = (['csrf_token'] if has_csrf else []) + list(order)
 
         declared = set(self._fields.keys())
         ordered = set(order)
