@@ -17,8 +17,8 @@ Keg Elements is the testing ground for ideas and code that will eventually make 
 
 .. _Keg: https://pypi.python.org/pypi/Keg
 
-Development *beta*
-==================
+Development
+===========
 
 To develop on this project, begin by running our tests::
 
@@ -30,17 +30,7 @@ You can then examine tox.ini for insights into our development process.  In part
 
 * use `py.test` for testing (and coverage analysis)
 * use `flake8` for linting
-* store `pip` requirements files in `requirements/`
-* cache wheels in `requirements/wheelhouse` for faster & more reliable CI builds
 
-Dependency Management
----------------------
-
-Adding a dependency involves:
-
-#. If it's a run-time dependency, add to `setup.py`.
-#. Adding the dependency to one of the requirements files in `requirements/`.
-#. Running `requirements/build-wheelhouse.py`.
 
 Preview Readme
 --------------
@@ -48,13 +38,17 @@ Preview Readme
 When updating the readme, use `restview --long-description` to preview changes.
 
 
+Pre-commit Hooks
+----------------
+
+You should install the pre-commit hooks by running ::
+
+    pre-commit install
+
+This will ensure that your code is ready for review.
+
 Issues & Discussion
 ====================
 
 Please direct questions, comments, bugs, feature requests, etc. to:
 https://github.com/level12/keg-elements/issues
-
-Current Status
-==============
-
-Beta
