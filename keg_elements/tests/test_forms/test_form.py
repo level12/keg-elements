@@ -500,6 +500,8 @@ class TestFieldOrder():
         assert 'num4' in str(e.value)
 
     def test_with_csrf(self):
+        # This whole hullabaloo is to get CSRF enabled for the form since we normally turn it off
+        # for testing.
         class CSRFImpl(wtf.csrf.core.CSRF):
             def generate_csrf_token(self, token):
                 return 'token'
@@ -516,7 +518,7 @@ class TestFieldOrder():
             num2 = wtf.IntegerField()
 
         form = CSRF()
-        assert [x.name for x in form] == ['num2', 'num1', 'csrf_token']
+        assert [x.name for x in form] == ['csrf_token', 'num2', 'num1']
 
     def test_field_order(self):
         class OrderedForm(Form):

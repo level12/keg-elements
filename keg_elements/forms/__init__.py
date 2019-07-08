@@ -350,21 +350,19 @@ def form_validator(func=None, only_when_fields_valid=False):
 class Form(BaseForm):
     """Base form with a bunch of QoL improvements
 
-    .. note:: Relying on the default field ordering can lead to unintuitive forms. It is possible to
-        override this by adding the ``__field_order`` class attribute. Set this class variable to a
-        tuple or list of field names (addressable via Form._fields['name_of_field']) and the form
-        will render in that order. You must include all the fields, except CSRF.  Forgetting a field
-        or adding one which doesn't exist will cause the form to raise a ``ValueError`` and the form
-        will not be rendered.
 
-    Example ::
+    :param __field_order: Relying on the default field ordering can lead to unintuitive forms. It is
+        possible to override this by adding the ``__field_order`` class attribute. Set this class
+        variable to a tuple or list of field names (addressable via Form._fields['name_of_field'])
+        and the form will render in that order. You must include all the fields, except CSRF.
+        Forgetting a field or adding one which doesn't exist will cause the form to raise a
+        ``ValueError`` and the form will not be rendered.
 
-        class MyForm(Form):
-            __field_order = ('field1', 'field2',)
+            class MyForm(Form):
+                __field_order = ('field1', 'field2',)
 
-            field1 = String('field1_label')  # Note that we don't use the label in the ordering
-            field2 = String()
-
+                field1 = String('field1_label')  # Note that we don't use the label in the ordering
+                field2 = String()
     """
     def __init__(self, *args, **kwargs):
         super(Form, self).__init__(*args, **kwargs)
@@ -372,7 +370,9 @@ class Form(BaseForm):
         self.after_init(args, kwargs)
 
     def __iter__(self):
-        # :rage: ... I have no idea why you need the class name, but alas, you do!
+        # You need the class name here because we have chose to use name mangling with the field
+        # name to indicate that this is a private field and to prevent collision with WTForms field
+        # naming conventions.
         cls_name = self.__class__.__name__
         order = getattr(self, '_{}__field_order'.format(cls_name), None)
 
@@ -380,14 +380,18 @@ class Form(BaseForm):
             return super().__iter__()
 
         has_csrf = hasattr(self, 'csrf_token')
-        order = list(order) + (['csrf_token'] if has_csrf else [])
+        order =  (['csrf_token'] if has_csrf else []) + list(order)
 
         declared = set(self._fields.keys())
         ordered = set(order)
+
         if declared != ordered:
+            not_ordered = declared - ordered
+            extra_ordered = ordered - declared
             raise ValueError(
-                'You have not ordered all fields for {}.'.format(cls_name),
-                ' Form Fields: {}. Ordered Fields: {}'.format(declared, ordered),
+                'Custom field ordering for {} is incorrect.'.format(cls_name),
+                ' Missing fields: {} '.format(not_ordered),
+                ' Extra fields: {} '.format(extra_ordered),
             )
 
         return (self._fields[f] for f in order)
