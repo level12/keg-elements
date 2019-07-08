@@ -248,7 +248,7 @@ class TestSoftDeleteMixin:
         assert not ents.SoftDeleteTester.delete(1234)
 
     def test_delete_cascaded_still_works(self):
-        sdt1 = ents.SoftDeleteTester.testing_create()
+        ents.SoftDeleteTester.testing_create()
 
         assert ents.SoftDeleteTester.query.count() == 1
 
