@@ -43,6 +43,13 @@ setup(
         'raven',
     ],
     extras_require={
+        'dev': [
+            'flask-webtest',
+            'pyquery',
+            'pytest',
+            'pytest-cov',
+            'tox',
+        ],
         'i18n': [
             'morphi'
         ]
