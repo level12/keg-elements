@@ -486,7 +486,7 @@ class TestFieldsToDict(FormBase):
 class TestFieldOrder():
     def test_field_missing_in_order(self):
         class MissingFields(Form):
-            __field_order = ('num3', 'num2', 'num4')
+            _field_order = ('num3', 'num2', 'num4')
             num1 = wtf.IntegerField()
             num2 = wtf.IntegerField()
             num3 = wtf.IntegerField()
@@ -507,7 +507,7 @@ class TestFieldOrder():
                 return 'token'
 
         class CSRF(Form):
-            __field_order = ('num2', 'num1',)
+            _field_order = ('num2', 'num1',)
 
             class Meta:
                 csrf = True
@@ -522,7 +522,7 @@ class TestFieldOrder():
 
     def test_field_order(self):
         class OrderedForm(Form):
-            __field_order = ('num3', 'num1', 'num2',)
+            _field_order = ('num3', 'num1', 'num2',)
             num1 = wtf.IntegerField()
             num2 = wtf.IntegerField()
             num3 = wtf.IntegerField()
