@@ -112,6 +112,10 @@ class AncillaryA(mixins.DefaultMixin, db.Model):
 
     thing_id = sa.Column(sa.Integer, sa.ForeignKey(Thing.id), nullable=False)
 
+    __table_args__ = (
+        sa.UniqueConstraint('id', thing_id),
+    )
+
     @classmethod
     def testing_create(cls, **kwargs):
         if 'thing_id' not in kwargs:
@@ -124,6 +128,10 @@ class AncillaryB(mixins.DefaultMixin, db.Model):
     __tablename__ = 'ancillary_bs'
 
     thing_id = sa.Column(sa.Integer, sa.ForeignKey(Thing.id), nullable=False)
+
+    __table_args__ = (
+        sa.UniqueConstraint('id', thing_id),
+    )
 
     @classmethod
     def testing_create(cls, **kwargs):
@@ -184,5 +192,22 @@ class ConstraintTester(mixins.DefaultMixin, db.Model):
         return super(ConstraintTester, cls).testing_create(**kwargs)
 
 
+class HardDeleteParent(mixins.DefaultMixin, db.Model):
+    __tablename__ = 'hard_delete_parent'
+
+
 class SoftDeleteTester(mixins.SoftDeleteMixin, mixins.DefaultMixin, db.Model):
     __tablename__ = 'softdelete_tester'
+
+    hdp_id = sa.Column(
+        sa.Integer,
+        sa.ForeignKey(HardDeleteParent.id),
+        nullable=False
+    )
+    hdp = sa.orm.relationship(
+        HardDeleteParent, backref=sa.orm.backref('sdts', cascade='all,delete-orphan'))
+
+    @classmethod
+    def testing_create(cls, **kwargs):
+        kwargs['hdp_id'] = kwargs.get('hpd_id') or HardDeleteParent.testing_create().id
+        return super().testing_create(**kwargs)

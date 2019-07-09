@@ -226,6 +226,7 @@ class TestSoftDeleteMixin:
 
     def setup_method(self, _):
         ents.SoftDeleteTester.delete_cascaded()
+        ents.HardDeleteParent.delete_cascaded()
 
     def test_delete_sets_field(self):
         sdt1 = ents.SoftDeleteTester.testing_create()
@@ -239,7 +240,7 @@ class TestSoftDeleteMixin:
 
         db.session.delete(sdt1)
 
-        with pytest.raises(mixins.SoftDeleteProhibitedError):
+        with pytest.raises(mixins.HardDeleteProhibitedError):
             db.session.commit()
 
         db.session.rollback()
@@ -261,3 +262,10 @@ class TestSoftDeleteMixin:
 
         sdt1 = ents.SoftDeleteTester.testing_create(_is_deleted=True)
         assert sdt1.deleted_utc is not None
+
+    def test_deleting_the_parent_deletes_the_child(self):
+        sdt1 = ents.SoftDeleteTester.testing_create()
+        assert sdt1.hdp == ents.HardDeleteParent.query.one()
+
+        with pytest.raises(mixins.HardDeleteProhibitedError):
+            sdt1.hdp.delete(sdt1.hdp_id)

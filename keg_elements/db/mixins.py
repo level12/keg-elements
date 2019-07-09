@@ -298,7 +298,7 @@ class DefaultMixin(DefaultColsMixin, MethodsMixin):
     pass
 
 
-class SoftDeleteProhibitedError(Exception):
+class HardDeleteProhibitedError(Exception):
     pass
 
 
@@ -372,8 +372,8 @@ class SoftDeleteMixin:
         if hasattr(target, 'before_delete_event'):
             target.before_delete_event(mapper, connection)
         else:
-            raise SoftDeleteProhibitedError(
-                'Unable to delete {}, this object implements soft-deletes.'.format(target))
+            raise HardDeleteProhibitedError(
+                'Unable to completely delete {}, this object implements soft-deletes.'.format(target))  # noqa
 
 
 sa.event.listen(SoftDeleteMixin, 'before_delete', SoftDeleteMixin.sqla_before_delete_event,

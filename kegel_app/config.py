@@ -5,3 +5,4 @@ class TestProfile(object):
     # testing.
     WTF_CSRF_ENABLED = False
     SQLALCHEMY_TRACK_MODIFICATIONS = True
+    # SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:@localhost/keg-elem-test'
