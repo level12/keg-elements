@@ -348,10 +348,49 @@ def form_validator(func=None, only_when_fields_valid=False):
 
 
 class Form(BaseForm):
+    """Base form with a bunch of QoL improvements
+
+
+    :param _field_order: Relying on the default field ordering can lead to unintuitive forms. It is
+        possible to override this by adding the ``_field_order`` class attribute. Set this class
+        variable to a tuple or list of field names (addressable via Form._fields['name_of_field'])
+        and the form will render in that order. You must include all the fields, except CSRF.
+        Forgetting a field or adding one which doesn't exist will cause the form to raise a
+        ``ValueError`` and the form will not be rendered.
+
+            class MyForm(Form):
+                _field_order = ('field1', 'field2',)
+
+                field1 = String('field1_label')  # Note that we don't use the label in the ordering
+                field2 = String()
+    """
     def __init__(self, *args, **kwargs):
         super(Form, self).__init__(*args, **kwargs)
         self._form_level_errors = []
         self.after_init(args, kwargs)
+
+    def __iter__(self):
+        order = getattr(self, '_field_order', None)
+
+        if order is None:
+            return super().__iter__()
+
+        has_csrf = hasattr(self, 'csrf_token')
+        order = (['csrf_token'] if has_csrf else []) + list(order)
+
+        declared = set(self._fields.keys())
+        ordered = set(order)
+
+        if declared != ordered:
+            not_ordered = declared - ordered
+            extra_ordered = ordered - declared
+            raise ValueError(
+                'Custom field ordering for {} is incorrect.'.format(self.__class__.__name__),
+                ' Missing fields: {} '.format(not_ordered),
+                ' Extra fields: {} '.format(extra_ordered),
+            )
+
+        return (self._fields[f] for f in order)
 
     def after_init(self, args, kwargs):
         pass
