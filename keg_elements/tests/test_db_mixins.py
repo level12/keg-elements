@@ -220,3 +220,52 @@ class TestMethodsMixin:
         assert sa.inspect(obj).persistent
         db.session.rollback()
         assert sa.inspect(obj).persistent
+
+
+class TestSoftDeleteMixin:
+
+    def setup_method(self, _):
+        ents.SoftDeleteTester.delete_cascaded()
+        ents.HardDeleteParent.delete_cascaded()
+
+    def test_delete_sets_field(self):
+        sdt1 = ents.SoftDeleteTester.testing_create()
+
+        assert sdt1.deleted_utc is None
+        assert ents.SoftDeleteTester.delete(sdt1.id)
+        assert sdt1.deleted_utc is not None
+
+    def test_manual_delete_raises_error(self):
+        sdt1 = ents.SoftDeleteTester.testing_create()
+
+        db.session.delete(sdt1)
+
+        with pytest.raises(mixins.HardDeleteProhibitedError):
+            db.session.commit()
+
+        db.session.rollback()
+
+    def test_delete_without_id_returns_none(self):
+        assert not ents.SoftDeleteTester.delete(1234)
+
+    def test_delete_cascaded_still_works(self):
+        ents.SoftDeleteTester.testing_create()
+
+        assert ents.SoftDeleteTester.query.count() == 1
+
+        ents.SoftDeleteTester.delete_cascaded()
+        assert ents.SoftDeleteTester.query.count() == 0
+
+    def test_testing_create_allows_is_deleted_flag(self):
+        sdt1 = ents.SoftDeleteTester.testing_create()
+        assert sdt1.deleted_utc is None
+
+        sdt1 = ents.SoftDeleteTester.testing_create(_is_deleted=True)
+        assert sdt1.deleted_utc is not None
+
+    def test_deleting_the_parent_deletes_the_child(self):
+        sdt1 = ents.SoftDeleteTester.testing_create()
+        assert sdt1.hdp == ents.HardDeleteParent.query.one()
+
+        with pytest.raises(mixins.HardDeleteProhibitedError):
+            sdt1.hdp.delete(sdt1.hdp_id)
