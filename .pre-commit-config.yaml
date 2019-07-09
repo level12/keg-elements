@@ -1,0 +1,20 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v1.2.3
+    hooks:
+      - id: flake8
+      - id: debug-statements
+      - id: check-merge-conflict
+      - id: check-docstring-first
+      - id: mixed-line-ending
+
+  #- repo: https://github.com/ambv/black
+  #  rev: stable
+  #  hooks:
+  #    - id: black
+  #      language_version: python3.7
+
+  - repo: git://github.com/Lucas-C/pre-commit-hooks-markup
+    rev: v1.0.0
+    hooks:
+      - id: rst-linter
