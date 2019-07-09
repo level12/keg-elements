@@ -1,6 +1,18 @@
 Changelog
 =========
 
+0.5.16 released 2019-07-09
+--------------------------
+
+- db: Add SoftDeleteMixin (ebc25b9_)
+- Enable Manual Ordering of Form Fields (#101) (00ce0b6_)
+- Merge pull request #103 from level12/pre-commit-hook-setup (68b92d6_)
+
+.. _ebc25b9: https://github.com/level12/keg-elements/commit/ebc25b9
+.. _00ce0b6: https://github.com/level12/keg-elements/commit/00ce0b6
+.. _68b92d6: https://github.com/level12/keg-elements/commit/68b92d6
+
+
 0.5.15 released 2019-07-02
 --------------------------
 
