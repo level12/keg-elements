@@ -1,0 +1,286 @@
+{%- if _ is not defined -%}
+    {% macro _(message) -%}
+        {{ message }}
+    {%- endmacro %}
+{%- endif -%}
+
+{# Renders field for bootstrap 4 standards.
+
+    Params:
+        field - WTForm field
+        kwargs - pass any arguments you want in order to put them into the html attributes.
+        There are few exceptions: for - for_, class - class_, class__ - class_
+
+    Example usage:
+        {{ horz_form.field(form.email, placeholder='Input email', type='email') }}
+
+    Note: 
+    A change was made to the below macros to support adding tab indexes to form 
+    elements. A tab index can be added explicitly as a html attribute when creating a 
+    field but we wanted to add the tab indexes when a wtform is created using the 
+    form macro, fields macro or the sections macro. 
+    Due to the fact that some of these macros can be used multiple times in a template,
+    we needed a way to specify the start tab index for each invocation of the macro. We 
+    do that by passing in the start_tab_index parameter to the form, fields and section 
+    macros.
+    This change could possibly cause tab indexes to be incorrect for existing forms
+    if some form fields are being rendered explicity inside a form macro. The tab indexes
+    would be incorrect because by default, the start_tab_index in the form macro is set to 
+    1 and the same index is then used to set the tab index on the form submit buttons. To fix
+    the tab indexes, the parameter start_tab_index in the form macro will need to be
+    set so to account for all the fields which are being explicitly rendered.
+#}
+
+{% macro div_form_group(field) -%}
+    <div class="form-group {{ 'required' if field.flags.required }} {{ kwargs.get('class_', '') }}">
+        {{ caller(**kwargs) }}
+    </div>
+{%- endmacro %}
+
+{% macro description(field) -%}
+  <div class="description">
+        <a type="button" class="btn btn-default" rel="kegel-field-description"
+            title="{{ field.label.text }} Field" tabindex="-1"
+            data-field-description-content="#{{ field.id }}_description_content">?</a>
+    <div id="{{ field.id }}_description_content" class="hide">
+        {% if field.description is callable %}
+            {{ field.description()|safe }}
+        {% else %}
+            {{ field.description|safe }}
+        {% endif %}
+    </div>
+  </div>
+{%- endmacro %}
+
+{% macro field_errors(field) -%}
+{# You will need javascript similar to below for validations to work properly.
+   Alternatively, remove .was-validated from the form element to disable native client side validations by default.
+
+    var forms = document.getElementsByClassName('needs-validation');
+    var validation = Array.prototype.filter.call(forms, function(form) {
+      form.addEventListener('submit', function(event) {
+        if (form.checkValidity() === false) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+
+     var fields = document.getElementsByClassName('is-invalid');
+     Array.prototype.filter.call(fields, function(field) {
+        field.setCustomValidity(false);
+    });
+#}
+    <div class="invalid-feedback">
+        {% if field.errors %}
+            {% for e in field.errors %}
+                <p>{{ e }}</p>
+            {% endfor %}
+        {% elif field.flags.required %}
+            <p>This field is required.</p>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{% macro field(field, label_visible=true) -%}
+{# You will need javascript similar to below for descriptions to work properly
+
+    $('[rel="kegel-field-description"]').popover({
+        container: 'body',
+        html: true,
+        trigger: 'focus',
+        content: function () {
+            var clone = $($(this).data('field-description-content')).clone(true).removeClass('hide');
+            return clone;
+        }
+    }).click(function(e) {
+        e.preventDefault();
+    });
+#}
+    {% call div_form_group(field, **kwargs) %}
+        {% if (field.type != 'HiddenField' and field.type != 'CSRFTokenField') and label_visible %}
+            {{ field.label(class_='control-label') }}
+        {% endif %}
+        <div class="labeled-group">
+            {{ field_widget(field, **kwargs) }}
+        </div>
+        {% if field.description %}
+            {{ description(field) }}
+        {% endif %}
+    {% endcall %}
+{%- endmacro %}
+
+{% macro field_widget(field) %}
+    {{ field(class_='form-control is-invalid' if field.errors else 'form-control', disabled=field.flags.disabled, readonly=field.flags.readonly, **kwargs) }}
+    {{ field_errors(field) }}
+{% endmacro %}
+
+{# Renders checkbox fields since they are represented differently in bootstrap
+    Params:
+        field - WTForm field (there are no check, but you should put here only BooleanField.
+        kwargs - pass any arguments you want in order to put them into the html attributes.
+        There are few exceptions: for - for_, class - class_, class__ - class_
+
+    Example usage:
+        {{ horiz_form.checkbox_field(form.remember_me) }}
+ #}
+{% macro checkbox_field(field) -%}
+    {% call div_form_group(field, **kwargs) %}
+        <div class="unlabeled-group checkbox">
+            <label>
+                {{ field(type='checkbox', **kwargs) }} {{ field.label }}
+            </label>
+            {{ field_errors(field) }}
+        </div>
+        {% if field.description %}
+            {{ description(field) }}
+        {% endif %}
+    {% endcall %}
+{%- endmacro %}
+
+{# Renders radio field
+    Params:
+        field - WTForm field (must have an `iter_choices` method)
+        kwargs - pass any arguments you want in order to put them into the html attributes.
+        There are few exceptions: for - for_, class - class_, class__ - class_
+
+    Example usage:
+        {{ horiz_form.radio_field(form.answers) }}
+ #}
+{% macro radio_field(field, label_visible=true, tabIndex=1) -%}
+    {% call div_form_group(field, **kwargs) %}
+        {% if label_visible %}
+            {{ field.label(class_='control-label') }}
+        {% endif %}
+        <div class="labeled-group">
+        {% for value, label, checked in field.iter_choices() %}
+            <div class="radio">
+                <label>
+                    <input type="radio"
+                           name="{{ field.id }}"
+                           id="{{ field.id }}"
+                           value="{{ value }}"
+                           {{ 'checked' if checked }}
+                           {{ 'disabled' if field.flags.disabled or (field.flags.readonly and not checked) }}
+                           tabIndex="{{tabIndex}}">
+                        {{ label }}
+                </label>
+            </div>
+        {% endfor %}
+        {{ field_errors(field) }}
+        </div>
+        {% if field.description %}
+            {{ description(field) }}
+        {% endif %}
+    {% endcall %}
+{%- endmacro %}
+
+{% macro submit_group(action_text='Submit', btn_class='btn btn-primary', cancel_url='', tab_index=1) -%}
+    <div class="form-group">
+      <div class="unlabeled-group">
+        <button type="submit" class="{{ btn_class }}" tabIndex="{{tab_index}}">{{ action_text }} </button>
+        {% if cancel_url %}
+            <a href="{{cancel_url}}" class="cancel" tabIndex="{{tab_index+1}}">Cancel</a>
+        {% endif %}
+      </div>
+    </div>
+{%- endmacro %}
+
+{% macro render_field(f) -%}
+    {% if f.type == 'BooleanField' %}
+        {{ checkbox_field(f, **kwargs) }}
+    {% elif f.type == 'RadioField' %}
+        {{ radio_field(f, **kwargs) }}
+    {% elif f is none %}
+        {# Do nothing b/c the field is None #}
+    {% else %}
+        {{ field(f, **kwargs) }}
+    {% endif %}
+{%- endmacro %}
+
+
+{% macro form_errors(form) -%}
+    {% if form.form_errors %}
+        <div class="invalid-feedback">
+            {% for e in form.form_errors %}
+                <p>{{ e }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endmacro %}
+
+
+{# Renders WTForm in bootstrap way. There are two ways to call function:
+     - as macros: it will render all field forms using cycle to iterate over them
+     - as call: it will insert form fields as you specify:
+     e.g. {% call macros.render_form(form, action_url=url_for('login_view'), action_text='Login',
+                                        class_='login-form') %}
+                {{ macros.render_field(form.email, placeholder='Input email', type='email') }}
+                {{ macros.render_field(form.password, placeholder='Input password', type='password') }}
+                {{ macros.render_checkbox_field(form.remember_me, type='checkbox') }}
+            {% endcall %}
+
+     Params:
+        form - WTForm class
+        action_url - url where to submit this form
+        action_text - text of submit button
+        class_ - sets a class for form
+#}
+{% macro form(
+    form,
+    field_names=None,
+    action_url='',
+    action_text='Submit',
+    class_='form-horizontal',
+    btn_class='btn btn-primary',
+    cancel_url='',
+    form_upload=false,
+    dirty_check=false,
+    start_tab_index=1
+) -%}
+
+    <form method="POST"
+          action="{{ action_url }}"
+          role="form"
+          class="{{ class_ }} {{ 'was-validated needs-validation' if form.errors else 'needs-validation' }}"
+          {% if form_upload %}enctype="multipart/form-data"{% endif %}
+          {% if dirty_check %}data-dirty-check="on"{% endif %}
+          novalidate
+    >
+        {{ form.hidden_tag() if form.hidden_tag }}
+        {% set tab_index=[start_tab_index|int] %}
+        {{ form_errors(form) }}
+        
+        {% if caller %}
+            {{ caller() }}
+        {% elif field_names %}
+            {{ fields(form, field_names) }}
+        {% else %}
+            {% for f in form %}
+                {{ render_field(f, tabIndex=tab_index.pop()) }}
+                {% if tab_index.append(start_tab_index|int+loop.index) %} {% endif %}
+            {% endfor %}
+            
+        {% endif %}
+        {{ submit_group(action_text=action_text, btn_class=btn_class, cancel_url=cancel_url, tab_index=tab_index[0]) }}
+    </form>
+{%- endmacro %}
+
+{% macro fields(form, field_names, start_tab_index=1) -%}
+    {% set tab_index = start_tab_index|int %}
+    {% for field_name in field_names %}
+        {% set tab_index = tab_index + loop.index0 %}
+        {{ render_field(form[field_name], tabIndex=tab_index) }}
+        
+    {% endfor %}
+{%- endmacro %}
+
+{% macro section(heading, form, field_names, start_tab_index=1) -%}
+    <h2>{{heading}}</h2>
+    {% if caller %}
+        {{ caller() }}
+    {% else %}
+        {{ fields(form, field_names, start_tab_index) }}
+    {% endif %}
+{%- endmacro %}

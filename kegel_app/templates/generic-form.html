@@ -1,8 +1,13 @@
 {% import 'keg_elements/forms/horizontal.html' as dynamic_render %}
+{% import 'keg_elements/forms/horizontal_b4.html' as b4_render %}
 {% import 'keg_elements/forms/horizontal_static.html' as static_render %}
 
 <div id="dynamic">
     {{ dynamic_render.form(form) }}
+</div>
+
+<div id="b4">
+    {{ b4_render.form(form) }}
 </div>
 
 <div id="static">
