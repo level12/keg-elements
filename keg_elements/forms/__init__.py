@@ -12,6 +12,7 @@ from decimal import Decimal
 from flask_wtf import FlaskForm as BaseForm
 from keg.db import db
 import sqlalchemy as sa
+from sqlalchemy_utils import ArrowType
 import six
 import wtforms.fields
 import wtforms.form
@@ -261,6 +262,17 @@ class FormGenerator(FormGeneratorBase):
     def __init__(self, form_class):
         super(FormGenerator, self).__init__(form_class)
         self.fields_meta = getattr(self.form_class, 'FieldsMeta', None)
+
+    def skip_column(self, column):
+        # Verify the key is not also in exclude=[] so we don't break compatibility with forms
+        # that already manually excluded these fields
+        if (not self.meta.include_datetimes_with_default
+                and isinstance(column.type, ArrowType)
+                and column.default
+                and column.key not in self.meta.exclude):
+            return True
+
+        return super().skip_column(column)
 
     def get_field_class(self, column):
         field_cls = super(FormGenerator, self).get_field_class(column)

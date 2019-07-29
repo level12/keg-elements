@@ -1,4 +1,5 @@
 {% import 'keg_elements/forms/horizontal.html' as dynamic_render %}
+{% import 'keg_elements/forms/horizontal_b4.html' as b4_render %}
 {% import 'keg_elements/forms/horizontal_static.html' as static_render %}
 
 {%- if _ is not defined -%}
@@ -16,6 +17,18 @@
 
     <div id="field_widget">
         {{ dynamic_render.field_widget(form[field_name], **field_kwargs) }}
+    </div>
+</div>
+
+<div id="b4">
+    <div id="div_form_group">
+        {% call b4_render.div_form_group(form[field_name], **field_kwargs) %}
+            {{ _('Contents') }}
+        {% endcall %}
+    </div>
+
+    <div id="field_widget">
+        {{ b4_render.field_widget(form[field_name], **field_kwargs) }}
     </div>
 </div>
 

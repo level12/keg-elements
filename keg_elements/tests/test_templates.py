@@ -33,6 +33,9 @@ class TestGenericTemplates(TemplateTest):
         assert response('#dynamic #default #test')[0].value == value
         assert response('#dynamic #doubled #test')[0].value == value  # dynamic is unaffected
 
+        assert response('#b4 #default #test')[0].value == value
+        assert response('#b4 #doubled #test')[0].value == value  # dynamic is unaffected
+
         assert response('#static #default #test').text() == value
         assert response('#static #doubled #test').text() == value * 2   # static is doubled
 
@@ -48,6 +51,9 @@ class TestGenericTemplates(TemplateTest):
         assert response('#dynamic #with-caller #test')[0].value == 'test-value'
         assert response('#dynamic #with-field-name #test')[0].value == 'test-value'
 
+        assert response('#b4 #with-caller #test')[0].value == 'test-value'
+        assert response('#b4 #with-field-name #test')[0].value == 'test-value'
+
         assert response('#static #with-caller #test').text() == 'test-value'
         assert response('#static #with-field-name #test').text() == 'test-value'
 
@@ -60,6 +66,7 @@ class TestGenericTemplates(TemplateTest):
         })
 
         assert response('#dynamic .description')
+        assert response('#b4 .description')
         assert response('#static .description')
 
 
@@ -168,7 +175,9 @@ class TestFieldMacros(TemplateTest):
         })
 
         assert response('#dynamic #div_form_group div.form-group').text() == 'Contents'
+        assert response('#b4 #div_form_group div.form-group').text() == 'Contents'
         assert response('#static  #div_form_group div.form-group').text() == 'Contents'
 
         assert response('#dynamic #field_widget #myfield')[0].value == 'My Data'
+        assert response('#b4 #field_widget #myfield')[0].value == 'My Data'
         assert response('#static  #field_widget #myfield').text() == 'My Data'
