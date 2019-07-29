@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.5.17 released 2019-07-29
+--------------------------
+
+- Skip arrow fields during form generation if default value set (95e26a6_)
+- Add bootstrap 4 form template option (bc4efcd_)
+
+.. _95e26a6: https://github.com/level12/keg-elements/commit/95e26a6
+.. _bc4efcd: https://github.com/level12/keg-elements/commit/bc4efcd
+
+
 0.5.16 released 2019-07-09
 --------------------------
 
