@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.5.18 released 2019-08-05
+--------------------------
+
+- Prevent double rendering of hidden form inputs in template macros (e0b47dc_)
+
+.. _e0b47dc: https://github.com/level12/keg-elements/commit/e0b47dc
+
+
 0.5.17 released 2019-07-29
 --------------------------
 
