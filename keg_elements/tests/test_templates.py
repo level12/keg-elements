@@ -9,6 +9,7 @@ from wtforms import (
     BooleanField,
     RadioField,
     StringField,
+    HiddenField,
 )
 
 
@@ -68,6 +69,17 @@ class TestGenericTemplates(TemplateTest):
         assert response('#dynamic .description')
         assert response('#b4 .description')
         assert response('#static .description')
+
+    def test_hidden_elements_rendered_only_once(self):
+        class TestForm(Form):
+            test = HiddenField()
+
+        response = self.render('generic-form.html', {
+            'form': TestForm()
+        })
+        assert len(response('#dynamic [name="test"]')) == 1
+        assert len(response('#b4 [name="test"]')) == 1
+        assert len(response('#static [name="test"]')) == 0
 
 
 class TestReadonlyOrDisabledFormRender(TemplateTest):

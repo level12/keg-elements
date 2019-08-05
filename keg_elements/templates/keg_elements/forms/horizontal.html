@@ -238,8 +238,11 @@
             {{ fields(form, field_names) }}
         {% else %}
             {% for f in form %}
-                {{ render_field(f, tabIndex=tab_index.pop()) }}
-                {% if tab_index.append(start_tab_index|int+loop.index) %} {% endif %}
+                {% if not f.widget.input_type == 'hidden' %}
+                    {# Hidden fields are rendered by the `hidden_tag()` call above #}
+                    {{ render_field(f, tabIndex=tab_index.pop()) }}
+                    {% if tab_index.append(start_tab_index|int+loop.index) %} {% endif %}
+                {% endif %}
             {% endfor %}
             
         {% endif %}
