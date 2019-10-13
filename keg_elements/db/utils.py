@@ -141,6 +141,16 @@ def session_flush():
 
 
 class CollectionUpdater(object):
+    """Update a collection attribute of a model object.
+
+    Takes a model object, the attribute name of the collection to be updated, and
+    the data to update the collection with. If a record in the given data matches
+    a record in the collection, the record is edited. Otherwise, the given record is
+    added to the collection.
+
+    All records in the collection that are not included in the given data are removed
+    from the collection.
+    """
 
     @no_autoflush
     def __init__(self, entity, attr_name, data):
@@ -178,18 +188,28 @@ class CollectionUpdater(object):
     @no_autoflush
     def update(self):
         """Update the objects associated with the entity"""
+        to_add = []
+        to_edit = []
         for record in self.data:
             child = self.find_child(record)
             state = sa.inspect(child) if child else None
 
             if state and state.persistent:
-                child.edit(_commit=False, **record)
+                to_edit.append((child, record))
             else:
-                child = self.child_cls.add(_commit=False, **record)
-                self.collection.append(child)
+                to_add.append(record)
 
             self.keep_children.add(child)
+
         self.remove_unmodified()
+        session_flush()
+
+        for child, record in to_edit:
+            child.edit(_commit=False, **record)
+
+        for record in to_add:
+            child = self.child_cls.add(_commit=False, **record)
+            self.collection.append(child)
 
     def remove_unmodified(self):
         remove_children = [child for child in self.collection if child not in self.keep_children]

@@ -103,6 +103,20 @@ class TestUpdateCollection(object):
 
         assert len(thing.related_things) == 0
 
+    def test_replace_with_unique_constraint(self):
+        thing = ents.Thing.testing_create()
+        other = ents.OtherThing.testing_create(thing=thing)
+
+        data = [
+            {
+                'name': 'test',
+                'is_enabled': True,
+                'unique_field': other.unique_field,
+            }
+        ]
+        thing.update_collection('other_things', data)
+        keg.db.db.session.flush()
+
 
 class TestExceptionHelpers:
     def setup_method(self, _):
