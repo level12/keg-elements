@@ -6,6 +6,7 @@ from keg.db import db
 from sqlalchemy_utils import ArrowType, EmailType
 import arrow
 import blazeutils.strings
+from blazeutils import tolist
 import pytz
 import six
 import sqlalchemy as sa
@@ -389,3 +390,45 @@ class SoftDeleteMixin:
 
 sa.event.listen(SoftDeleteMixin, 'before_delete', SoftDeleteMixin.sqla_before_delete_event,
                 propagate=True)
+
+
+class LookupMixin(DefaultMixin):
+    label = sa.Column(sa.Unicode(255), nullable=False, unique=True)
+    is_active = sa.Column(sa.Boolean, nullable=False, default=True)
+
+    @classmethod
+    def testing_create(cls, **kwargs):
+        kwargs.setdefault('label', blazeutils.strings.randchars(10))
+        return super().testing_create(**kwargs)
+
+    @classmethod
+    def _active_query(cls, include_ids=None, order_by=None):
+        if order_by is None:
+            order_by = cls.label
+
+        if include_ids:
+            include_ids = tolist(include_ids)
+            clause = sa.sql.or_(
+                cls.is_active.is_(sa.true()),
+                cls.id.in_(include_ids)
+            )
+        else:
+            clause = cls.is_active.is_(sa.true())
+
+        return cls.query.filter(clause).order_by(order_by)
+
+    @classmethod
+    def list_active(cls, include_ids=None, order_by=None):
+        return cls._active_query(include_ids, order_by).all()
+
+    @classmethod
+    def pairs_active(cls, include_ids=None, order_by=None):
+        query = cls._active_query(include_ids, order_by)
+        return cls.pairs('id', 'label', query=query)
+
+    @classmethod
+    def get_by_label(cls, label):
+        return cls.get_by(label=label)
+
+    def __repr__(self):
+        return '<{} {}:{}>'.format(self.__class__.__name__, self.id, self.label)
