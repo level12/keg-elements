@@ -3,7 +3,6 @@ import math
 import random
 from decimal import Decimal
 
-import pytest
 import wrapt
 import sqlalchemy as sa
 from sqlalchemy.sql import expression
@@ -83,6 +82,7 @@ def _validate_unique_msg(dialect, msg, constraint_name=None):
 
 @contextlib.contextmanager
 def raises_unique_exc(constraint_name):
+    import pytest
     with pytest.raises(sa.exc.IntegrityError) as exc:
         yield
     assert validate_unique_exc(exc.value, constraint_name)
@@ -90,6 +90,7 @@ def raises_unique_exc(constraint_name):
 
 @contextlib.contextmanager
 def raises_check_exc(contraint_name):
+    import pytest
     with pytest.raises(sa.exc.IntegrityError) as exc:
         yield
     assert _is_check_const(db.engine.dialect.name, str(exc.value), contraint_name)
