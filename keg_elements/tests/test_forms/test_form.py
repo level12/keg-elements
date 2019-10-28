@@ -654,3 +654,12 @@ class TestFormLevelValidation(FormBase):
         form = self.assert_valid(num1=6, num2=7, num3=50, form_cls=SubclassForm)
         assert form.form_errors == []
         assert form.all_errors == ({}, [])
+
+
+class TestExcludesDatetimes(FormBase):
+    entity_cls = ents.Thing
+
+    def test_exclude_default_cols(self):
+        form = self.compose_meta()
+        assert 'updated_utc' not in form.fields_todict()
+        assert 'created_utc' not in form.fields_todict()
