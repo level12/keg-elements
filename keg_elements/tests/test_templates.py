@@ -10,6 +10,7 @@ from wtforms import (
     RadioField,
     StringField,
     HiddenField,
+    ValidationError,
 )
 
 
@@ -69,6 +70,57 @@ class TestGenericTemplates(TemplateTest):
         assert response('#dynamic .description')
         assert response('#b4 .description')
         assert response('#static .description')
+
+    def test_b4_checkbox_attrs(self):
+        class TestingValidator:
+            def __init__(self):
+                self.is_valid = True
+
+            def __call__(self, form, field):
+                if not self.is_valid:
+                    raise ValidationError('Something wrong')
+        validator = TestingValidator()
+
+        class TestForm(Form):
+            test = BooleanField(validators=[validator])
+
+        # Check valid
+        form = TestForm(test=True)
+        response = self.render('generic-form.html', {'form': form})
+        field = response('#b4 [name="test"]')
+        assert field.has_class('form-check-input')
+        assert not field.has_class('is-invalid')
+
+        wrapper = field.parent()
+        assert wrapper.has_class('unlabeled-group')
+        assert wrapper.has_class('checkbox')
+        assert wrapper.has_class('form-check')
+
+        label = wrapper.children('label')
+        assert label.has_class('form-check-label')
+        assert label.attr('for') == 'test'
+
+        assert len(wrapper('.invalid-feedback p')) == 0
+
+        # Check invalid
+        validator.is_valid = False
+        form.validate()
+
+        response = self.render('generic-form.html', {'form': form})
+        field = response('#b4 [name="test"]')
+        assert field.has_class('form-check-input')
+        assert field.has_class('is-invalid')
+
+        wrapper = field.parent()
+        assert wrapper.has_class('unlabeled-group')
+        assert wrapper.has_class('checkbox')
+        assert wrapper.has_class('form-check')
+
+        label = wrapper.children('label')
+        assert label.has_class('form-check-label')
+        assert label.attr('for') == 'test'
+
+        assert wrapper('.invalid-feedback p').text() == 'Something wrong'
 
     def test_hidden_elements_rendered_only_once(self):
         class TestForm(Form):
