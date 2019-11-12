@@ -254,6 +254,55 @@ class RequiredBoolRadioField(wtforms.fields.RadioField):
         self.type = 'RadioField'
 
 
+class _TypeHintingTextInputBase(wtforms.widgets.TextInput):
+    def __init__(self, prefix=None, suffix=None):
+        self.prefix = prefix
+        self.suffix = suffix
+        super().__init__()
+
+
+class TypeHintingTextInputB3(_TypeHintingTextInputBase):
+    """
+    A text input widget with a prefix and/or suffix to hint at the expected type or units.
+    For use with bootstrap 3
+    """
+    def __call__(self, field, **kwargs):
+        def make_addon(txt):
+            return wtforms.widgets.HTMLString(
+                '<span class="input-group-addon">{}</span>'.format(wtforms.widgets.core.escape(txt))
+            )
+
+        return wtforms.widgets.HTMLString(
+            '<div class="input-group">{pre}{field}{post}</div>'.format(
+                pre=make_addon(self.prefix) if self.prefix else '',
+                field=super().__call__(field, **kwargs).__html__(),
+                post=make_addon(self.suffix) if self.suffix else ''
+            )
+        )
+
+
+class TypeHintingTextInputB4(_TypeHintingTextInputBase):
+    """
+    A text input widget with a prefix and/or suffix to hint at the expected type or units.
+    For use with bootstrap 4
+    """
+    def __call__(self, field, **kwargs):
+        def make_addon(txt, addon_type):
+            return wtforms.widgets.HTMLString(
+                '<div class="input-group-{type}">'
+                '   <span class="input-group-text">{txt}</span>'
+                "</div>".format(type=addon_type, txt=wtforms.widgets.core.escape(txt))
+            )
+
+        return wtforms.widgets.HTMLString(
+            '<div class="input-group">{pre}{field}{post}</div>'.format(
+                pre=make_addon(self.prefix, "prepend") if self.prefix else "",
+                field=super().__call__(field, **kwargs).__html__(),
+                post=make_addon(self.suffix, "append") if self.suffix else "",
+            )
+        )
+
+
 def _max_for_numeric(digits, scale):
     return Decimal('{}.{}'.format('9' * (digits - scale), '9' * scale))
 

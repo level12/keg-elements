@@ -663,3 +663,151 @@ class TestExcludesDatetimes(FormBase):
         form = self.compose_meta()
         assert 'updated_utc' not in form.fields_todict()
         assert 'created_utc' not in form.fields_todict()
+
+
+class TestTypeHintingTextInputB4:
+    class DemoForm(wtf.Form):
+        prefix_field = wtf.StringField(widget=ke_forms.TypeHintingTextInputB4(prefix="foo"))
+        suffix_field = wtf.StringField(widget=ke_forms.TypeHintingTextInputB4(suffix="bar"))
+        both_field = wtf.StringField(widget=ke_forms.TypeHintingTextInputB4(prefix="a", suffix="z"))
+
+    def test_prefix(self):
+        form = self.DemoForm()
+        rendered = pq(form.prefix_field())
+
+        group = rendered(".input-group")
+        assert len(group) == 1
+
+        children = group.children()
+        assert len(children) == 2
+
+        prefix, field = children.items()
+        assert prefix.has_class("input-group-prepend")
+        assert len(prefix.children(".input-group-text"))
+        assert prefix.children(".input-group-text").text() == "foo"
+
+        assert field.is_("input")
+
+    def test_suffix(self):
+        form = self.DemoForm()
+        rendered = pq(form.suffix_field())
+
+        group = rendered(".input-group")
+        assert len(group) == 1
+
+        children = group.children()
+        assert len(children) == 2
+
+        field, suffix = children.items()
+        assert suffix.has_class("input-group-append")
+        assert len(suffix.children(".input-group-text"))
+        assert suffix.children(".input-group-text").text() == "bar"
+
+        assert field.is_("input")
+
+    def test_both(self):
+        form = self.DemoForm()
+        rendered = pq(form.both_field())
+
+        group = rendered(".input-group")
+        assert len(group) == 1
+
+        children = group.children()
+        assert len(children) == 3
+
+        prefix, field, suffix = children.items()
+
+        assert prefix.has_class("input-group-prepend")
+        assert len(prefix.children(".input-group-text"))
+        assert prefix.children(".input-group-text").text() == "a"
+
+        assert suffix.has_class("input-group-append")
+        assert len(suffix.children(".input-group-text"))
+        assert suffix.children(".input-group-text").text() == "z"
+
+        assert field.is_("input")
+
+    def test_text_escaped(self):
+        class Form(wtf.Form):
+            prefix = wtf.StringField(widget=ke_forms.TypeHintingTextInputB4(prefix="<script>"))
+            suffix = wtf.StringField(widget=ke_forms.TypeHintingTextInputB4(suffix="&foo&"))
+
+        form = Form()
+
+        prefix = form.prefix()
+        assert "&lt;script&gt;" in prefix
+
+        suffix = form.suffix()
+        assert "&amp;foo&amp;" in suffix
+
+
+class TestTypeHintingTextInputB3:
+    class DemoForm(wtf.Form):
+        prefix_field = wtf.StringField(widget=ke_forms.TypeHintingTextInputB3(prefix="foo"))
+        suffix_field = wtf.StringField(widget=ke_forms.TypeHintingTextInputB3(suffix="bar"))
+        both_field = wtf.StringField(widget=ke_forms.TypeHintingTextInputB3(prefix="a", suffix="z"))
+
+    def test_prefix(self):
+        form = self.DemoForm()
+        rendered = pq(form.prefix_field())
+
+        group = rendered(".input-group")
+        assert len(group) == 1
+
+        children = group.children()
+        assert len(children) == 2
+
+        prefix, field = children.items()
+        assert prefix.has_class("input-group-addon")
+        assert prefix.text() == "foo"
+
+        assert field.is_("input")
+
+    def test_suffix(self):
+        form = self.DemoForm()
+        rendered = pq(form.suffix_field())
+
+        group = rendered(".input-group")
+        assert len(group) == 1
+
+        children = group.children()
+        assert len(children) == 2
+
+        field, suffix = children.items()
+        assert suffix.has_class("input-group-addon")
+        assert suffix.text() == "bar"
+
+        assert field.is_("input")
+
+    def test_both(self):
+        form = self.DemoForm()
+        rendered = pq(form.both_field())
+
+        group = rendered(".input-group")
+        assert len(group) == 1
+
+        children = group.children()
+        assert len(children) == 3
+
+        prefix, field, suffix = children.items()
+
+        assert prefix.has_class("input-group-addon")
+        assert prefix.text() == "a"
+
+        assert suffix.has_class("input-group-addon")
+        assert suffix.text() == "z"
+
+        assert field.is_("input")
+
+    def test_text_escaped(self):
+        class Form(wtf.Form):
+            prefix = wtf.StringField(widget=ke_forms.TypeHintingTextInputB3(prefix="<script>"))
+            suffix = wtf.StringField(widget=ke_forms.TypeHintingTextInputB3(suffix="&foo&"))
+
+        form = Form()
+
+        prefix = form.prefix()
+        assert "&lt;script&gt;" in prefix
+
+        suffix = form.suffix()
+        assert "&amp;foo&amp;" in suffix
