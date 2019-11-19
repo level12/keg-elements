@@ -352,13 +352,10 @@ class SoftDeleteMixin:
         :rtype: bool
         :return: The result of the operation
         """
-        obj = cls.query.get(oid)
-
-        if obj is None:
-            return False
-
-        obj.deleted_utc = arrow.utcnow()
-        return True
+        return cls.query.filter(cls.id == oid).update(
+            {"deleted_utc": arrow.utcnow()},
+            synchronize_session=False
+        ) > 0
 
     @might_commit
     @might_flush
