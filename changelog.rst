@@ -1,6 +1,22 @@
 Changelog
 =========
 
+0.5.19 released 2019-11-19
+--------------------------
+
+- Adds a U.S. state select field (3abd696_)
+- Add type hint widget for use with form text inputs (fe089e0_)
+- Use recommended classes and tag layout for rendering bootstrap 4 checkboxes (d20b084_)
+- Add Python 3.8 support and drop support for Python 3.5 (d87b2db_)
+- Exclude create/update timestamp fields from model form generation by default (012fe38_)
+
+.. _3abd696: https://github.com/level12/keg-elements/commit/3abd696
+.. _fe089e0: https://github.com/level12/keg-elements/commit/fe089e0
+.. _d20b084: https://github.com/level12/keg-elements/commit/d20b084
+.. _d87b2db: https://github.com/level12/keg-elements/commit/d87b2db
+.. _012fe38: https://github.com/level12/keg-elements/commit/012fe38
+
+
 0.5.18 released 2019-08-05
 --------------------------
 
