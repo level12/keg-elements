@@ -372,6 +372,11 @@ class SoftDeleteMixin:
             raise HardDeleteProhibitedError(
                 'Unable to completely delete {}, this object implements soft-deletes.'.format(target))  # noqa
 
+    @might_commit
+    @classmethod
+    def delete_cascaded(cls):
+        cls.query.delete(synchronize_session=False)
+
 
 sa.event.listen(SoftDeleteMixin, 'before_delete', SoftDeleteMixin.sqla_before_delete_event,
                 propagate=True)
