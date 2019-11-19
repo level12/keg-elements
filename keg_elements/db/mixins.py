@@ -352,13 +352,10 @@ class SoftDeleteMixin:
         :rtype: bool
         :return: The result of the operation
         """
-        obj = cls.query.get(oid)
-
-        if obj is None:
-            return False
-
-        obj.deleted_utc = arrow.utcnow()
-        return True
+        return cls.query.filter(cls.id == oid).update(
+            {"deleted_utc": arrow.utcnow()},
+            synchronize_session=False
+        ) > 0
 
     @might_commit
     @might_flush
@@ -374,6 +371,11 @@ class SoftDeleteMixin:
         else:
             raise HardDeleteProhibitedError(
                 'Unable to completely delete {}, this object implements soft-deletes.'.format(target))  # noqa
+
+    @might_commit
+    @classmethod
+    def delete_cascaded(cls):
+        cls.query.delete(synchronize_session=False)
 
 
 sa.event.listen(SoftDeleteMixin, 'before_delete', SoftDeleteMixin.sqla_before_delete_event,
