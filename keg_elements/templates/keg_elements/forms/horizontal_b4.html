@@ -127,9 +127,10 @@
  #}
 {% macro checkbox_field(field) -%}
     {% call div_form_group(field, **kwargs) %}
-        <div class="unlabeled-group checkbox">
-            <label>
-                {{ field(type='checkbox', **kwargs) }} {{ field.label }}
+        <div class="unlabeled-group checkbox form-check">
+            {{ field(type='checkbox', class_='form-check-input is-invalid' if field.errors else 'form-check-input', **kwargs) }}
+            <label class="form-check-label" for="{{ field.id }}">
+                {{ field.label }}
             </label>
             {{ field_errors(field) }}
         </div>
