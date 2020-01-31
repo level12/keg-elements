@@ -22,12 +22,16 @@ class Units(enum.Enum):
     meters = 'm'
 
 
+def random_scale_check():
+    return 12.3456
+
+
 class Thing(db.Model, mixins.DefaultMixin):
     __tablename__ = 'things'
 
     name = db.Column(db.Unicode(50), nullable=False)
-    color = db.Column(db.Unicode)
-    scale_check = db.Column(db.Numeric(8, 4))
+    color = db.Column(db.Unicode, info=dict(randomdata='random_color'))
+    scale_check = db.Column(db.Numeric(8, 4), info=dict(randomdata=random_scale_check))
     float_check = db.Column(db.Float)
     units = db.Column(sa.Enum(Units, name='enum_units'))
 
@@ -38,6 +42,10 @@ class Thing(db.Model, mixins.DefaultMixin):
     @name_and_color.expression
     def name_and_color(cls):
         return cls.name + sa.sql.literal('-') + cls.color
+
+    @classmethod
+    def random_color(cls):
+        return 'blue'
 
 
 class RelatedThing(db.Model, mixins.DefaultMixin):

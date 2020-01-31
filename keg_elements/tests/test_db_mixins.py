@@ -221,6 +221,11 @@ class TestMethodsMixin:
         db.session.rollback()
         assert sa.inspect(obj).persistent
 
+    def test_override_random_data_generation(self):
+        obj = ents.Thing.testing_create()
+        assert obj.color == 'blue'
+        assert obj.scale_check == Decimal('12.3456')
+
 
 class TestSoftDeleteMixin:
 

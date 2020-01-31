@@ -244,6 +244,15 @@ class MethodsMixin:
 
     @classmethod
     def random_data_for_column(cls, column, numeric_range):
+        if 'randomdata' in column.info:
+            if type(column.info['randomdata']) is str:
+                # assume randomdata the is name of a method on the class
+                callable = getattr(cls, column.info['randomdata'])
+                data = callable()
+                return data
+
+            return column.info['randomdata']()
+
         default_range = (-100, 100) if numeric_range is None else numeric_range
         if isinstance(column.type, sa.types.Enum):
             return random.choice(column.type.enums)
