@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.5.20 released 2020-02-03
+--------------------------
+
+- Fix BS4 Field Description (a9d3479_)
+
+.. _a9d3479: https://github.com/level12/keg-elements/commit/a9d3479
+
+
 0.5.19 released 2019-11-19
 --------------------------
 
