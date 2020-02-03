@@ -39,9 +39,10 @@
 
 {% macro description(field) -%}
   <div class="description">
-        <a type="button" class="btn btn-default btn-outline-secondary" rel="kegel-field-description"
-            title="{{ field.label.text }} Field" tabindex="-1"
-            data-field-description-content="#{{ field.id }}_description_content">?</a>
+    <a type="button" class="btn btn-default btn-outline-secondary" rel="kegel-field-description"
+        title="{{ field.label.text }} Field" tabindex="-1"
+        data-field-description-content="#{{ field.id }}_description_content">?</a>
+
     <div id="{{ field.id }}_description_content" class="sr-only">
         {% if field.description is callable %}
             {{ field.description()|safe }}
@@ -109,7 +110,7 @@
                 </div>
             </div>
             {% if field.description %}
-                <div class="col>
+                <div class="col">
                     {{ description(field) }}
                 </div>
             {% endif %}
