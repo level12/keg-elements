@@ -1,83 +1,175 @@
+import re
+
 import flask
-import raven
-from raven.utils.serializer.base import Serializer
-from raven.utils.serializer.manager import transform, SerializationManager
+import sentry_sdk
+from sentry_sdk.integrations.logging import LoggingIntegration as SentryLogging
+from sentry_sdk.integrations.flask import FlaskIntegration as SentryFlask
 
 
-class ConfigTypeFilterSerializer(Serializer):
-    """
-    Sentry serializer for the Config type that will hide the contents
-    """
-    TYPES = (
-        flask.config.Config,
+class SentryEventFilter:
+    # Filter out any variables having a type in the following tuple
+    sanitized_types = (flask.config.Config,)
+
+    # Filter out values anywhere in the event JSON with a key containing any of the following
+    # strings or regular expressions.
+    sanitized_var_names = [
+        'token',
+        'password',
+        'secret',
+        'passwd',
+        'authorization',
+        'sentry_dsn',
+        'xsrf',
+        re.compile('.*key$'),
+    ]
+
+    # Filter out all local variables from the stacktrace contained within any of the modules listed.
+    # This includes all submodules. Values may be strings or compiled regular expressions.
+    sanitized_modules = [
+        'keg_elements.crypto',
+        'bcrypt',
+        'cryptography',
+        'encryption',
+        'itsdangerous',
+        'passlib',
+        'PyNaCl',
+        'secretstorage',
+    ]
+
+    def __init__(
+            self,
+            types=frozenset(),
+            var_names=frozenset(),
+            modules=frozenset()
+    ):
+        self.sanitized_types = tuple(set(self.sanitized_types) | set(types))
+        self.sanitized_var_names = set(self.sanitized_var_names) | set(var_names)
+        self.sanitized_modules = set(self.sanitized_modules) | set(modules)
+
+        self._variable_regexes = {self._var_to_re(key) for key in self.sanitized_var_names}
+        self._module_regexes = {self._module_to_re(mod) for mod in self.sanitized_modules}
+
+    def _var_to_re(self, key):
+        if isinstance(key, str):
+            return re.compile(r'.*{}.*'.format(re.escape(key)), re.IGNORECASE)
+        return key
+
+    def _module_to_re(self, module):
+        if isinstance(module, str):
+            return re.compile(r'^{}(?:\.|$).*'.format(re.escape(module)))
+        return module
+
+    def repr_process(self, obj, hints):
+        if isinstance(obj, self.sanitized_types):
+            return f'<Filtered {obj.__class__.__name__}>'
+        return NotImplemented
+
+    def should_exclude_var(self, k):
+        for key in self._variable_regexes:
+            if key.match(k):
+                return True
+        return False
+
+    def _filter_repr(self, v):
+        return f'<Filtered {v.__class__.__name__}>'
+
+    def _filter_recur(self, obj):
+        if isinstance(obj, dict):
+            return {
+                k: (self._filter_repr(v) if self.should_exclude_var(k) else self._filter_recur(v))
+                for k, v in obj.items()
+            }
+        if isinstance(obj, list):
+            return [self._filter_recur(v) for v in obj]
+        return obj
+
+    def should_exclude_module(self, m):
+        for mod in self._module_regexes:
+            if mod.match(m):
+                return True
+        return False
+
+    def _get_exceptions(self, event):
+        try:
+            exception = event['exception']
+        except KeyError:
+            return None
+
+        if isinstance(exception, dict) and 'values' in exception:
+            return exception['values']
+
+        return [exception]
+
+    def _filter_modules(self, event):
+        exceptions = self._get_exceptions(event)
+        if exceptions is None:
+            # Event does not appear to include any exception stack traces
+            return event
+
+        stacks = []
+        for exc in exceptions:
+            try:
+                stacks.append(exc['stacktrace']['frames'])
+            except KeyError:
+                # If we cannot process the stack trace, clear everything to minimize the chances of
+                # leaking sensitive data in case of an unrecognized event schema
+                exc['stacktrace'] = {'frames': []}
+
+        for stack in stacks:
+            sanitize_subcalls = False
+            for frame in stack:
+                module = frame.get('module')
+                if sanitize_subcalls or module is None or self.should_exclude_module(module):
+                    frame['vars'] = {}
+                    # Sanitize any stack frames resulting from calls after entering a sanitized
+                    # module. Since the sanitized module may process sensitive data using stdlib
+                    # functions or functions from other external libraries.
+                    sanitize_subcalls = True
+        return event
+
+    def _filter_request(self, event):
+        try:
+            request_dict = event['request']
+        except KeyError:
+            return event
+
+        request_dict['cookies'] = {
+            k: self._filter_repr(v) for k, v in request_dict.get('cookies', {}).items()
+        }
+        request_dict['headers'] = {
+            k: (self._filter_repr(v) if 'cookie' in k.lower() else v)
+            for k, v in request_dict.get('headers', {}).items()
+        }
+
+        return event
+
+    def before_send(self, event, hints):
+        event = self._filter_recur(event)
+        event = self._filter_modules(event)
+        event = self._filter_request(event)
+
+        return event
+
+
+def install_sentry(app, integrations, release=None, event_filter=None, **kwargs):
+    sentry_dsn = app.config.get('SENTRY_DSN')
+    if sentry_dsn is None:
+        return
+
+    event_filter = event_filter or SentryEventFilter()
+    sentry_sdk.serializer.add_global_repr_processor(event_filter.repr_process)
+
+    sentry_sdk.init(
+        dsn=sentry_dsn,
+        integrations=[
+            SentryLogging(event_level=None),
+            SentryFlask(),
+            *integrations
+        ],
+        before_send=event_filter.before_send,
+        release=release,
+        environment=app.config.get('SENTRY_ENVIRONMENT'),
+        with_locals=True,
+        send_default_pii=True,  # include user details
+        **kwargs
     )
-
-    def can(self, value):
-        return isinstance(value, self.TYPES)
-
-    def serialize(self, value, **kwargs):
-        return '{ ... }'
-
-
-class FilteringManager(SerializationManager):
-    """
-    This is used by sentry to find the available serializers to use when building a report.
-    Typically we could register a serializer without subclassing this but because the built-in
-    serializers take precedent to custom ones we could register and the Config type is a subclass
-    of dict, we must insert our serializer before the built ins to force sentry to prefer it over
-    the dict serializer.
-    """
-
-    def __init__(self, extra_serializers=tuple()):
-        self.extra_serializers = extra_serializers
-        super(FilteringManager, self).__init__()
-
-    @property
-    def serializers(self):
-        for es in self.extra_serializers:
-            yield es
-        for s in SerializationManager.serializers.fget(self):
-            yield s
-
-
-class SentryClient(raven.base.Client):
-    """
-    A custom sentry client type that includes sanitization for the config type and features to ease
-    testing of the reports that would be sent to the sentry API
-    """
-
-    # The following attributes are used for testing to capture reports that would be sent.
-    # When __log_reports__ is True, any data that would be sent to sentry is stored in the
-    # __report_log__ list.  See testing.SentryCapture for a helpful context manager that makes
-    # use of these attributes
-    __log_reports__ = False
-    __report_log__ = []
-
-    def __init__(self, *args, **kwargs):
-        self.extra_serializers = kwargs.pop('extra_serializers', [ConfigTypeFilterSerializer])
-        super(SentryClient, self).__init__(*args, **kwargs)
-
-    def transform(self, data):
-        # Called by sentry to convert data into a JSON friendly format that can be sent to their API
-        return transform(
-            data,
-            list_max_length=self.list_max_length,
-            string_max_length=self.string_max_length,
-            manager=FilteringManager(self.extra_serializers)
-        )
-
-    def send(self, auth_header=None, **data):
-        from keg import current_app
-
-        if self.__log_reports__:
-            # Report logging is enabled. Store the report in __report_log__
-            self.__report_log__.append(data)
-            return
-
-        if flask.has_app_context() and current_app.config.get('TESTING'):
-            # We are in a test. Don't pass on the report to Sentry.
-            return
-
-        # If we are not testing or we cannot determine that because we are not within an
-        # app context, pass the report through
-        return super(SentryClient, self).send(auth_header=auth_header, **data)  # pragma: no cover
