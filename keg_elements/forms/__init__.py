@@ -234,6 +234,14 @@ class SelectField(SelectFieldBase):
         return value_dict.get(self.data)
 
 
+class MultiCheckboxField(wtforms.fields.SelectMultipleField):
+    """
+    A multiple-select, except displays a list of checkboxes.
+
+    This field is BS4 only
+    """
+
+
 class RequiredBoolRadioField(wtforms.fields.RadioField):
     def __init__(self, *args, **kwargs):
         true_label = kwargs.pop('true_label', _('Yes'))

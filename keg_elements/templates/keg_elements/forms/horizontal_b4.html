@@ -118,8 +118,36 @@
     {% endcall %}
 {%- endmacro %}
 
+
+{% macro custom_css() %}
+<!-- included from keg-elements custom-css macro -->
+<style>
+    .multi-checkbox > * {
+        flex: 1 1 48%;
+        margin: 0 1%;
+    }
+</style>
+{% endmacro %}
+
+{% macro multi_checkbox(field) %}
+    <div id="{{ field.id }}" class="d-flex flex-row flex-wrap multi-checkbox">
+    {% for choice_id, choice in field.choices %}
+    <div class="custom-control custom-checkbox">
+        <input type="checkbox" name="{{ field.name }}"
+            {{ 'checked="checked"' if field.data and choice_id in field.data else "" }}
+            class="custom-control-input" value="{{ choice_id }}" id="{{ field.id }}{{choice_id}}">
+        <label class="custom-control-label" for="{{ field.id }}{{ choice_id }}">{{choice}}</label>
+    </div>
+    {% endfor %}
+    </div>
+{% endmacro %}
+
 {% macro field_widget(field) %}
-    {{ field(class_='form-control is-invalid' if field.errors else 'form-control', disabled=field.flags.disabled, readonly=field.flags.readonly, **kwargs) }}
+    {% if field.type == "MultiCheckboxField" %}
+        {{ multi_checkbox(field) }}
+    {% else %}
+        {{ field(class_='form-control is-invalid' if field.errors else 'form-control', disabled=field.flags.disabled, readonly=field.flags.readonly, **kwargs) }}
+    {% endif %}
     {{ field_errors(field) }}
 {% endmacro %}
 
@@ -134,9 +162,9 @@
  #}
 {% macro checkbox_field(field) -%}
     {% call div_form_group(field, **kwargs) %}
-        <div class="unlabeled-group checkbox form-check">
-            {{ field(type='checkbox', class_='form-check-input is-invalid' if field.errors else 'form-check-input', **kwargs) }}
-            <label class="form-check-label" for="{{ field.id }}">
+        <div class="unlabeled-group checkbox form-check custom-control custom-checkbox">
+            {{ field(type='checkbox', class_='form-check-input is-invalid custom-control-input' if field.errors else 'form-check-input', **kwargs) }}
+            <label class="form-check-label custom-control-label" for="{{ field.id }}">
                 {{ field.label }}
             </label>
             {{ field_errors(field) }}
