@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.5.21 released 2020-02-21
+--------------------------
+
+- Add support for multi select checkbox form fields (fa21fa4_)
+- allow columns to override their random data generation (a3445c1_)
+
+.. _fa21fa4: https://github.com/level12/keg-elements/commit/fa21fa4
+.. _a3445c1: https://github.com/level12/keg-elements/commit/a3445c1
+
+
 0.5.20 released 2020-02-03
 --------------------------
 
