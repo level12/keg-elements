@@ -81,11 +81,7 @@
 {%- endmacro %}
 
 {% macro field_widget(field) %}
-    {% if field.type == 'MultiCheckboxField' %}
-        {{ field(class_='form-check', disabled=field.flags.disabled, readonly=field.flags.readonly, **kwargs) }}
-    {% else %}
-        {{ field(class_='form-control', disabled=field.flags.disabled, readonly=field.flags.readonly, **kwargs) }}
-    {% endif %}
+    {{ field(class_='form-control', disabled=field.flags.disabled, readonly=field.flags.readonly, **kwargs) }}
     {% if field.errors %}
         {% for e in field.errors %}
             <p class="help-block">{{ e }}</p>
@@ -235,7 +231,6 @@
         {{ form.hidden_tag() if form.hidden_tag }}
         {% set tab_index=[start_tab_index|int] %}
         {{ form_errors(form) }}
-
         {% if caller %}
             {{ caller() }}
         {% elif field_names %}
@@ -248,7 +243,6 @@
                     {% if tab_index.append(start_tab_index|int+loop.index) %} {% endif %}
                 {% endif %}
             {% endfor %}
-
         {% endif %}
         {{ submit_group(action_text=action_text, btn_class=btn_class, cancel_url=cancel_url, tab_index=tab_index[0]) }}
     </form>
@@ -259,7 +253,6 @@
     {% for field_name in field_names %}
         {% set tab_index = tab_index + loop.index0 %}
         {{ render_field(form[field_name], tabIndex=tab_index) }}
-
     {% endfor %}
 {%- endmacro %}
 
