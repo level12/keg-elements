@@ -95,9 +95,12 @@ class TestGenericTemplates(TemplateTest):
         assert wrapper.has_class('unlabeled-group')
         assert wrapper.has_class('checkbox')
         assert wrapper.has_class('form-check')
+        assert wrapper.has_class('custom-control')
+        assert wrapper.has_class('custom-checkbox')
 
         label = wrapper.children('label')
         assert label.has_class('form-check-label')
+        assert label.has_class('custom-control-label')
         assert label.attr('for') == 'test'
 
         assert len(wrapper('.invalid-feedback p')) == 0
@@ -109,6 +112,7 @@ class TestGenericTemplates(TemplateTest):
         response = self.render('generic-form.html', {'form': form})
         field = response('#b4 [name="test"]')
         assert field.has_class('form-check-input')
+        assert field.has_class('custom-control-input')
         assert field.has_class('is-invalid')
 
         wrapper = field.parent()
