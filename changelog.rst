@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.5.22 released 2020-02-27
+--------------------------
+
+- Add missing class to checkbox input (4b4e44c_)
+
+.. _4b4e44c: https://github.com/level12/keg-elements/commit/4b4e44c
+
+
 0.5.21 released 2020-02-21
 --------------------------
 
