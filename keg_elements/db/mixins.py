@@ -43,9 +43,9 @@ def kwargs_match_entity(wrapped, instance, args, kwargs):
 
 class DefaultColsMixin(object):
     id = sa.Column('id', sa.Integer, primary_key=True)
-    created_utc = sa.Column(ArrowType, nullable=False, default=arrow.now,
+    created_utc = sa.Column(ArrowType, nullable=False, default=arrow.utcnow,
                             server_default=dbutils.utcnow())
-    updated_utc = sa.Column(ArrowType, nullable=False, default=arrow.now, onupdate=arrow.now,
+    updated_utc = sa.Column(ArrowType, nullable=False, default=arrow.utcnow, onupdate=arrow.utcnow,
                             server_default=dbutils.utcnow())
 
 

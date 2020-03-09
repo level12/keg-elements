@@ -50,6 +50,7 @@ setup(
             'pytest',
             'pytest-cov',
             'tox',
+            'freezegun'
         ],
         'i18n': [
             'morphi'
