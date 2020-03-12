@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from keg.db import db
 import arrow
+import freezegun
 import pytest
 import six
 import sqlalchemy as sa
@@ -24,6 +25,17 @@ class TestDefaultColsMixin:
         thing3 = ents.Thing.testing_create(id=7)
 
         assert ents.Thing.query.all() == [thing2, thing1, thing3]
+
+    def test_utc_default(self):
+        with freezegun.freeze_time('2020-01-01 13:01:01', tz_offset=4):
+            thing = ents.Thing.testing_create()
+        assert thing.created_utc.format() == '2020-01-01 17:01:01+00:00'
+        assert thing.updated_utc.format() == '2020-01-01 17:01:01+00:00'
+
+        with freezegun.freeze_time('2020-02-01 14:03:05', tz_offset=3):
+            db.session.query(ents.Thing).filter_by(id=thing.id).update({})
+            db.session.commit()
+        assert thing.updated_utc.format() == '2020-02-01 17:03:05+00:00'
 
 
 class TestMethodsMixin:
