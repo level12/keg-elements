@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.5.23 released 2020-03-20
+--------------------------
+
+- enable MultiCheckboxField usage in templates for bootstrap 3 (c1dba1b_)
+- fix SA arrow column default timezone (3eea89d_)
+
+.. _c1dba1b: https://github.com/level12/keg-elements/commit/c1dba1b
+.. _3eea89d: https://github.com/level12/keg-elements/commit/3eea89d
+
+
 0.5.22 released 2020-02-27
 --------------------------
 
