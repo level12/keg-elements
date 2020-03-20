@@ -80,8 +80,42 @@
     {% endcall %}
 {%- endmacro %}
 
+{% macro custom_css() %}
+<!-- included from keg-elements custom-css macro -->
+<style>
+    .multi-checkbox > li {
+        padding-bottom: 0.5em;
+    }
+
+    .multi-checkbox > li input {
+        display: inline;
+    }
+
+    .multi-checkbox > li label {
+        display: inline;
+    }
+</style>
+{% endmacro %}
+
+{% macro multi_checkbox(field) %}
+    <ul id="{{ field.id }}" class="multi-checkbox">
+        {% for choice_id, choice in field.choices %}
+        <li class="list-unstyled custom-control custom-checkbox col-xs-6">
+            <input type="checkbox" name="{{ field.name }}"
+                {{ 'checked="checked"' if field.data and choice_id in field.data else "" }}
+                class="custom-control-input" value="{{ choice_id }}" id="{{ field.id }}{{choice_id}}">
+            <label class="custom-control-label" for="{{ field.id }}{{ choice_id }}">{{choice}}</label>
+        </li>
+        {% endfor %}
+    </ul>
+{% endmacro %}
+
 {% macro field_widget(field) %}
-    {{ field(class_='form-control', disabled=field.flags.disabled, readonly=field.flags.readonly, **kwargs) }}
+    {% if field.type == "MultiCheckboxField" %}
+        {{ multi_checkbox(field) }}
+    {% else %}
+        {{ field(class_='form-control', disabled=field.flags.disabled, readonly=field.flags.readonly, **kwargs) }}
+    {% endif %}
     {% if field.errors %}
         {% for e in field.errors %}
             <p class="help-block">{{ e }}</p>

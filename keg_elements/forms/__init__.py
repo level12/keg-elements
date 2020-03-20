@@ -237,8 +237,6 @@ class SelectField(SelectFieldBase):
 class MultiCheckboxField(wtforms.fields.SelectMultipleField):
     """
     A multiple-select, except displays a list of checkboxes.
-
-    This field is BS4 only
     """
 
 
