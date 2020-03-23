@@ -94,10 +94,33 @@
     .multi-checkbox > li label {
         display: inline;
     }
+
+    .multi-checkbox-controls {
+        padding: 0.5em 1em;
+    }
 </style>
 {% endmacro %}
 
+{% macro custom_js() %}
+<!-- included from keg-elements custom-js macro -->
+<script>
+    document.querySelectorAll('[multi-checkbox-data^="select-"]').forEach(item => {
+        const target_value = item.attributes['multi-checkbox-data'].value.indexOf('select-all') !== -1;
+        item.addEventListener('click', event => {
+            event.target.parentElement.parentElement.querySelectorAll('.custom-checkbox input').forEach(checkbox => {
+                checkbox.checked = target_value;
+            });
+            event.preventDefault();
+        })
+    })
+</script>
+{% endmacro %}
+
 {% macro multi_checkbox(field) %}
+    <div class="multi-checkbox-controls">
+        <button multi-checkbox-data="select-all">Select All</button>
+        <button multi-checkbox-data="select-none">Select None</button>
+    </div>
     <ul id="{{ field.id }}" class="multi-checkbox">
         {% for choice_id, choice in field.choices %}
         <li class="list-unstyled custom-control custom-checkbox col-xs-6">

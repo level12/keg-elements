@@ -126,10 +126,33 @@
         flex: 1 1 48%;
         margin: 0 1%;
     }
+
+    .multi-checkbox-controls {
+        padding: 0.5em 1em;
+    }
 </style>
 {% endmacro %}
 
+{% macro custom_js() %}
+<!-- included from keg-elements custom-js macro -->
+<script>
+    document.querySelectorAll('[multi-checkbox-data^="select-"]').forEach(item => {
+        const target_value = item.attributes['multi-checkbox-data'].value.indexOf('select-all') !== -1;
+        item.addEventListener('click', event => {
+            event.target.parentElement.parentElement.querySelectorAll('.custom-checkbox input').forEach(checkbox => {
+                checkbox.checked = target_value;
+            });
+            event.preventDefault();
+        })
+    })
+</script>
+{% endmacro %}
+
 {% macro multi_checkbox(field) %}
+    <div class="multi-checkbox-controls">
+        <button multi-checkbox-data="select-all">Select All</button>
+        <button multi-checkbox-data="select-none">Select None</button>
+    </div>
     <div id="{{ field.id }}" class="d-flex flex-row flex-wrap multi-checkbox">
     {% for choice_id, choice in field.choices %}
     <div class="custom-control custom-checkbox">
