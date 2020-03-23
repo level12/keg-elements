@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.5.24 released 2020-03-23
+--------------------------
+
+- select all/none feature for MultiCheckbox fields (vanilla JS) (7a727b6_)
+
+.. _7a727b6: https://github.com/level12/keg-elements/commit/7a727b6
+
+
 0.5.23 released 2020-03-20
 --------------------------
 
