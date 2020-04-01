@@ -305,11 +305,11 @@ class TestLookupMixin:
         return True
 
     def test_list_active(self):
-        a = ents.LookupTester.testing_create(label='a', is_active=True)
-        b = ents.LookupTester.testing_create(label='b', is_active=True)
-        c = ents.LookupTester.testing_create(label='c', is_active=True)
-        d = ents.LookupTester.testing_create(label='d', is_active=False)
-        e = ents.LookupTester.testing_create(label='e', is_active=False)
+        a = ents.LookupTester.testing_create(label='a', disabled_utc=None)
+        b = ents.LookupTester.testing_create(label='b', disabled_utc=None)
+        c = ents.LookupTester.testing_create(label='c', disabled_utc=None)
+        d = ents.LookupTester.testing_create(label='d', disabled_utc=arrow.now())
+        e = ents.LookupTester.testing_create(label='e', disabled_utc=arrow.now())
 
         rows = ents.LookupTester.list_active()
         assert [a, b, c] == rows
@@ -324,11 +324,11 @@ class TestLookupMixin:
         assert [a, b, c, d, e] == rows
 
     def test_pairs_active(self):
-        a = ents.LookupTester.testing_create(label='a', is_active=True)
-        b = ents.LookupTester.testing_create(label='b', is_active=True)
-        c = ents.LookupTester.testing_create(label='c', is_active=True)
-        d = ents.LookupTester.testing_create(label='d', is_active=False)
-        e = ents.LookupTester.testing_create(label='e', is_active=False)
+        a = ents.LookupTester.testing_create(label='a', disabled_utc=None)
+        b = ents.LookupTester.testing_create(label='b', disabled_utc=None)
+        c = ents.LookupTester.testing_create(label='c', disabled_utc=None)
+        d = ents.LookupTester.testing_create(label='d', disabled_utc=arrow.now())
+        e = ents.LookupTester.testing_create(label='e', disabled_utc=arrow.now())
 
         def make_pairs(*records):
             return [(record.id, record.label) for record in records]
@@ -346,12 +346,12 @@ class TestLookupMixin:
         assert make_pairs(a, b, c, d, e) == pairs
 
     def test_get_by_label(self):
-        a = ents.LookupTester.testing_create(label='a', is_active=True)
-        b = ents.LookupTester.testing_create(label='b', is_active=True)
+        a = ents.LookupTester.testing_create(label='a', disabled_utc=None)
+        b = ents.LookupTester.testing_create(label='b', disabled_utc=None)
 
         assert ents.LookupTester.get_by_label('a') == a
         assert ents.LookupTester.get_by_label('b') == b
 
     def test_repr(self):
-        a = ents.LookupTester.testing_create(label='a', is_active=True)
+        a = ents.LookupTester.testing_create(label='a', disabled_utc=None)
         assert str(a) == '<LookupTester {}:a>'.format(a.id)

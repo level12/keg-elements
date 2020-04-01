@@ -2,21 +2,21 @@ import datetime as dt
 import operator
 import random
 
-from keg.db import db
-from sqlalchemy_utils import ArrowType, EmailType
 import arrow
 import blazeutils.strings
-from blazeutils import tolist
 import pytz
 import six
 import sqlalchemy as sa
 import wrapt
+from blazeutils import tolist
+from keg.db import db
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy_utils import ArrowType, EmailType
 
-import keg_elements.decorators as decor
 import keg_elements.db.columns as columns
 import keg_elements.db.utils as dbutils
+import keg_elements.decorators as decor
 from keg_elements.extensions import lazy_gettext as _
-
 
 might_commit = decor.keyword_optional('_commit', after=dbutils.session_commit, when_missing=True)
 might_flush = decor.keyword_optional('_flush', after=dbutils.session_flush)
@@ -394,12 +394,15 @@ sa.event.listen(SoftDeleteMixin, 'before_delete', SoftDeleteMixin.sqla_before_de
 
 class LookupMixin(DefaultMixin):
     label = sa.Column(sa.Unicode(255), nullable=False, unique=True)
-    is_active = sa.Column(sa.Boolean, nullable=False, default=True)
+    disabled_utc = sa.Column(ArrowType, nullable=True, default=None, server_default=sa.null())
 
-    @classmethod
-    def testing_create(cls, **kwargs):
-        kwargs.setdefault('label', blazeutils.strings.randchars(10))
-        return super().testing_create(**kwargs)
+    @hybrid_property
+    def is_active(self):
+        return self.disabled_utc is not None
+
+    @is_active.expression
+    def is_active(cls):
+        return sa.sql.case([(cls.disabled_utc.is_(None), sa.true())], else_=sa.false())
 
     @classmethod
     def _active_query(cls, include_ids=None, order_by=None):
