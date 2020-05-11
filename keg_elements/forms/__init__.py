@@ -434,6 +434,7 @@ class Form(BaseForm):
     def __init__(self, *args, **kwargs):
         super(Form, self).__init__(*args, **kwargs)
         self._form_level_errors = []
+        self._errors = None
         self.after_init(args, kwargs)
 
     def __iter__(self):
