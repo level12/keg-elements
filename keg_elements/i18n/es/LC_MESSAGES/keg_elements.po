@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: KegElements 0.5.8\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2018-09-12 14:18-0400\n"
+"POT-Creation-Date: 2020-05-11 15:58-0400\n"
 "PO-Revision-Date: 2018-08-22 09:06-0400\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -35,7 +35,11 @@ msgstr "Entrada Base36 demasiado grande"
 msgid "Negative base36 conversion input."
 msgstr "Entrada de conversión base36 negativa."
 
-#: keg_elements/db/columns.py:36
+#: keg_elements/views.py:27
+msgid "Too many records to export as {}"
+msgstr "Demasiados registros para exportar como {}"
+
+#: keg_elements/db/columns.py:39
 msgid "Key must be at least 32 bytes long"
 msgstr "La clave debe tener al menos 32 bytes de longitud"
 
@@ -55,19 +59,19 @@ msgstr ""
 "No se encontró ninguna clave primaria en `oid` o` kwargs` para la cual "
 "recuperar el objeto para editar"
 
-#: keg_elements/db/mixins.py:267
+#: keg_elements/db/mixins.py:281
 msgid "No randomization for this column type"
 msgstr "Sin aleatorización para este tipo de columna"
 
-#: keg_elements/db/utils.py:76
+#: keg_elements/db/utils.py:120
 msgid "length must be at least 7"
 msgstr "la longitud debe ser de al menos 7"
 
-#: keg_elements/forms/__init__.py:222
+#: keg_elements/forms/__init__.py:245
 msgid "Yes"
 msgstr "Sí"
 
-#: keg_elements/forms/__init__.py:223
+#: keg_elements/forms/__init__.py:246
 msgid "No"
 msgstr ""
 
@@ -99,16 +103,12 @@ msgstr "Este valor debe ser único pero ya está asignado."
 msgid "This value must be unique but is already assigned to {link}."
 msgstr "Este valor debe ser exclusivo, pero ya tiene asignado a {link}."
 
-#: keg_elements/templates/keg_elements/forms/horizontal.html:148
-msgid "Cancel"
-msgstr "Cancelar"
+#~ msgid "Cancel"
+#~ msgstr "Cancelar"
 
-#: keg_elements/templates/keg_elements/forms/horizontal.html:198
-msgid "Submit"
-msgstr "Enviar"
+#~ msgid "Submit"
+#~ msgstr "Enviar"
 
-#: keg_elements/templates/keg_elements/forms/horizontal_static.html:91
-#: keg_elements/templates/keg_elements/forms/horizontal_static.html:129
-msgid "Done"
-msgstr "Hecho"
+#~ msgid "Done"
+#~ msgstr "Hecho"
 
