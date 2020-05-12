@@ -10,7 +10,7 @@
     "Key must be at least 32 bytes long": "La clave debe tener al menos 32 bytes de longitud",
     "Must only contain alphanumeric data.": "Solo debe contener datos alfanum\u00e9ricos.",
     "Negative base36 conversion input.": "Entrada de conversi\u00f3n base36 negativa.",
-    "No": "",
+    "No": "No",
     "No primary key was found in `oid` or `kwargs` for which to retrieve the object to edit": "No se encontr\u00f3 ninguna clave primaria en `oid` o` kwargs` para la cual recuperar el objeto para editar",
     "No randomization for this column type": "Sin aleatorizaci\u00f3n para este tipo de columna",
     "This value must be unique but is already assigned to {link}.": "Este valor debe ser exclusivo, pero ya tiene asignado a {link}.",
