@@ -1,6 +1,20 @@
 Changelog
 =========
 
+0.5.25 released 2020-05-12
+--------------------------
+
+- check translations in CI (3a01a93_)
+- add GridView for convenient webgrid usage (a9deb06_)
+- support wtforms 2.3+ (0d78557_)
+- remove pytest from non-testing code (5e11b79_)
+
+.. _3a01a93: https://github.com/level12/keg-elements/commit/3a01a93
+.. _a9deb06: https://github.com/level12/keg-elements/commit/a9deb06
+.. _0d78557: https://github.com/level12/keg-elements/commit/0d78557
+.. _5e11b79: https://github.com/level12/keg-elements/commit/5e11b79
+
+
 0.5.24 released 2020-03-23
 --------------------------
 
