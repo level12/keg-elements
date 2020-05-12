@@ -1,0 +1,11 @@
+{% block main %}
+    <h1>{{ title }}</h1>
+
+    <section id="grid-body">
+        <div class="preamble">
+            {% block preamble %}
+            {% endblock %}
+        </div>
+        {{ grid.html() | safe}}
+    </section>
+{% endblock %}

@@ -1,0 +1,24 @@
+{
+    "": {
+        "language": "es",
+        "plural-forms": "nplurals=2; plural=(n != 1)"
+    },
+    "Base36 input too large": "Entrada Base36 demasiado grande",
+    "Field must have no more than {scale} decimal places.": "El campo no debe tener m\u00e1s de {scale} decimales.",
+    "Form must provide either `obj` or `_obj` property for uniqueness validation.": "El formulario debe proporcionar la propiedad `obj` o` _obj` para la validaci\u00f3n de unicidad.",
+    "If input file name doesn't end in \".enc\" then output filename must be given.": "Si el nombre del archivo de entrada no termina en \".enc\", se debe dar el nombre del archivo de salida.",
+    "Key must be at least 32 bytes long": "La clave debe tener al menos 32 bytes de longitud",
+    "Must only contain alphanumeric data.": "Solo debe contener datos alfanum\u00e9ricos.",
+    "Negative base36 conversion input.": "Entrada de conversi\u00f3n base36 negativa.",
+    "No": "",
+    "No primary key was found in `oid` or `kwargs` for which to retrieve the object to edit": "No se encontr\u00f3 ninguna clave primaria en `oid` o` kwargs` para la cual recuperar el objeto para editar",
+    "No randomization for this column type": "Sin aleatorizaci\u00f3n para este tipo de columna",
+    "This value must be unique but is already assigned to {link}.": "Este valor debe ser exclusivo, pero ya tiene asignado a {link}.",
+    "This value must be unique but is already assigned.": "Este valor debe ser \u00fanico pero ya est\u00e1 asignado.",
+    "Too many records to export as {}": "Demasiados registros para exportar como {}",
+    "Unknown column or relationship names in kwargs: {kwargs!r}": "Nombres desconocidos de columna o relaci\u00f3n en kwargs: {kwargs!r}",
+    "Updating property types is not implemented.": "La actualizaci\u00f3n de los tipos de propiedad no est\u00e1 implementada.",
+    "Value is not numeric.": "El valor no es num\u00e9rico.",
+    "Yes": "S\u00ed",
+    "length must be at least 7": "la longitud debe ser de al menos 7"
+}

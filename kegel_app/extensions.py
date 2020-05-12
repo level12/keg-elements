@@ -1,3 +1,6 @@
+import webgrid.flask
+from webgrid import BaseGrid
+
 MORPHI_PACKAGE_NAME = 'kegel_app'
 
 # begin morphi boilerplate
@@ -37,3 +40,8 @@ else:
 
     lazy_gettext = gettext
     lazy_ngettext = ngettext
+
+
+class Grid(BaseGrid):
+    manager = webgrid.flask.WebGrid()
+    session_on = True

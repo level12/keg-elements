@@ -50,7 +50,9 @@ setup(
             'pytest',
             'pytest-cov',
             'tox',
-            'freezegun'
+            'freezegun',
+            'webgrid',
+            'xlsxwriter',
         ],
         'i18n': [
             'morphi'
