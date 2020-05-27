@@ -130,6 +130,15 @@ class EntityBase(object):
                 assert col.onupdate, 'Column "{}" should have onupdate set'.format(col.name)
             assert col.server_default, 'Column "{}" should have server_default set'.format(col.name)
 
+    def test_column_numeric_scale_precision_set(self):
+        for col_check in self.column_check_generator():
+            col = getattr(self.entity_cls, col_check.name)
+            if isinstance(col.type, sa.Numeric) and not isinstance(col.type, sa.Float):
+                assert col.type.precision is not None, \
+                    'Column "{}" does not specify precision'.format(col.name)
+                assert col.type.scale is not None, \
+                    'Column "{}" does not specify scale'.format(col.name)
+
     def test_all_columns_are_constraint_tested(self):
         """Checks that all fields declared on entity are in the constraint tests"""
 

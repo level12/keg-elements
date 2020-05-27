@@ -219,3 +219,9 @@ class SoftDeleteTester(mixins.SoftDeleteMixin, mixins.DefaultMixin, db.Model):
     def testing_create(cls, **kwargs):
         kwargs['hdp_id'] = kwargs.get('hpd_id') or HardDeleteParent.testing_create().id
         return super().testing_create(**kwargs)
+
+
+class DefaultNumeric(mixins.DefaultMixin, db.Model):
+    __tablename__ = 'default_numeric'
+
+    number = sa.Column(sa.Numeric)
