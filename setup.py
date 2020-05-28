@@ -44,8 +44,10 @@ setup(
     ],
     extras_require={
         'dev': [
+            'alembic',
             'flask-webtest',
             'pre-commit',
+            'psycopg2-binary',
             'pyquery',
             'pytest',
             'pytest-cov',

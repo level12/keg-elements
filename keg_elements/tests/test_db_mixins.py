@@ -19,6 +19,7 @@ class TestDefaultColsMixin:
     def setup_method(self, fn):
         ents.Thing.delete_cascaded()
 
+    @pytest.mark.skipif(db.engine.dialect.name != 'sqlite', reason='SQLite only test')
     def test_default_ordering(self):
         thing1 = ents.Thing.testing_create(id=6)
         thing2 = ents.Thing.testing_create(id=5)
