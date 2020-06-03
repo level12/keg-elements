@@ -292,3 +292,70 @@ class TestSentryFilter:
                 'url': 'http://localhost:5000/error'
             }
         }
+
+    def test_filter_by_config_value(self, monkeypatch):
+        monkeypatch.setitem(flask.current_app.config, 'STRING', '1234567890')
+        monkeypatch.setitem(flask.current_app.config, 'BYTES1', b'\xF0\x0B\xAA')
+        monkeypatch.setitem(flask.current_app.config, 'BYTES2', b'hello world')
+        monkeypatch.setitem(flask.current_app.config, 'IGNORED', 'ignored')
+
+        class Filter(sentry.SentryEventFilter):
+            sanitized_config_keys = [
+                'STRING',
+                'BYTES1',
+                'BYTES2',
+            ]
+
+        event = {
+            'exception': {
+                'stacktrace': {
+                    'frames': [
+                        {
+                            'module': 'foo.bar',
+                            'vars': {
+                                'string1': '**1234567890**',
+                                'string2': '__31323334353637383930__',
+                                'string3': '**MTIzNDU2Nzg5MA==**',
+                                'string4': '**MTIzNDU2Nzg5MA**',
+                                'bytes1_1': '**F00BAA**',
+                                'bytes1_2': '**8Auq**',
+                                'bytes1_3': '**%F0%0B%AA**',
+                                'bytes2_1': '**hello world**',
+                                'bytes2_2': '**hello+world**',
+                                'bytes2_3': '**aGVsbG8gd29ybGQ=**',
+                                'multiple': '**1234567890**hello world**',
+                                'ignored': '**ignored**',
+                                'url': 'http://localhost?var1=hello+world&var2=%F0%0B%AA',
+                            }
+                        },
+                    ]
+                },
+            }
+        }
+        filtered = Filter().before_send(event, {})
+        assert filtered == {
+            'exception': {
+                'stacktrace': {
+                    'frames': [
+                        {
+                            'module': 'foo.bar',
+                            'vars': {
+                                'string1': '**<Filtered str>**',
+                                'string2': '__<Filtered str>__',
+                                'string3': '**<Filtered str>**',
+                                'string4': '**<Filtered str>**',
+                                'bytes1_1': '**<Filtered str>**',
+                                'bytes1_2': '**<Filtered str>**',
+                                'bytes1_3': '**<Filtered str>**',
+                                'bytes2_1': '**<Filtered str>**',
+                                'bytes2_2': '**<Filtered str>**',
+                                'bytes2_3': '**<Filtered str>**',
+                                'multiple': '**<Filtered str>**<Filtered str>**',
+                                'ignored': '**ignored**',
+                                'url': 'http://localhost?var1=<Filtered str>&var2=<Filtered str>',
+                            }
+                        },
+                    ]
+                },
+            }
+        }

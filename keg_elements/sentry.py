@@ -1,4 +1,6 @@
+import base64
 import re
+import urllib.parse
 
 import flask
 import sentry_sdk
@@ -36,6 +38,11 @@ class SentryEventFilter:
         'secretstorage',
     ]
 
+    # Filter out all instances of the values stored in the config dict under these keys.
+    sanitized_config_keys = [
+        'SECRET_KEY',
+    ]
+
     def __init__(
             self,
             types=frozenset(),
@@ -48,6 +55,7 @@ class SentryEventFilter:
 
         self._variable_regexes = {self._var_to_re(key) for key in self.sanitized_var_names}
         self._module_regexes = {self._module_to_re(mod) for mod in self.sanitized_modules}
+        self._config_values = self._config_value_representations()
 
     def _var_to_re(self, key):
         if isinstance(key, str):
@@ -58,6 +66,35 @@ class SentryEventFilter:
         if isinstance(module, str):
             return re.compile(r'^{}(?:\.|$).*'.format(re.escape(module)))
         return module
+
+    def _config_value_representations(self):
+        if not flask.current_app:
+            return []
+
+        reps = []
+        for key in self.sanitized_config_keys:
+            base_value = flask.current_app.config[key]
+            if not isinstance(base_value, (str, bytes)):
+                base_value = str(base_value)
+
+            if isinstance(base_value, str):
+                bytes_value = base_value.encode(errors='ignore')
+                str_value = base_value
+            else:
+                bytes_value = base_value
+                str_value = base_value.decode(errors='ignore')
+
+            reps.extend([
+                str_value,
+                repr(base_value),
+                urllib.parse.quote(bytes_value),
+                urllib.parse.quote_plus(bytes_value),
+                base64.b64encode(bytes_value).decode(),
+                base64.b64encode(bytes_value).rstrip(b'=').decode(),
+                base64.b16encode(bytes_value).decode(),
+            ])
+
+        return reps
 
     def repr_process(self, obj, hints):
         if isinstance(obj, self.sanitized_types):
@@ -73,10 +110,18 @@ class SentryEventFilter:
     def _filter_repr(self, v):
         return f'<Filtered {v.__class__.__name__}>'
 
+    def _filter_value(self, key, value):
+        if self.should_exclude_var(key):
+            return self._filter_repr(value)
+        if isinstance(value, str):
+            for conf_val in self._config_values:
+                value = value.replace(conf_val, self._filter_repr(conf_val))
+        return self._filter_recur(value)
+
     def _filter_recur(self, obj):
         if isinstance(obj, dict):
             return {
-                k: (self._filter_repr(v) if self.should_exclude_var(k) else self._filter_recur(v))
+                k: self._filter_value(k, v)
                 for k, v in obj.items()
             }
         if isinstance(obj, list):
