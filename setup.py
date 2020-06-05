@@ -29,9 +29,6 @@ setup(
     packages=find_packages(),
     zip_safe=False,
     include_package_data=True,
-    setup_requires=[
-        'setuptools_scm',
-    ],
     version=version['VERSION'],
     install_requires=[
         'arrow',
@@ -40,7 +37,7 @@ setup(
         'pytz',
         'WTForms-Alchemy',
         'cryptography',
-        'raven',
+        'sentry_sdk',
     ],
     extras_require={
         'dev': [
