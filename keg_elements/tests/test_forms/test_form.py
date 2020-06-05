@@ -284,6 +284,19 @@ class TestValidators(FormBase):
 
         assert len(form.float_check.validators) == 1
 
+    def test_numeric_scale_precision_required(self):
+        with pytest.raises(ValueError, match='Numeric fields must specify precision and scale'):
+            class TestForm1(ke_forms.ModelForm):
+                class Meta:
+                    model = ents.DefaultNumeric
+
+        class TestForm2(ke_forms.ModelForm):
+            class Meta:
+                model = ents.DefaultNumeric
+                exclude = ('number',)
+
+            number = wtf.DecimalField('Number', validators=[])
+
     def test_length_validation_not_applied_for_enums(self):
         form = self.compose_meta()
         for validator in form.units.validators:

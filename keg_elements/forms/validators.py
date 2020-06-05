@@ -44,7 +44,7 @@ def numeric(form, field):
 
 
 class NumberScale(object):
-    def __init__(self, scale=-1, message=None):
+    def __init__(self, scale, message=None):
         self.scale = scale
         if not message:
             message = _(u'Field must have no more than {scale} decimal places.', scale=scale)
@@ -56,7 +56,7 @@ class NumberScale(object):
             return
         # use decimal's quantization to see if it's equal to field data at the full scale.
         #   If it isn't, user entered too many decimal places
-        if field.data != field.data.quantize(Decimal('0.{}1'.format('0' * (self.scale - 1)))):
+        if field.data != field.data.quantize(Decimal(1) / 10 ** self.scale):
             raise ValidationError(self.message)
 
 
