@@ -11,8 +11,8 @@ import keg_elements.db.columns as columns
 
 many_things_mapper = db.Table(
     'many_things_mapper',
-    sa.Column('thing_id', sa.Integer, sa.ForeignKey('things.id')),
-    sa.Column('many_id', sa.Integer, sa.ForeignKey('many_things.id'))
+    sa.Column('thing_id', sa.Integer, sa.ForeignKey('things.id', ondelete='cascade')),
+    sa.Column('many_id', sa.Integer, sa.ForeignKey('many_things.id', ondelete='cascade'))
 )
 
 
@@ -47,13 +47,20 @@ class Thing(db.Model, mixins.DefaultMixin):
     def random_color(cls):
         return 'blue'
 
+    @classmethod
+    def delete_cascaded(cls):
+        RelatedThing.delete_cascaded()
+        AncillaryA.delete_cascaded()
+        AncillaryB.delete_cascaded()
+        super().delete_cascaded()
+
 
 class RelatedThing(db.Model, mixins.DefaultMixin):
     __tablename__ = 'related_things'
 
     name = db.Column(db.Unicode(50), nullable=False)
     is_enabled = db.Column(db.Boolean, nullable=False, default=False,
-                           server_default=sa.text('FALSE'))
+                           server_default=sa.false())
 
     thing_id = sa.Column(sa.Integer, sa.ForeignKey(Thing.id), nullable=False)
     thing = sa.orm.relationship(lambda: Thing, backref=sa.orm.backref(
@@ -131,6 +138,11 @@ class AncillaryA(mixins.DefaultMixin, db.Model):
 
         return super(AncillaryA, cls).testing_create(**kwargs)
 
+    @classmethod
+    def delete_cascaded(cls):
+        UsesBoth.delete_cascaded()
+        super().delete_cascaded()
+
 
 class AncillaryB(mixins.DefaultMixin, db.Model):
     __tablename__ = 'ancillary_bs'
@@ -148,17 +160,24 @@ class AncillaryB(mixins.DefaultMixin, db.Model):
 
         return super(AncillaryB, cls).testing_create(**kwargs)
 
+    @classmethod
+    def delete_cascaded(cls):
+        UsesBoth.delete_cascaded()
+        super().delete_cascaded()
 
+
+
+# Foreign keys to non-unique, non-primary key columns are not supported by MSSQL
 class UsesBoth(mixins.DefaultMixin, db.Model):
     __tablename__ = 'uses_boths'
     __table_args__ = (
         sa.ForeignKeyConstraint(
-            ('thing_id', 'ancillary_a_id'),
-            (AncillaryA.thing_id, AncillaryA.id)
+            ('ancillary_a_id', 'thing_id'),
+            (AncillaryA.id, AncillaryA.thing_id)
         ),
         sa.ForeignKeyConstraint(
-            ('thing_id', 'ancillary_b_id'),
-            (AncillaryB.thing_id, AncillaryB.id)
+            ('ancillary_b_id', 'thing_id'),
+            (AncillaryB.id, AncillaryB.thing_id)
         ),
     )
 

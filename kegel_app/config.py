@@ -1,3 +1,6 @@
+import os
+
+
 class TestProfile(object):
     KEG_KEYRING_ENABLE = False
 
@@ -6,3 +9,5 @@ class TestProfile(object):
     WTF_CSRF_ENABLED = False
     SQLALCHEMY_TRACK_MODIFICATIONS = True
     # SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:@localhost/keg-elem-test'
+
+    SQLALCHEMY_DATABASE_URI = os.environ.get('SQLALCHEMY_DATABASE_URI', 'sqlite://')
