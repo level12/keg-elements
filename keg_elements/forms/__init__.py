@@ -4,7 +4,6 @@ from __future__ import unicode_literals
 import functools
 import inspect
 import logging
-from collections import namedtuple
 from operator import attrgetter
 
 import flask
@@ -12,6 +11,7 @@ from decimal import Decimal
 from flask_wtf import FlaskForm as BaseForm
 from keg.db import db
 import sqlalchemy as sa
+from markupsafe import Markup
 from sqlalchemy_utils import ArrowType
 import six
 import wtforms.fields
@@ -274,11 +274,11 @@ class TypeHintingTextInputB3(_TypeHintingTextInputBase):
     """
     def __call__(self, field, **kwargs):
         def make_addon(txt):
-            return wtforms.widgets.HTMLString(
+            return Markup(
                 '<span class="input-group-addon">{}</span>'.format(wtforms.widgets.core.escape(txt))
             )
 
-        return wtforms.widgets.HTMLString(
+        return Markup(
             '<div class="input-group">{pre}{field}{post}</div>'.format(
                 pre=make_addon(self.prefix) if self.prefix else '',
                 field=super().__call__(field, **kwargs).__html__(),
@@ -294,13 +294,13 @@ class TypeHintingTextInputB4(_TypeHintingTextInputBase):
     """
     def __call__(self, field, **kwargs):
         def make_addon(txt, addon_type):
-            return wtforms.widgets.HTMLString(
+            return Markup(
                 '<div class="input-group-{type}">'
                 '   <span class="input-group-text">{txt}</span>'
                 "</div>".format(type=addon_type, txt=wtforms.widgets.core.escape(txt))
             )
 
-        return wtforms.widgets.HTMLString(
+        return Markup(
             '<div class="input-group">{pre}{field}{post}</div>'.format(
                 pre=make_addon(self.prefix, "prepend") if self.prefix else "",
                 field=super().__call__(field, **kwargs).__html__(),
@@ -404,7 +404,7 @@ def form_validator(func=None, only_when_fields_valid=False):
 
     @functools.wraps(func)
     def wrapper(form):
-        if not only_when_fields_valid or not form.errors:
+        if not only_when_fields_valid or not form.field_errors:
             return func(form)
 
     global ___validator_creation_counter
@@ -499,14 +499,15 @@ class Form(BaseForm):
         return self._form_level_errors
 
     @property
-    def errors(self):
-        if self._errors is None:
-            self._errors = {name: f.errors for name, f in six.iteritems(self._fields) if f.errors}
-        return self._errors
+    def field_errors(self):
+        return super().errors
 
     @property
-    def all_errors(self):
-        return namedtuple('Errors', ['field', 'form'])(self.errors, self.form_errors)
+    def errors(self):
+        errors = self.field_errors
+        if self.form_errors:
+            errors['_form'] = self.form_errors
+        return errors
 
 
 BaseModelForm = model_form_factory(Form, form_generator=FormGenerator)

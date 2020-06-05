@@ -26,6 +26,7 @@ class FormBase(object):
         class _ComposedForm(ModelForm):
             class Meta:
                 model = self.entity_cls
+                csrf = False
 
             if fields_meta_cls:
                 FieldsMeta = fields_meta_cls
@@ -64,7 +65,7 @@ class TestSelectField(FormBase):
     form_cls = FruitForm
 
     def test_blank_choice_rendering(self):
-        form = FruitForm(csrf_enabled=False)
+        form = FruitForm(meta={'csrf': False})
         fruit_options = pq(form.fruit())('option')
         assert fruit_options.length == 3
         assert fruit_options.eq(0).attr('value') == ''
@@ -100,7 +101,7 @@ class TestRequiredBoolRadioField(FormBase):
     form_cls = RequiredBoolMockForm
 
     def test_required_bool_radio_rendering(self):
-        form = self.RequiredBoolMockForm(csrf_enabled=False)
+        form = self.RequiredBoolMockForm(meta={'csrf': False})
         is_competent_labels = pq(form.is_competent())('label')
         assert is_competent_labels.length == 2
         assert is_competent_labels.eq(0).text() == 'Yes'
@@ -131,7 +132,7 @@ class TestDefaultTypeOfRequiredBooleanField(FormBase):
     entity_cls = ents.ThingWithRequiredBoolean
 
     def test_field_types(self):
-        form = self.compose_meta(csrf_enabled=False)
+        form = self.compose_meta()
         assert type(form.nullable_boolean) == wtf.fields.BooleanField
         assert type(form.required_boolean) == ke_forms.RequiredBoolRadioField
         assert type(form.required_boolean_with_default) == wtf.fields.BooleanField
@@ -161,7 +162,7 @@ class TestFieldMeta(FormBase):
         assert not form.color.flags.required
 
     def test_widget_no_override(self):
-        form = self.compose_meta(csrf_enabled=False)
+        form = self.compose_meta()
         assert type(form.color.widget) == wtforms_components.widgets.TextInput
 
     def test_widget_override(self):
@@ -169,7 +170,7 @@ class TestFieldMeta(FormBase):
             __default__ = FieldMeta
             color = FieldMeta(widget=wtf.widgets.TextArea())
 
-        form = self.compose_meta(fields_meta_cls=WidgetOverrideFieldsMeta, csrf_enabled=False)
+        form = self.compose_meta(fields_meta_cls=WidgetOverrideFieldsMeta)
         assert type(form.color.widget) == wtf.widgets.TextArea
 
     def test_extra_validators(self):
@@ -181,11 +182,11 @@ class TestFieldMeta(FormBase):
             __default__ = FieldMeta
             color = FieldMeta(extra_validators=[_is_roy])
 
-        form = self.compose_meta(fields_meta_cls=ExtraValidatorsFieldsMeta, csrf_enabled=False,
+        form = self.compose_meta(fields_meta_cls=ExtraValidatorsFieldsMeta,
                                  name='Test', color='red')
         assert form.validate()
 
-        form = self.compose_meta(fields_meta_cls=ExtraValidatorsFieldsMeta, csrf_enabled=False,
+        form = self.compose_meta(fields_meta_cls=ExtraValidatorsFieldsMeta,
                                  name='Test', color='mauve')
         assert not form.validate()
         assert set(form.color.errors) == {'Not a ROY color'}
@@ -196,8 +197,7 @@ class TestFieldMeta(FormBase):
             units = FieldMeta(coerce=lambda x: ents.Units[x.lower()] if x else x,
                               choices=[(x, x.value) for x in ents.Units])
 
-        form = self.compose_meta(fields_meta_cls=CoerceFieldsMeta, csrf_enabled=False,
-                                 name='Test', units='FEET')
+        form = self.compose_meta(fields_meta_cls=CoerceFieldsMeta, name='Test', units='FEET')
         assert isinstance(form.units, wtf.SelectField)
         assert form.validate()
         assert isinstance(form.units.data, ents.Units)
@@ -216,7 +216,7 @@ class TestFieldMeta(FormBase):
             __default__ = FieldMeta
             name = FieldMeta(default='foo')
 
-        form = self.compose_meta(fields_meta_cls=DefaultFieldsMeta, csrf_enabled=False)
+        form = self.compose_meta(fields_meta_cls=DefaultFieldsMeta)
         assert form.name.default == 'foo'
         assert form.color.default is None
 
@@ -285,18 +285,18 @@ class TestValidators(FormBase):
         assert len(form.float_check.validators) == 1
 
     def test_length_validation_not_applied_for_enums(self):
-        form = self.compose_meta(csrf_enabled=False)
+        form = self.compose_meta()
         for validator in form.units.validators:
             assert not isinstance(validator, wtf.validators.Length)
 
 
 class FeaturesForm(Form):
-    name = wtf.StringField(validators=[validators.required()])
+    name = wtf.StringField(validators=[validators.data_required()])
     color = wtf.StringField()
 
 
 class NumbersSubForm(wtf.Form):
-    number = wtf.StringField('Number', validators=[validators.required()])
+    number = wtf.StringField('Number', validators=[validators.data_required()])
     color = wtf.StringField('Color')
 
 
@@ -563,12 +563,14 @@ class TestFormLevelValidation(FormBase):
     def test_form_valid(self):
         form = self.assert_valid(num1=5, num2=37, num3=100)
         assert form.form_errors == []
-        assert form.all_errors == ({}, [])
+        assert form.field_errors == {}
+        assert form.errors == {}
 
     def test_form_invalid(self):
         form = self.assert_invalid(num1=40, num2=3, num3=50)
         assert form.form_errors == ['Does not add up', 'Out of order']
-        assert form.all_errors == ({}, ['Does not add up', 'Out of order'])
+        assert form.field_errors == {}
+        assert form.errors == {'_form': ['Does not add up', 'Out of order']}
 
     def test_stop_validation_with_error(self):
         class StopValidationForm(Form):
@@ -586,7 +588,8 @@ class TestFormLevelValidation(FormBase):
 
         form = self.assert_invalid(form_cls=StopValidationForm, s1='v1', s2='v2')
         assert form.form_errors == ['not equal']
-        assert form.all_errors == ({}, ['not equal'])
+        assert form.field_errors == {}
+        assert form.errors == {'_form': ['not equal']}
 
     def test_stop_validation_no_error(self):
         class StopValidationForm(Form):
@@ -604,7 +607,8 @@ class TestFormLevelValidation(FormBase):
 
         form = self.assert_valid(form_cls=StopValidationForm, s1='v1', s2='v2')
         assert form.form_errors == []
-        assert form.all_errors == ({}, [])
+        assert form.field_errors == {}
+        assert form.errors == {}
 
     def test_invalid_with_field_errors(self):
         class InvalidFieldsForm(Form):
@@ -618,8 +622,11 @@ class TestFormLevelValidation(FormBase):
 
         form = self.assert_invalid(form_cls=InvalidFieldsForm, s1='1234', s2='4321')
         assert form.form_errors == ['not equal']
-        assert form.all_errors == (
-            {'s1': ['Field cannot be longer than 3 characters.']}, ['not equal'])
+        assert form.field_errors == {'s1': ['Field cannot be longer than 3 characters.']}
+        assert form.errors == {
+            '_form': ['not equal'],
+            's1': ['Field cannot be longer than 3 characters.']
+        }
 
     def test_do_not_validate_with_field_errors(self):
         class InvalidFieldsForm(Form):
@@ -632,8 +639,8 @@ class TestFormLevelValidation(FormBase):
 
         form = self.assert_invalid(form_cls=InvalidFieldsForm, s1='1234', s2='4321')
         assert form.form_errors == []
-        assert form.all_errors == (
-            {'s1': ['Field cannot be longer than 3 characters.']}, [])
+        assert form.field_errors == {'s1': ['Field cannot be longer than 3 characters.']}
+        assert form.errors == {'s1': ['Field cannot be longer than 3 characters.']}
 
     def test_validators_inherited(self):
         class SubclassForm(self.MyForm):
@@ -649,11 +656,15 @@ class TestFormLevelValidation(FormBase):
 
         form = self.assert_invalid(num1=7, num2=5, num3=51, form_cls=SubclassForm)
         assert form.form_errors == ['Out of order', 'Num3 is odd', 'Does not compute']
-        assert form.all_errors == ({}, ['Out of order', 'Num3 is odd', 'Does not compute'])
+        assert form.field_errors == {}
+        assert form.errors == {
+            '_form': ['Out of order', 'Num3 is odd', 'Does not compute']
+        }
 
         form = self.assert_valid(num1=6, num2=7, num3=50, form_cls=SubclassForm)
         assert form.form_errors == []
-        assert form.all_errors == ({}, [])
+        assert form.field_errors == {}
+        assert form.errors == {}
 
 
 class TestExcludesDatetimes(FormBase):
