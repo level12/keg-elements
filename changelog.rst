@@ -1,6 +1,20 @@
 Changelog
 =========
 
+0.5.26 released 2020-06-09
+--------------------------
+
+- Upgrade Sentry library and improve filtering of sensitive data in error reports (5c0afad_)
+- Add alembic helper functions for common tasks (9440a4e_)
+- Require numeric columns to specify scale and precision (d0e0260_)
+- Improve form-level error handling (e590f2d_)
+
+.. _5c0afad: https://github.com/level12/keg-elements/commit/5c0afad
+.. _9440a4e: https://github.com/level12/keg-elements/commit/9440a4e
+.. _d0e0260: https://github.com/level12/keg-elements/commit/d0e0260
+.. _e590f2d: https://github.com/level12/keg-elements/commit/e590f2d
+
+
 0.5.25 released 2020-05-12
 --------------------------
 
