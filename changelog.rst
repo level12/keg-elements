@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.5.27 released 2020-06-09
+--------------------------
+
+- Properly handle missing or empty config keys in Sentry filtering (bfb413b_)
+
+.. _bfb413b: https://github.com/level12/keg-elements/commit/bfb413b
+
+
 0.5.26 released 2020-06-09
 --------------------------
 
