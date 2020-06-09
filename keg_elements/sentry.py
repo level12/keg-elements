@@ -73,7 +73,10 @@ class SentryEventFilter:
 
         reps = []
         for key in self.sanitized_config_keys:
-            base_value = flask.current_app.config[key]
+            base_value = flask.current_app.config.get(key)
+            if not base_value:
+                continue
+
             if not isinstance(base_value, (str, bytes)):
                 base_value = str(base_value)
 

@@ -298,12 +298,17 @@ class TestSentryFilter:
         monkeypatch.setitem(flask.current_app.config, 'BYTES1', b'\xF0\x0B\xAA')
         monkeypatch.setitem(flask.current_app.config, 'BYTES2', b'hello world')
         monkeypatch.setitem(flask.current_app.config, 'IGNORED', 'ignored')
+        monkeypatch.setitem(flask.current_app.config, 'EMPTY', '')
+        monkeypatch.setitem(flask.current_app.config, 'NONE', None)
 
         class Filter(sentry.SentryEventFilter):
             sanitized_config_keys = [
                 'STRING',
                 'BYTES1',
                 'BYTES2',
+                'EMPTY',
+                'NONE',
+                'UNSET',
             ]
 
         event = {
@@ -326,6 +331,8 @@ class TestSentryFilter:
                                 'multiple': '**1234567890**hello world**',
                                 'ignored': '**ignored**',
                                 'url': 'http://localhost?var1=hello+world&var2=%F0%0B%AA',
+                                'empty': '',
+                                'none': None,
                             }
                         },
                     ]
@@ -353,6 +360,8 @@ class TestSentryFilter:
                                 'multiple': '**<Filtered str>**<Filtered str>**',
                                 'ignored': '**ignored**',
                                 'url': 'http://localhost?var1=<Filtered str>&var2=<Filtered str>',
+                                'empty': '',
+                                'none': None,
                             }
                         },
                     ]
