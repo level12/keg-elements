@@ -79,7 +79,7 @@ class OtherThing(db.Model, mixins.DefaultMixin):
 
     name = db.Column(db.Unicode(50), nullable=False)
     is_enabled = db.Column(db.Boolean, nullable=False, default=False,
-                           server_default=sa.text('FALSE'))
+                           server_default=sa.false())
     unique_field = db.Column(db.Unicode(50), unique=True, nullable=False)
 
     thing_id = sa.Column(sa.Integer, sa.ForeignKey(Thing.id, ondelete='cascade'), nullable=False)
