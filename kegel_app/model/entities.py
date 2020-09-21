@@ -82,7 +82,7 @@ class OtherThing(db.Model, mixins.DefaultMixin):
                            server_default=sa.text('FALSE'))
     unique_field = db.Column(db.Unicode(50), unique=True, nullable=False)
 
-    thing_id = sa.Column(sa.Integer, sa.ForeignKey(Thing.id), nullable=False)
+    thing_id = sa.Column(sa.Integer, sa.ForeignKey(Thing.id, ondelete='cascade'), nullable=False)
     thing = sa.orm.relationship(lambda: Thing, backref=sa.orm.backref(
         'other_things',
         cascade='all, delete-orphan'
