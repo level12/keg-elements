@@ -1,13 +1,13 @@
 import codecs
 import enum
 import random
+import uuid
 
 import sqlalchemy as sa
-
 from keg.db import db
-import keg_elements.db.mixins as mixins
-import keg_elements.db.columns as columns
 
+import keg_elements.db.columns as columns
+import keg_elements.db.mixins as mixins
 
 many_things_mapper = db.Table(
     'many_things_mapper',
@@ -72,6 +72,27 @@ class RelatedThing(db.Model, mixins.DefaultMixin):
     def testing_create(cls, **kwargs):
         kwargs['thing'] = kwargs.get('thing') or Thing.testing_create()
         return super(RelatedThing, cls).testing_create(**kwargs)
+
+
+class OtherThing(db.Model, mixins.DefaultMixin):
+    __tablename__ = 'other_things'
+
+    name = db.Column(db.Unicode(50), nullable=False)
+    is_enabled = db.Column(db.Boolean, nullable=False, default=False,
+                           server_default=sa.text('FALSE'))
+    unique_field = db.Column(db.Unicode(50), unique=True, nullable=False)
+
+    thing_id = sa.Column(sa.Integer, sa.ForeignKey(Thing.id), nullable=False)
+    thing = sa.orm.relationship(lambda: Thing, backref=sa.orm.backref(
+        'other_things',
+        cascade='all, delete-orphan'
+    ))
+
+    @classmethod
+    def testing_create(cls, **kwargs):
+        kwargs['thing'] = kwargs.get('thing') or Thing.testing_create()
+        kwargs.setdefault('unique_field', str(uuid.uuid4()))
+        return super(OtherThing, cls).testing_create(**kwargs)
 
 
 class ManyToManyThing(db.Model, mixins.DefaultMixin):
