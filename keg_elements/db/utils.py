@@ -187,7 +187,18 @@ class CollectionUpdater(object):
 
     @no_autoflush
     def update(self):
-        """Update the objects associated with the entity"""
+        """Update the objects associated with the entity
+
+        Objects are matched by keys found in supplied data, if any. If no keys are supplied,
+        the existing objects in the collection are removed, and new records are constructed
+        from the data.
+
+        The way SQLAlchemy handles collection updates presents a limitation for collections
+        having unique constraints. If we drop/recreate the record with the same unique value,
+        we will get a unique constraint exception. To work around this, we cache info from
+        matched objects in state, then remove/flush objects first. This clears the table for
+        the new records from adds/edits.
+        """
         to_add = []
         to_edit = []
         for record in self.data:
