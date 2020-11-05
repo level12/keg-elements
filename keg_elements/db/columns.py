@@ -77,6 +77,13 @@ class DBEnum(enum.Enum):
             choices=MyEnum.form_options()
             coerce=MyEnum.coerce
         )
+
+    If using `ModelForm` the field will be configured with the above options automatically:
+
+    class MyEntityForm(ModelForm):
+        class Meta:
+            model = MyEntity
+
     """
     @classmethod
     def db_name(cls):

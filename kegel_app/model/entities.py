@@ -22,6 +22,15 @@ class Units(enum.Enum):
     meters = 'm'
 
 
+class ThingStatus(columns.DBEnum):
+    open = 'Open'
+    closed = 'Closed'
+
+    @classmethod
+    def db_name(cls):
+        return 'enum_thing_status'
+
+
 def random_scale_check():
     return 12.3456
 
@@ -34,6 +43,7 @@ class Thing(db.Model, mixins.DefaultMixin):
     scale_check = db.Column(db.Numeric(8, 4), info=dict(randomdata=random_scale_check))
     float_check = db.Column(db.Float)
     units = db.Column(sa.Enum(Units, name='enum_units'))
+    status = db.Column(ThingStatus.db_type())
 
     @sa.ext.hybrid.hybrid_property
     def name_and_color(self):

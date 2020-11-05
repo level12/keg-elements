@@ -20,6 +20,7 @@ from wtforms.validators import InputRequired, Optional, StopValidation, NumberRa
 from wtforms_alchemy import model_form_factory, FormGenerator as FormGeneratorBase
 from wtforms_components.fields import SelectField as SelectFieldBase
 
+from keg_elements.db.columns import DBEnum
 from keg_elements.extensions import lazy_gettext as _
 from keg_elements.forms.validators import NumberScale
 
@@ -118,8 +119,7 @@ class FieldMeta(object):
         elif modifier is None:
             choices = default_choices
         else:
-            map_func = lambda pair: (pair[0], modifier(pair[1]))
-            choices = map(map_func, default_choices)
+            choices = [(v, modifier(l)) for v, l in default_choices]
 
         field.kwargs['choices'] = self.modify_choices(choices)
 
@@ -376,6 +376,15 @@ class FormGenerator(FormGeneratorBase):
         if isinstance(column.type, sa.types.Enum):
             return None
         return super(FormGenerator, self).length_validator(column)
+
+    def select_field_kwargs(self, column):
+        enum_cls = getattr(column.type, 'enum_class', None)
+        if enum_cls and issubclass(enum_cls, DBEnum):
+            return {
+                'coerce': enum_cls.coerce,
+                'choices': enum_cls.form_options()
+            }
+        return super().select_field_kwargs(column)
 
 
 def field_to_dict(field):
