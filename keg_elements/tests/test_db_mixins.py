@@ -175,13 +175,13 @@ class TestMethodsMixin:
         obj = ents.Thing.testing_create()
 
         expected = {'id', 'name', 'color', 'scale_check', 'float_check', 'updated_utc',
-                    'created_utc', 'units'}
+                    'created_utc', 'units', 'status'}
         assert set(obj.to_dict().keys()) == expected
         assert set(obj.to_dict(exclude={'id'}).keys()) == expected - {'id'}
 
         hybrids = ['name_and_color']
         exclude = ['name', 'scale_check', 'float_check', 'color', 'updated_utc', 'created_utc',
-                   'units']
+                   'units', 'status']
         dictionary = obj.to_dict(hybrids=hybrids, exclude=exclude)
 
         assert dictionary == {

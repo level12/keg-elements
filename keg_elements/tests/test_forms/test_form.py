@@ -92,6 +92,39 @@ class TestSelectField(FormBase):
         # make sure we can override the int helper by passing through an explicit coerce
         self.assert_valid(**{'letter2': 'a', 'numstr': '1'})
 
+    def test_db_enum_default_choices(self):
+        class ThingForm(ModelForm):
+            class Meta:
+                model = ents.Thing
+                csrf = False
+
+            class FieldsMeta:
+                __default__ = FieldMeta
+
+        form = ThingForm()
+        assert form.status.choices == [
+            (ents.ThingStatus.open, 'Open'),
+            (ents.ThingStatus.closed, 'Closed'),
+        ]
+        assert form.status.coerce('open') is ents.ThingStatus.open
+
+    def test_db_enum_override_choices(self):
+        class ThingForm(ModelForm):
+            class Meta:
+                model = ents.Thing
+                csrf = False
+
+            class FieldsMeta:
+                __default__ = FieldMeta
+                status = FieldMeta(choices=[('1', 'Foo'), ('2', 'Bar')], coerce=str)
+
+        form = ThingForm()
+        assert form.status.choices == [
+            ('1', 'Foo'),
+            ('2', 'Bar'),
+        ]
+        assert form.status.coerce(1) == '1'
+
 
 class TestRequiredBoolRadioField(FormBase):
     class RequiredBoolMockForm(Form):
