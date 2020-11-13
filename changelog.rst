@@ -1,6 +1,20 @@
 Changelog
 =========
 
+0.5.28 released 2020-11-13
+--------------------------
+
+- Auto-generate form field options for enum columns (a074cd2_)
+- Fix mssql CI (4ec0480_)
+- Fix test model key cascade (53dd792_)
+- Fix update_collection for models with unique constraints (900f3ec_)
+
+.. _a074cd2: https://github.com/level12/keg-elements/commit/a074cd2
+.. _4ec0480: https://github.com/level12/keg-elements/commit/4ec0480
+.. _53dd792: https://github.com/level12/keg-elements/commit/53dd792
+.. _900f3ec: https://github.com/level12/keg-elements/commit/900f3ec
+
+
 0.5.27 released 2020-06-09
 --------------------------
 
