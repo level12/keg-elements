@@ -426,11 +426,11 @@ class LookupMixin(SoftDeleteMixin):
         if include_ids:
             include_ids = tolist(include_ids)
             clause = sa.sql.or_(
-                cls.is_active.is_(sa.true()),
+                cls.is_active == sa.true(),
                 cls.id.in_(include_ids)
             )
         else:
-            clause = cls.is_active.is_(sa.true())
+            clause = cls.is_active == sa.true()
 
         return cls.query.filter(clause).order_by(order_by)
 
