@@ -345,13 +345,13 @@ class FormGenerator(FormGeneratorBase):
 
     def get_field_modifier(self, prop):
 
-        # is there an entry in FieldMeta?
+        # is there an entry in FieldsMeta?
         if hasattr(self.fields_meta, prop.key):
             field_modifier = getattr(self.fields_meta, prop.key)
         else:
             field_modifier = getattr(self.fields_meta, '__default__', _not_given)
             if field_modifier is _not_given:
-                return None
+                field_modifier = FieldMeta
 
         return field_modifier() if inspect.isclass(field_modifier) else field_modifier
 

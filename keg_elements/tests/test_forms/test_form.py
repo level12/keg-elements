@@ -868,3 +868,16 @@ class TestTypeHintingTextInputB3:
 
         suffix = form.suffix()
         assert "&amp;foo&amp;" in suffix
+
+
+class TestModelForm:
+    class MyForm(ModelForm):
+        class Meta:
+            model = ents.LookupTester
+
+        class FieldsMeta:
+            pass
+
+    def test_default_title_case(self):
+        form = TestModelForm.MyForm(None)
+        assert form.label.label.text == 'Label'
