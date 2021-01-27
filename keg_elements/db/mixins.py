@@ -280,6 +280,53 @@ class MethodsMixin:
             return blazeutils.strings.randchars(min(column.type.length or 25, 25))
         raise ValueError(_('No randomization for this column type'))
 
+    @classmethod
+    def testing_set_related(cls, kwargs, model,
+                            *testing_create_args, **testing_create_kwargs):
+        """Create a related object for testing, if it is not specified in kwargs.
+
+        Designed to be used by `testing_create`. A common issue is that related
+        test records need to be set up with the test entity instance, but they
+        could be specified already in kwargs. In addition, relationships already
+        specified may be given on the relationship attribute or the foreign-key
+        field.
+
+        This method takes existing `testing_create` kwargs and the related
+        entity, and makes the necessary updates.
+
+        Relationship name is generated from the given entity by default, but may
+        be passed in as a `_relationship_name` keyword argument. The foreign key
+        field is assumed to be the relationship name with an `_id` suffix, but
+        may be specified with the `_relationship_field` keyword argument.
+
+        Any additional args/kwargs are passed to the given model's `testing_create`.
+        """
+        relationship_name = testing_create_kwargs.pop(
+            '_relationship_name',
+            blazeutils.strings.case_cw2us(model.__name__),
+        )
+        relationship_field = testing_create_kwargs.pop(
+            '_relationship_field',
+            '{}_id'.format(relationship_name),
+        )
+
+        for attr_name in (relationship_name, relationship_field):
+            if not hasattr(cls, attr_name):
+                print(cls, attr_name)
+                raise Exception(
+                    'testing_set_related expects "{}" on class {}'.format(
+                        attr_name,
+                        cls.__name__,
+                    )
+                )
+
+        # generic logic to respect existing kwargs setting on either field
+        if not {relationship_name, relationship_field} & set(kwargs.keys()):
+            kwargs[relationship_name] = model.testing_create(
+                *testing_create_args,
+                **testing_create_kwargs
+            )
+
     @might_commit
     @might_flush
     @classmethod

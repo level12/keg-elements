@@ -35,7 +35,7 @@ def random_scale_check():
     return 12.3456
 
 
-class Thing(db.Model, mixins.DefaultMixin):
+class Thing(mixins.DefaultMixin, db.Model):
     __tablename__ = 'things'
 
     name = db.Column(db.Unicode(50), nullable=False)
@@ -65,7 +65,7 @@ class Thing(db.Model, mixins.DefaultMixin):
         super().delete_cascaded()
 
 
-class RelatedThing(db.Model, mixins.DefaultMixin):
+class RelatedThing(mixins.DefaultMixin, db.Model):
     __tablename__ = 'related_things'
 
     name = db.Column(db.Unicode(50), nullable=False)
@@ -80,11 +80,11 @@ class RelatedThing(db.Model, mixins.DefaultMixin):
 
     @classmethod
     def testing_create(cls, **kwargs):
-        kwargs['thing'] = kwargs.get('thing') or Thing.testing_create()
+        cls.testing_set_related(kwargs, Thing)
         return super(RelatedThing, cls).testing_create(**kwargs)
 
 
-class OtherThing(db.Model, mixins.DefaultMixin):
+class OtherThing(mixins.DefaultMixin, db.Model):
     __tablename__ = 'other_things'
 
     name = db.Column(db.Unicode(50), nullable=False)
@@ -100,12 +100,12 @@ class OtherThing(db.Model, mixins.DefaultMixin):
 
     @classmethod
     def testing_create(cls, **kwargs):
-        kwargs['thing'] = kwargs.get('thing') or Thing.testing_create()
+        cls.testing_set_related(kwargs, Thing)
         kwargs.setdefault('unique_field', str(uuid.uuid4()))
         return super(OtherThing, cls).testing_create(**kwargs)
 
 
-class ManyToManyThing(db.Model, mixins.DefaultMixin):
+class ManyToManyThing(mixins.DefaultMixin, db.Model):
     __tablename__ = 'many_things'
 
     name = db.Column(db.Unicode(50), nullable=False)
@@ -115,7 +115,7 @@ class ManyToManyThing(db.Model, mixins.DefaultMixin):
                                  backref='manys')
 
 
-class ThingWithRequiredBoolean(db.Model, mixins.DefaultMixin):
+class ThingWithRequiredBoolean(mixins.DefaultMixin, db.Model):
     __tablename__ = 'required_boolean_table'
 
     nullable_boolean = db.Column(db.Boolean, nullable=True)
@@ -125,7 +125,7 @@ class ThingWithRequiredBoolean(db.Model, mixins.DefaultMixin):
                                                      server_default='false')
 
 
-class MultiplePrimaryKeys(db.Model, mixins.DefaultMixin):
+class MultiplePrimaryKeys(mixins.DefaultMixin, db.Model):
     __tablename__ = 'multikey_table'
 
     other_pk = db.Column(db.Integer, primary_key=True)
@@ -140,7 +140,7 @@ def super_secure_decrypt(data, key):
     return codecs.encode(data.decode(), 'rot_13')
 
 
-class ColumnTester(db.Model, mixins.DefaultMixin):
+class ColumnTester(mixins.DefaultMixin, db.Model):
     __tablename__ = 'column_tester'
 
     time_zone = db.Column(columns.TimeZoneType(length=100))

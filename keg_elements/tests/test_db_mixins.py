@@ -239,6 +239,52 @@ class TestMethodsMixin:
         assert obj.color == 'blue'
         assert obj.scale_check == Decimal('12.3456')
 
+    def test_related_object_created(self):
+        obj = ents.RelatedThing.testing_create()
+        assert obj.thing
+
+    def test_related_object_respects_id(self):
+        thing = ents.Thing.testing_create()
+        obj = ents.RelatedThing.testing_create(thing_id=thing.id)
+        assert obj.thing is thing
+
+    def test_related_object_respects_relationship_attr(self):
+        thing = ents.Thing.testing_create()
+        obj = ents.RelatedThing.testing_create(thing=thing)
+        assert obj.thing is thing
+
+    def test_related_object_bad_attributes(self):
+        class MyObject(mixins.MethodsMixin):
+            pass
+
+        with pytest.raises(Exception, match='expects "thing" on class MyObject'):
+            MyObject.testing_set_related({}, ents.Thing)
+
+    def test_related_object_takes_overrides(self):
+        class MyObject(mixins.MethodsMixin):
+            foo = None
+            bar = None
+
+        kwargs = {}
+        MyObject.testing_set_related(
+            kwargs, ents.Thing, _relationship_name='foo', _relationship_field='bar'
+        )
+        assert isinstance(kwargs['foo'], ents.Thing)
+
+        thing = ents.Thing.testing_create()
+        kwargs = {'foo': thing}
+        MyObject.testing_set_related(
+            kwargs, ents.Thing, _relationship_name='foo', _relationship_field='bar'
+        )
+        assert kwargs['foo'] is thing
+
+        kwargs = {'bar': thing.id}
+        MyObject.testing_set_related(
+            kwargs, ents.Thing, _relationship_name='foo', _relationship_field='bar'
+        )
+        assert kwargs['bar'] == thing.id
+        assert 'foo' not in kwargs
+
 
 class TestSoftDeleteMixin:
 
