@@ -881,3 +881,17 @@ class TestModelForm:
     def test_default_title_case(self):
         form = TestModelForm.MyForm(None)
         assert form.label.label.text == 'Label'
+
+
+def test_fields_meta_inheritance():
+    class FormA(ModelForm):
+        class FieldsMeta:
+            a = 'foo'
+
+    class FormB(FormA):
+        class FieldsMeta:
+            b = 'bar'
+
+    form = FormB()
+    assert form.FieldsMeta.a == 'foo'
+    assert form.FieldsMeta.b == 'bar'

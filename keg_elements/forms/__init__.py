@@ -17,7 +17,11 @@ import six
 import wtforms.fields
 import wtforms.form
 from wtforms.validators import InputRequired, Optional, StopValidation, NumberRange
-from wtforms_alchemy import model_form_factory, FormGenerator as FormGeneratorBase
+from wtforms_alchemy import (
+    FormGenerator as FormGeneratorBase,
+    model_form_factory,
+    model_form_meta_factory,
+)
 from wtforms_components.fields import SelectField as SelectFieldBase
 
 from keg_elements.db.columns import DBEnum
@@ -521,7 +525,34 @@ class Form(BaseForm):
         return errors
 
 
-BaseModelForm = model_form_factory(Form, form_generator=FormGenerator)
+BaseModelFormMeta = model_form_meta_factory()
+
+
+class ModelFormMeta(BaseModelFormMeta):
+    """Base model form metaclass that handles nested inheritance issues.
+
+    The default metaclass here will handle the nested Meta class. A form
+    subclass with a Meta nested class will treat the form's superclass' Meta
+    as a parent.
+
+    This metaclass does the same thing for FieldsMeta, allowing superclasses
+    to define a FieldsMeta that may reasonably be passed down to the subclass.
+    """
+    def __init__(cls, *args, **kwargs):
+        bases = []
+        for class_ in cls.__mro__:
+            if 'FieldsMeta' in class_.__dict__:
+                bases.append(getattr(class_, 'FieldsMeta'))
+
+        if object not in bases:
+            bases.append(object)
+
+        cls.FieldsMeta = type('FieldsMeta', tuple(bases), {})
+
+        BaseModelFormMeta.__init__(cls, *args, **kwargs)
+
+
+BaseModelForm = model_form_factory(Form, meta=ModelFormMeta, form_generator=FormGenerator)
 
 
 class ModelForm(BaseModelForm):
