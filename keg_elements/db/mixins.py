@@ -2,20 +2,21 @@ import datetime as dt
 import operator
 import random
 
-from keg.db import db
-from sqlalchemy_utils import ArrowType, EmailType
 import arrow
 import blazeutils.strings
 import pytz
 import six
 import sqlalchemy as sa
 import wrapt
+from blazeutils import tolist
+from keg.db import db
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy_utils import ArrowType, EmailType
 
-import keg_elements.decorators as decor
 import keg_elements.db.columns as columns
 import keg_elements.db.utils as dbutils
+import keg_elements.decorators as decor
 from keg_elements.extensions import lazy_gettext as _
-
 
 might_commit = decor.keyword_optional('_commit', after=dbutils.session_commit, when_missing=True)
 might_flush = decor.keyword_optional('_flush', after=dbutils.session_flush)
@@ -436,3 +437,66 @@ class SoftDeleteMixin:
 
 sa.event.listen(SoftDeleteMixin, 'before_delete', SoftDeleteMixin.sqla_before_delete_event,
                 propagate=True)
+
+
+class LookupMixin(SoftDeleteMixin):
+    """Provides a base for id/label pair tables, used in one-to-many relationships.
+
+    Based on SoftDeleteMixin, so any lookup record that is deleted/deactivated is
+    still available for existing records.
+
+    A code field is provided for developer reference in code, so a changeable label
+    does not need to be hard-coded for lookup.
+
+    Developer expectations:
+    - LookupMixin will precede DefaultMixin or MethodsMixin in entity base classes
+    - Only active labels will be listed for linking to new related records
+    - `include_ids` will be used for ensuring existing records preserve lookup
+    """
+
+    label = sa.Column(sa.Unicode(255), nullable=False, unique=True)
+    code = sa.Column(sa.Unicode(255))
+
+    @hybrid_property
+    def is_active(self):
+        return self.deleted_utc is not None
+
+    @is_active.expression
+    def is_active(cls):
+        return sa.sql.case([(cls.deleted_utc.is_(None), sa.true())], else_=sa.false())
+
+    @classmethod
+    def _active_query(cls, include_ids=None, order_by=None):
+        if order_by is None:
+            order_by = cls.label
+
+        if include_ids:
+            include_ids = tolist(include_ids)
+            clause = sa.sql.or_(
+                cls.is_active == sa.true(),
+                cls.id.in_(include_ids)
+            )
+        else:
+            clause = cls.is_active == sa.true()
+
+        return cls.query.filter(clause).order_by(order_by)
+
+    @classmethod
+    def list_active(cls, include_ids=None, order_by=None):
+        return cls._active_query(include_ids, order_by).all()
+
+    @classmethod
+    def pairs_active(cls, include_ids=None, order_by=None):
+        query = cls._active_query(include_ids, order_by)
+        return cls.pairs('id', 'label', query=query)
+
+    @classmethod
+    def get_by_label(cls, label):
+        return cls.get_by(label=label)
+
+    @classmethod
+    def get_by_code(cls, code):
+        return cls.get_by(code=code)
+
+    def __repr__(self):
+        return '<{} {}:{}>'.format(self.__class__.__name__, self.id, self.label)

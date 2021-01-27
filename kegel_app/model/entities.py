@@ -275,3 +275,7 @@ class DefaultNumeric(mixins.DefaultMixin, db.Model):
     __tablename__ = 'default_numeric'
 
     number = sa.Column(sa.Numeric)
+
+
+class LookupTester(mixins.LookupMixin, mixins.DefaultMixin, db.Model):
+    pass

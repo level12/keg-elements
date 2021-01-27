@@ -336,3 +336,74 @@ class TestSoftDeleteMixin:
 
         with pytest.raises(mixins.HardDeleteProhibitedError):
             sdt1.hdp.delete(sdt1.hdp_id)
+
+
+class TestLookupMixin:
+    def setup(self):
+        ents.LookupTester.delete_cascaded()
+
+    def _labels_in_list(labels, rows):
+        row_labels = [row.label for row in rows]
+        for label in labels:
+            if label not in row_labels:
+                return False
+
+        return True
+
+    def test_list_active(self):
+        a = ents.LookupTester.testing_create(label='a', deleted_utc=None)
+        b = ents.LookupTester.testing_create(label='b', deleted_utc=None)
+        c = ents.LookupTester.testing_create(label='c', deleted_utc=None)
+        d = ents.LookupTester.testing_create(label='d', deleted_utc=arrow.now())
+        e = ents.LookupTester.testing_create(label='e', deleted_utc=arrow.now())
+
+        rows = ents.LookupTester.list_active()
+        assert [a, b, c] == rows
+
+        rows = ents.LookupTester.list_active(order_by=ents.LookupTester.label.desc())
+        assert [c, b, a] == rows
+
+        rows = ents.LookupTester.list_active(include_ids=d.id)
+        assert [a, b, c, d] == rows
+
+        rows = ents.LookupTester.list_active(include_ids=(d.id, e.id))
+        assert [a, b, c, d, e] == rows
+
+    def test_pairs_active(self):
+        a = ents.LookupTester.testing_create(label='a', deleted_utc=None)
+        b = ents.LookupTester.testing_create(label='b', deleted_utc=None)
+        c = ents.LookupTester.testing_create(label='c', deleted_utc=None)
+        d = ents.LookupTester.testing_create(label='d', deleted_utc=arrow.now())
+        e = ents.LookupTester.testing_create(label='e', deleted_utc=arrow.now())
+
+        def make_pairs(*records):
+            return [(record.id, record.label) for record in records]
+
+        pairs = ents.LookupTester.pairs_active()
+        assert make_pairs(a, b, c) == pairs
+
+        pairs = ents.LookupTester.pairs_active(order_by=ents.LookupTester.label.desc())
+        assert make_pairs(c, b, a) == pairs
+
+        pairs = ents.LookupTester.pairs_active(include_ids=d.id)
+        assert make_pairs(a, b, c, d) == pairs
+
+        pairs = ents.LookupTester.pairs_active(include_ids=(d.id, e.id))
+        assert make_pairs(a, b, c, d, e) == pairs
+
+    def test_get_by_label(self):
+        a = ents.LookupTester.testing_create(label='a', deleted_utc=None)
+        b = ents.LookupTester.testing_create(label='b', deleted_utc=None)
+
+        assert ents.LookupTester.get_by_label('a') == a
+        assert ents.LookupTester.get_by_label('b') == b
+
+    def test_get_by_code(self):
+        a = ents.LookupTester.testing_create(label='a', code='foo', deleted_utc=None)
+        ents.LookupTester.testing_create(label='b', deleted_utc=None)
+
+        assert ents.LookupTester.get_by_code('foo') == a
+
+    def test_repr(self):
+        a = ents.LookupTester.testing_create(label='a', deleted_utc=None)
+        assert str(a) == '<LookupTester {}:a>'.format(a.id)
