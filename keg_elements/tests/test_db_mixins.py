@@ -305,11 +305,11 @@ class TestLookupMixin:
         return True
 
     def test_list_active(self):
-        a = ents.LookupTester.testing_create(label='a', disabled_utc=None)
-        b = ents.LookupTester.testing_create(label='b', disabled_utc=None)
-        c = ents.LookupTester.testing_create(label='c', disabled_utc=None)
-        d = ents.LookupTester.testing_create(label='d', disabled_utc=arrow.now())
-        e = ents.LookupTester.testing_create(label='e', disabled_utc=arrow.now())
+        a = ents.LookupTester.testing_create(label='a', deleted_utc=None)
+        b = ents.LookupTester.testing_create(label='b', deleted_utc=None)
+        c = ents.LookupTester.testing_create(label='c', deleted_utc=None)
+        d = ents.LookupTester.testing_create(label='d', deleted_utc=arrow.now())
+        e = ents.LookupTester.testing_create(label='e', deleted_utc=arrow.now())
 
         rows = ents.LookupTester.list_active()
         assert [a, b, c] == rows
@@ -324,11 +324,11 @@ class TestLookupMixin:
         assert [a, b, c, d, e] == rows
 
     def test_pairs_active(self):
-        a = ents.LookupTester.testing_create(label='a', disabled_utc=None)
-        b = ents.LookupTester.testing_create(label='b', disabled_utc=None)
-        c = ents.LookupTester.testing_create(label='c', disabled_utc=None)
-        d = ents.LookupTester.testing_create(label='d', disabled_utc=arrow.now())
-        e = ents.LookupTester.testing_create(label='e', disabled_utc=arrow.now())
+        a = ents.LookupTester.testing_create(label='a', deleted_utc=None)
+        b = ents.LookupTester.testing_create(label='b', deleted_utc=None)
+        c = ents.LookupTester.testing_create(label='c', deleted_utc=None)
+        d = ents.LookupTester.testing_create(label='d', deleted_utc=arrow.now())
+        e = ents.LookupTester.testing_create(label='e', deleted_utc=arrow.now())
 
         def make_pairs(*records):
             return [(record.id, record.label) for record in records]
@@ -346,12 +346,18 @@ class TestLookupMixin:
         assert make_pairs(a, b, c, d, e) == pairs
 
     def test_get_by_label(self):
-        a = ents.LookupTester.testing_create(label='a', disabled_utc=None)
-        b = ents.LookupTester.testing_create(label='b', disabled_utc=None)
+        a = ents.LookupTester.testing_create(label='a', deleted_utc=None)
+        b = ents.LookupTester.testing_create(label='b', deleted_utc=None)
 
         assert ents.LookupTester.get_by_label('a') == a
         assert ents.LookupTester.get_by_label('b') == b
 
+    def test_get_by_code(self):
+        a = ents.LookupTester.testing_create(label='a', code='foo', deleted_utc=None)
+        ents.LookupTester.testing_create(label='b', deleted_utc=None)
+
+        assert ents.LookupTester.get_by_code('foo') == a
+
     def test_repr(self):
-        a = ents.LookupTester.testing_create(label='a', disabled_utc=None)
+        a = ents.LookupTester.testing_create(label='a', deleted_utc=None)
         assert str(a) == '<LookupTester {}:a>'.format(a.id)

@@ -392,17 +392,31 @@ sa.event.listen(SoftDeleteMixin, 'before_delete', SoftDeleteMixin.sqla_before_de
                 propagate=True)
 
 
-class LookupMixin(DefaultMixin):
+class LookupMixin(SoftDeleteMixin):
+    """Provides a base for id/label pair tables, used in one-to-many relationships.
+
+    Based on SoftDeleteMixin, so any lookup record that is deleted/deactivated is
+    still available for existing records.
+
+    A code field is provided for developer reference in code, so a changeable label
+    does not need to be hard-coded for lookup.
+
+    Developer expectations:
+    - LookupMixin will precede DefaultMixin or MethodsMixin in entity base classes
+    - Only active labels will be listed for linking to new related records
+    - `include_ids` will be used for ensuring existing records preserve lookup
+    """
+
     label = sa.Column(sa.Unicode(255), nullable=False, unique=True)
-    disabled_utc = sa.Column(ArrowType, nullable=True, default=None, server_default=sa.null())
+    code = sa.Column(sa.Unicode(255))
 
     @hybrid_property
     def is_active(self):
-        return self.disabled_utc is not None
+        return self.deleted_utc is not None
 
     @is_active.expression
     def is_active(cls):
-        return sa.sql.case([(cls.disabled_utc.is_(None), sa.true())], else_=sa.false())
+        return sa.sql.case([(cls.deleted_utc.is_(None), sa.true())], else_=sa.false())
 
     @classmethod
     def _active_query(cls, include_ids=None, order_by=None):
@@ -432,6 +446,10 @@ class LookupMixin(DefaultMixin):
     @classmethod
     def get_by_label(cls, label):
         return cls.get_by(label=label)
+
+    @classmethod
+    def get_by_code(cls, code):
+        return cls.get_by(code=code)
 
     def __repr__(self):
         return '<{} {}:{}>'.format(self.__class__.__name__, self.id, self.label)
