@@ -1,3 +1,4 @@
+from keg_elements.forms import ModelForm
 import keg_elements.testing as testing
 from kegel_app.model import entities
 
@@ -70,3 +71,27 @@ class TestEntityBaseUsesBothFkString(testing.EntityBase):
         testing.ColumnCheck('ancillary_a_id', fk='ancillary_as.id'),
         testing.ColumnCheck('ancillary_b_id', fk='ancillary_bs.id'),
     ]
+
+
+class TestFormBase(testing.FormBase):
+    class ThingForm(ModelForm):
+        class Meta:
+            model = entities.Thing
+            csrf = False
+
+        class FieldsMeta:
+            pass
+
+    form_cls = ThingForm
+
+    def ok_data(self, **kwargs):
+        return {
+            "name": "foo",
+            **kwargs
+        }
+
+    def test_field_configuration(self):
+        self.verify_field('name', 'Name', required=True)
+        self.verify_field('status', 'Status', required=False,
+                          choice_values=[entities.ThingStatus.open,
+                                         entities.ThingStatus.closed])

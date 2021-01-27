@@ -1,9 +1,12 @@
 from collections import namedtuple
+from unittest import mock
 
 from keg import current_app
+from pyquery import PyQuery
 import six
 import sqlalchemy as sa
 from sqlalchemy_utils import ArrowType
+from werkzeug.datastructures import MultiDict
 
 from .db.utils import validate_unique_exc
 from .db.mixins import DefaultColsMixin
@@ -181,3 +184,70 @@ class EntityBase(object):
         except Exception as e:
             if not validate_unique_exc(e):
                 raise
+
+
+class FormBase(object):
+    form_cls = None
+
+    def ok_data(self, **kwargs):
+        return kwargs
+
+    def test_disallowed_fields_not_present(self):
+        form = self.create_form()
+        assert "created_utc" not in form
+        assert "updated_utc" not in form
+
+    def test_ok_data_valid(self):
+        self.assert_valid()
+
+    def create_form(self, obj=None, **kwargs):
+        data = kwargs.pop('_form_data', self.ok_data(**kwargs))
+        # attempt to disable CSRF here with a patch. This covers a majority of cases in testing
+        with mock.patch.dict(current_app.config, WTF_CSRF_ENABLED=False):
+            form = self.form_cls(MultiDict(data), obj=obj)
+
+        return form
+
+    def assert_invalid(self, **kwargs):
+        form = self.create_form(**kwargs)
+        assert not form.validate(), "expected form errors"
+        return form
+
+    def assert_valid(self, **kwargs):
+        form = self.create_form(**kwargs)
+        assert form.validate(), form.errors
+        return form
+
+    def verify_field(
+        self, name, label=None, required=False, choice_values=None, prefix=None, suffix=None
+    ):
+        if required is not None:
+            data = {name: ""}
+            form = self.create_form(**data)
+            field = form[name]
+            form.validate()
+
+            if required:
+                assert "This field is required." in field.errors
+            else:
+                assert not field.errors, field.errors
+        else:
+            form = self.create_form()
+            field = form[name]
+
+        if hasattr(field, "choices"):
+            if choice_values:
+                assert choice_values == [choice[0] for choice in field.choices]
+
+        if label:
+            assert field.label.text == label
+
+        if prefix or suffix:
+            form = self.create_form()
+            field = form[name]
+
+            pq = PyQuery(field())
+            if prefix:
+                assert pq(".input-group-prepend").text() == prefix
+            if suffix:
+                assert pq(".input-group-append").text() == suffix
