@@ -12,7 +12,7 @@ from flask_wtf import FlaskForm as BaseForm
 from keg.db import db
 import sqlalchemy as sa
 from markupsafe import Markup
-from sqlalchemy_utils import ArrowType
+from sqlalchemy_utils import ArrowType, get_class_by_table
 import six
 import wtforms.fields
 import wtforms.form
@@ -22,9 +22,13 @@ from wtforms_alchemy import (
     model_form_factory,
     model_form_meta_factory,
 )
-from wtforms_components.fields import SelectField as SelectFieldBase
+from wtforms_components.fields import (
+    SelectField as SelectFieldBase,
+    SelectMultipleField as SelectMultipleFieldBase,
+)
 
 from keg_elements.db.columns import DBEnum
+from keg_elements.db.utils import has_column
 from keg_elements.extensions import lazy_gettext as _
 from keg_elements.forms.validators import NumberScale
 
@@ -87,7 +91,7 @@ class FieldMeta(object):
         return label_text
 
     def apply_to_description(self, field):
-        default_description = field.kwargs['description']
+        default_description = field.kwargs.get('description')
         if self.description is _not_given:
             description = default_description
         else:
@@ -195,20 +199,11 @@ def select_coerce(es_pass_thru, coerce, value):
         return six.text_type(value)
 
 
-class SelectField(SelectFieldBase):
-    """
-        Provides helpful features above wtforms_components SelectField which it is based on:
-
-        1) Adds a blank choice by default at the front of the choices.  This results in your user
-           being forced to select something if the field is required, which avoids initial
-           defaulting of the first value in the field getting submitted.
-        2) The coerce function used for the choices will automatically convert to int if possible,
-           falling back to unicode if the value is not an integer.
-    """
+class SelectMixin:
     def __init__(self, *args, **kwargs):
         self.add_blank_choice = kwargs.pop('add_blank_choice', True)
         coerce_arg = kwargs.pop('coerce', _not_given)
-        super(SelectField, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         if self.add_blank_choice:
             # If we are adding a blank choice, and it is selected, we want the value that comes back
@@ -222,12 +217,12 @@ class SelectField(SelectFieldBase):
     def iter_choices(self):
         if self.add_blank_choice:
             yield ('', '', (self.coerce, False))
-        for value in super(SelectField, self).iter_choices():
+        for value in super().iter_choices():
             yield value
 
     @property
     def choice_values(self):
-        values = super(SelectField, self).choice_values
+        values = super().choice_values
         if self.add_blank_choice:
             return [''] + values
         return values
@@ -236,6 +231,31 @@ class SelectField(SelectFieldBase):
     def selected_choice_label(self):
         value_dict = dict(self.concrete_choices)
         return value_dict.get(self.data)
+
+
+class SelectField(SelectMixin, SelectFieldBase):
+    """
+        Provides helpful features above wtforms_components SelectField which it is based on:
+
+        1) Adds a blank choice by default at the front of the choices.  This results in your user
+           being forced to select something if the field is required, which avoids initial
+           defaulting of the first value in the field getting submitted.
+        2) The coerce function used for the choices will automatically convert to int if possible,
+           falling back to unicode if the value is not an integer.
+    """
+
+
+class SelectMultipleField(SelectMixin, SelectMultipleFieldBase):
+    """
+        Provides helpful features above wtforms_components SelectMultipleField which it is
+        based on:
+
+        The coerce function used for the choices will automatically convert to int if possible,
+        falling back to unicode if the value is not an integer.
+    """
+    def __init__(self, *args, **kwargs):
+        kwargs['add_blank_choice'] = kwargs.get('add_blank_choice', False)
+        super().__init__(*args, **kwargs)
 
 
 class MultiCheckboxField(wtforms.fields.SelectMultipleField):
@@ -262,6 +282,192 @@ class RequiredBoolRadioField(wtforms.fields.RadioField):
 
         super(RequiredBoolRadioField, self).__init__(*args, **kwargs)
         self.type = 'RadioField'
+
+
+class RelationshipFieldBase:
+    """Common base for single/multiple select fields that reference ORM relationships.
+
+    Handles one-to-many and many-to-many patterns.
+
+    Note, must use the wtforms-components fields as a base, because we depend on
+    lazy-loaded choices. At import time, a field's choices may not be fully available
+    in the data. In addition, when pairing the form with an existing record, we need
+    to ensure that the option from the record is present even if it would normally
+    be filtered (e.g. an inactive option).
+    """
+    def __init__(self, label=None, orm_cls=None, label_attr=None, fk_attr='id',
+                 query_filter=None, coerce=_not_given, **kwargs):
+        label = self.field_label_modifier(label)
+        self.orm_cls = orm_cls
+        self.label_attr = label_attr
+        if self.label_attr is None:
+            self.label_attr = self.get_best_label_attr()
+        self.fk_attr = fk_attr
+        self.query_filter = query_filter
+        if not self.fk_attr and not coerce:
+            def coerce_to_orm_obj(value):
+                """Coerce ID to relationship object."""
+                # If coming form formdata, we'll get a string ID.
+                if isinstance(value, str):
+                    return self.orm_cls.query.get(value)
+
+                # If coming from object data, we'll get an ORM instance.
+                return value
+
+            coerce = coerce_to_orm_obj
+
+        super().__init__(label=label, choices=self.get_choices, coerce=coerce, **kwargs)
+
+    def field_label_modifier(self, label):
+        """Modifies the label to something more human-friendly.
+
+        One-to-many relationships often have a field name like "foo_id", which title cases
+        as "Foo Id". Form should only show "Foo", though, so we trim it that way here.
+        """
+        if label.lower().endswith(' id'):
+            return label.rsplit(' ', 1)[0]
+        return label
+
+    def build_query(self):
+        query = self.query_base()
+        query = self.filter_query(query)
+        return query
+
+    def query_base(self):
+        return self.orm_cls.query.order_by(self.label_attr)
+
+    def get_data_filter(self):
+        if self.fk_attr:
+            return getattr(self.orm_cls, self.fk_attr) == self.data
+        else:
+            return self.orm_cls.id == self.data.id
+
+    def filter_query(self, query):
+        filter_terms = []
+        # Get supplied filters.
+        if callable(self.query_filter):
+            filter_terms.append(self.query_filter(self))
+        elif self.query_filter is not None:
+            filter_terms.append(self.query_filter)
+
+        # Having an existing value should filter the query.
+        if self.data is not None:
+            data_filter = self.get_data_filter()
+            if data_filter is not None:
+                filter_terms.append(data_filter)
+
+        # Apply filter terms with or_, or directly, depending on length.
+        if len(filter_terms) == 1:
+            query = query.filter(*filter_terms)
+        elif len(filter_terms) > 1:
+            query = query.filter(sa.sql.or_(*filter_terms))
+
+        return query
+
+    def get_best_label_attr(self):
+        if has_column(self.orm_cls, 'label'):
+            return 'label'
+
+        if has_column(self.orm_cls, 'name'):
+            return 'name'
+
+        return None
+
+    def get_option_label(self, obj):
+        if self.label_attr:
+            return getattr(obj, self.label_attr)
+
+        return str(obj)
+
+    def get_choices(self):
+        query = self.build_query()
+
+        def get_value(obj):
+            if self.fk_attr:
+                return str(getattr(obj, self.fk_attr))
+
+            return str(obj.id)
+
+        return [(get_value(obj), self.get_option_label(obj)) for obj in query]
+
+    @property
+    def choice_values(self):
+        # coerce values used for validation, because the data we're matching will
+        # be int type
+        return [self.coerce(v) for v in super().choice_values]
+
+
+class RelationshipField(RelationshipFieldBase, SelectField):
+    """SelectField for relationships.
+    Args:
+        orm_cls (class): Model class of the relationship attribute. Used to query
+            records for populating select options.
+        relationship_attr (str): Name of the attribute on form model that refers to
+            the relationship object. Typically this is a foreign key ID.
+        label_attr (str): Name of attribute on relationship class to use for select
+            option labels.
+        fk_attr (str): Optional name of foreign key column of ORM class. If set to
+            None, coerce values to instances of ORM class. Otherwise, coerce values to
+            the attribute of ORM class the foreign key belongs to. Default is 'id'.
+        query_filter (callable): Optional SA query filter criterion for querying select
+            options. Can be a function that returns a filter criterion. Function is
+            called with the RelationshipField instance it belongs to.
+        coerce (callable): Optional function used to coerce form values. By default,
+            if fk_attr is set to None, values are coerced to instances of ORM class.
+            Otherwise, the default select coersion is applied. Setting this overrides
+            default behavior.
+        **kwargs: Passed to SelectField.__init__.
+    Ex.
+        class Bar(Model):
+            name = Column(Unicode(255))
+            foos = relationship('Foo', foreign_keys='foos.id')
+        class Foo(Model):
+            name = Column(Unicode(255))
+            bar_id = Column(sa.ForeignKey(Bar.id))
+            bar = relationship(Bar, foreign_keys=bar_id)
+        class FooForm(ModelForm):
+            bar_id = RelationshipField('Bar Label', Bar, 'name')
+    """
+
+
+class RelationshipMultipleField(RelationshipFieldBase, SelectMultipleField):
+    """SelectMultipleField for relationships.
+    Args:
+        orm_cls (class): Model class of the relationship attribute. Used to query
+            records for populating select options.
+        relationship_attr (str): Name of the collection on form model that refers to
+            the relationship object.
+        label_attr (str): Name of attribute on relationship class to use for select
+            option labels.
+        query_filter (callable): Optional SA query filter criterion for querying select
+            options. Can be a function that returns a filter criterion. Function is
+            called with the RelationshipField instance it belongs to.
+        coerce (callable): Optional function used to coerce form values. By default,
+            values are coerced to instances of ORM class. Setting this overrides
+            default behavior.
+        **kwargs: Passed to SelectMultipleField.__init__.
+    Ex.
+        class Bar(Model):
+            name = Column(Unicode(255))
+            foos = relationship('Foo', foreign_keys='foos.id')
+        class Foo(Model):
+            name = Column(Unicode(255))
+            bar_id = Column(sa.ForeignKey(Bar.id))
+            bar = relationship(Bar, foreign_keys=bar_id)
+        class BarForm(ModelForm):
+            foos = RelationshipMultipleField('Foos', Foo, 'name')
+    """
+    def __init__(self, label, orm_cls, label_attr=None,
+                 query_filter=None, coerce=_not_given, **kwargs):
+        super().__init__(label, orm_cls, label_attr, None, query_filter, coerce, **kwargs)
+
+    def get_data_filter(self):
+        if not self.data:
+            # Empty set should not add any options. Returning in_ in this case has
+            # undesirable results.
+            return
+        existing_ids = [obj.id for obj in self.data]
+        return self.orm_cls.id.in_(existing_ids)
 
 
 class _TypeHintingTextInputBase(wtforms.widgets.TextInput):
@@ -331,6 +537,12 @@ class FormGenerator(FormGeneratorBase):
                 and column.key not in self.meta.exclude):
             return True
 
+        # include_foreign_keys will pull in all foreign keys on the object. If we want the
+        # form to include only required keys, we use include_required_foreign_keys.
+        include_required_fks = getattr(self.meta, 'include_required_foreign_keys', False)
+        if (include_required_fks and column.foreign_keys and column.nullable is False):
+            return False
+
         return super().skip_column(column)
 
     def get_field_class(self, column):
@@ -360,7 +572,18 @@ class FormGenerator(FormGeneratorBase):
         return field_modifier() if inspect.isclass(field_modifier) else field_modifier
 
     def create_field(self, prop, column):
-        field = super(FormGenerator, self).create_field(prop, column)
+        if column.foreign_keys:
+            foreign_key = next(iter(column.foreign_keys))
+            orm_cls = get_class_by_table(db.Model, foreign_key.column.table)
+            validators = self.create_validators(prop, column)
+            field = RelationshipField(
+                label=to_title_case(str(column.key)),
+                orm_cls=orm_cls,
+                validators=validators,
+            )
+        else:
+            field = super(FormGenerator, self).create_field(prop, column)
+
         modifier = self.get_field_modifier(prop)
         if modifier is not None:
             modifier.apply_to_field(field)

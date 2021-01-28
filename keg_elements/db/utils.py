@@ -8,6 +8,7 @@ import sqlalchemy as sa
 from sqlalchemy.sql import expression
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.types import DateTime
+import sqlalchemy_utils as sautils
 
 from blazeutils.strings import randchars
 
@@ -42,6 +43,14 @@ def no_autoflush(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
     finally:
         db.session.autoflush = autoflush
+
+
+def has_column(orm_cls_or_table, column_name):
+    for column in sautils.get_columns(orm_cls_or_table):
+        if column.key == column_name:
+            return True
+
+    return False
 
 
 def random_numeric(column):
