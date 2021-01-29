@@ -1,6 +1,25 @@
 Changelog
 =========
 
+0.5.29 released 2021-01-29
+--------------------------
+
+- Add RelationshipField and RelationshipMultipleField for generating select fields from ORM (8d90b5a_)
+- Add form meta option include_required_foreign_keys for form generation (8d90b5a_)
+- Add standard testing FormBase for field verification (2b0ee8a_)
+- Allow model form subclasses to utilize the super's FieldsMeta (84dcc1f_)
+- Use blank FieldMeta object by default when no meta is given (2457605_)
+- Provide a model mixin for generic id/value lookup tables (a392941_)
+- Add testing_set_related entity method to wrap related object creation (e6fe3d9_)
+
+.. _8d90b5a: https://github.com/level12/keg-elements/commit/8d90b5a
+.. _2b0ee8a: https://github.com/level12/keg-elements/commit/2b0ee8a
+.. _84dcc1f: https://github.com/level12/keg-elements/commit/84dcc1f
+.. _2457605: https://github.com/level12/keg-elements/commit/2457605
+.. _a392941: https://github.com/level12/keg-elements/commit/a392941
+.. _e6fe3d9: https://github.com/level12/keg-elements/commit/e6fe3d9
+
+
 0.5.28 released 2020-11-13
 --------------------------
 
