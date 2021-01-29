@@ -2,17 +2,25 @@ from __future__ import absolute_import, unicode_literals
 
 import sys
 
+from keg.db import db
 import pytest
 from pyquery import PyQuery as pq
-from keg_elements.forms import FieldMeta, Form, ModelForm, SelectField
-import keg_elements.forms as ke_forms
 import six
 from werkzeug.datastructures import MultiDict
 import wtforms as wtf
 from wtforms import validators
 import wtforms_components
 
+import keg_elements.forms as ke_forms
 import kegel_app.model.entities as ents
+from keg_elements.forms import (
+    FieldMeta,
+    Form,
+    ModelForm,
+    RelationshipField,
+    RelationshipMultipleField,
+    SelectField,
+)
 
 
 class FormBase(object):
@@ -895,3 +903,253 @@ def test_fields_meta_inheritance():
     form = FormB()
     assert form.FieldsMeta.a == 'foo'
     assert form.FieldsMeta.b == 'bar'
+
+
+class RelationshipMixin:
+    def assert_object_options(self, field, option_objects, has_blank=True):
+        object_options = [(str(obj.id), obj.name) for obj in option_objects]
+        expected_choices = [
+            ('', ''),
+            *object_options
+        ] if has_blank else object_options
+        index = 0
+        for value, label, selected in field.iter_choices():
+            assert expected_choices[index] == (value, label)
+            index += 1
+
+
+class ThingForeignKeyRelationshipMixin:
+    def setup(self):
+        ents.Thing.delete_cascaded()
+
+    def get_field(self, form):
+        raise NotImplementedError()  # pragma: no cover
+
+    def create_formdata(self, form):
+        raise NotImplementedError()  # pragma: no cover
+
+    def coerce(self, value):
+        return value
+
+    def test_relationship_options(self):
+        ents.Thing.testing_create(name='Foo')
+        thing1 = ents.Thing.testing_create()
+        form = self.create_form(
+            self.create_relationship(lambda this: this.orm_cls.name != 'Foo')
+        )
+
+        self.assert_object_options(self.get_field(form), [thing1])
+
+    def test_options_include_form_obj_value(self):
+        foo_thing = ents.Thing.testing_create(name='Foo')
+        thing1 = ents.Thing.testing_create(name='Thing 1')
+        related_thing = ents.RelatedThing(thing=foo_thing, name='Related')
+        db.session.commit()
+        form = self.create_form(
+            self.create_relationship(lambda this: this.orm_cls.name != 'Foo'),
+            obj=related_thing,
+        )
+
+        self.assert_object_options(self.get_field(form), [foo_thing, thing1])
+        assert self.get_field(form).data == self.coerce(foo_thing.id)
+
+    def test_options_sorted(self):
+        thing_b = ents.Thing.testing_create(name='BBB')
+        thing_c = ents.Thing.testing_create(name='CCC')
+        thing_a = ents.Thing.testing_create(name='AAA')
+        form = self.create_form(
+            self.create_relationship(lambda this: this.orm_cls.name != 'Foo')
+        )
+
+        self.assert_object_options(self.get_field(form), [thing_a, thing_b, thing_c])
+
+    def test_no_query_filter(self):
+        foo_thing = ents.Thing.testing_create(name='Foo')
+        thing1 = ents.Thing.testing_create(name='Thing 1')
+        form = self.create_form(self.create_relationship())
+
+        self.assert_object_options(self.get_field(form), [foo_thing, thing1])
+
+
+class TestForeignKeyRelationship(ThingForeignKeyRelationshipMixin, RelationshipMixin):
+    """Test a foreign key field."""
+    def create_relationship(self, query_filter=None):
+        return RelationshipField('Thing', ents.Thing, 'name', query_filter=query_filter)
+
+    def create_form(self, relationship, **kwargs):
+        class RelatedThingForm(ModelForm):
+            thing_id = relationship
+
+            class Meta:
+                model = ents.RelatedThing
+
+        return RelatedThingForm(**kwargs)
+
+    def get_field(self, form):
+        return form.thing_id
+
+    def test_coerce_formdata(self):
+        thing = ents.Thing.testing_create()
+        form = self.create_form(self.create_relationship(),
+                                formdata=MultiDict({'thing_id': str(thing.id)}))
+        assert form.thing_id.data == thing.id
+
+
+class TestOrmRelationship(ThingForeignKeyRelationshipMixin, RelationshipMixin):
+    """Test a relationship field that corresponds to a SA RelationshipProperty."""
+
+    def create_relationship(self, query_filter=None):
+        return RelationshipField('Thing', ents.Thing, 'name', query_filter=query_filter,
+                                 fk_attr=None)
+
+    def create_form(self, relationship, **kwargs):
+        class RelatedThingForm(ModelForm):
+            thing = relationship
+
+            class Meta:
+                model = ents.RelatedThing
+
+        return RelatedThingForm(**kwargs)
+
+    def coerce(self, value):
+        return ents.Thing.query.get(value)
+
+    def get_field(self, form):
+        return form.thing
+
+    def test_coerce_formdata(self):
+        thing = ents.Thing.testing_create()
+        form = self.create_form(self.create_relationship(),
+                                formdata=MultiDict({'thing': str(thing.id)}))
+        assert form.thing.data == thing
+
+
+class TestRelationshipFieldGenerator:
+    def setup(self):
+        ents.Thing.delete_cascaded()
+
+    def create_form(self, **kwargs):
+        class RelatedThingForm(ModelForm):
+            class Meta:
+                model = ents.RelatedThing
+                include_foreign_keys = True
+
+        return RelatedThingForm(**kwargs)
+
+    def create_custom_form(self, field_kwargs, **kwargs):
+        class RelatedThingForm(ModelForm):
+            class Meta:
+                model = ents.RelatedThing
+
+            thing_id = RelationshipField('Thing', ents.Thing, **field_kwargs)
+
+        return RelatedThingForm(**kwargs)
+
+    def test_field_created(self):
+        form = self.create_form()
+        assert form.thing_id
+        assert form.thing_id.label.text == 'Thing'
+
+    def test_choices(self):
+        thing1 = ents.Thing.testing_create(name='foo')
+        thing2 = ents.Thing.testing_create(name='bar')
+        form = self.create_form()
+        assert form.thing_id.choice_values == ['', thing2.id, thing1.id]
+
+    def test_validators_applied(self):
+        form = self.create_form()
+        assert isinstance(form.thing_id.validators[0], validators.InputRequired)
+
+    def test_custom_label_attr(self):
+        thing1 = ents.Thing.testing_create(name='foo', color='blue')
+        thing2 = ents.Thing.testing_create(name='bar', color='red')
+        form = self.create_custom_form({'label_attr': 'color'})
+        assert form.thing_id.choice_values == ['', thing1.id, thing2.id]
+
+    def test_choices_filtered(self):
+        ents.Thing.testing_create(name='foo', color='blue')
+        thing2 = ents.Thing.testing_create(name='bar', color='red')
+        form = self.create_custom_form({'query_filter': ents.Thing.name != 'foo'})
+        assert form.thing_id.choice_values == ['', thing2.id]
+
+    def test_choices_included(self):
+        thing1 = ents.Thing.testing_create(name='foo', color='blue')
+        thing2 = ents.Thing.testing_create(name='bar', color='red')
+        related_thing = ents.RelatedThing.testing_create(thing=thing1)
+        form = self.create_custom_form({'query_filter': ents.Thing.name != 'foo'},
+                                       obj=related_thing)
+        assert form.thing_id.choice_values == ['', thing2.id, thing1.id]
+
+
+class TestCollectionRelationship(RelationshipMixin):
+    """Test field that corresponds to a SA collection."""
+    def create_relationship(self, query_filter=None):
+        return RelationshipMultipleField('Related Things', ents.RelatedThing, 'name',
+                                         query_filter=query_filter)
+
+    def assert_object_options(self, field, option_objects):
+        return super().assert_object_options(field, option_objects, has_blank=False)
+
+    def create_form(self, relationship, **kwargs):
+        class ThingForm(ModelForm):
+            related_things = relationship
+
+            class Meta:
+                model = ents.Thing
+
+        return ThingForm(**kwargs)
+
+    def setup(self):
+        ents.Thing.delete_cascaded()
+
+    def test_relationship_options(self):
+        ents.RelatedThing.testing_create(name='Foo')
+        thing1 = ents.RelatedThing.testing_create()
+        form = self.create_form(
+            self.create_relationship(lambda this: this.orm_cls.name != 'Foo')
+        )
+
+        self.assert_object_options(form.related_things, [thing1])
+
+    def test_options_include_form_obj_value(self):
+        foo_thing = ents.RelatedThing.testing_create(name='Foo')
+        thing1 = ents.RelatedThing.testing_create(name='Thing 1')
+        thing2 = ents.RelatedThing.testing_create(name='Thing 2')
+        thing_obj = ents.Thing.testing_create(related_things=[thing1, thing2])
+        form = self.create_form(
+            self.create_relationship(lambda this: ~this.orm_cls.id.in_([thing1.id, thing2.id])),
+        )
+        self.assert_object_options(form.related_things, [foo_thing])
+
+        form = self.create_form(
+            self.create_relationship(lambda this: ~this.orm_cls.id.in_([thing1.id, thing2.id])),
+            obj=thing_obj,
+        )
+        self.assert_object_options(form.related_things, [foo_thing, thing1, thing2])
+
+    def test_load_save_data(self):
+        class ManyThingsForm(ModelForm):
+            things = RelationshipMultipleField('Things', ents.Thing)
+
+            class Meta:
+                model = ents.ManyToManyThing
+
+        thing1 = ents.Thing.testing_create()
+        thing2 = ents.Thing.testing_create()
+        thing3 = ents.Thing.testing_create()
+        manything = ents.ManyToManyThing.testing_create(things=[thing1, thing2])
+
+        form = ManyThingsForm(obj=manything)
+        # form data level should be ORM instances
+        assert form.things.data == [thing1, thing2]
+
+        form = ManyThingsForm(
+            obj=manything,
+            formdata=MultiDict([
+                ('things', str(thing2.id)),
+                ('things', str(thing3.id)),
+            ])
+        )
+        assert form.things.data == [thing2, thing3]
+        form.populate_obj(manything)
+        assert manything.things == [thing2, thing3]
