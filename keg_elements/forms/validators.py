@@ -13,12 +13,10 @@ class ValidateAlphaNumeric(object):
     """
         A validator to make sure than a form field contains only alphanumeric data
 
-        usage example:
+        Example::
             import keg_elements.forms.validators as validators
 
-            wtforms.StringField('AlphaNumeric', validators=[
-                            validators.ValidateAlphaNumeric()
-                        ])
+            wtforms.StringField('AlphaNumeric', validators=[validators.ValidateAlphaNumeric()])
     """
     regex = re.compile(r'^[a-zA-Z0-9]+$')
 
@@ -44,6 +42,7 @@ def numeric(form, field):
 
 
 class NumberScale(object):
+    """Ensure the field's numeric value is within a maximum number of decimal places."""
     def __init__(self, scale, message=None):
         self.scale = scale
         if not message:
@@ -69,9 +68,7 @@ class ValidateUnique(object):
     Pass ``object_html_link`` to this validator's ``__init__`` to get an error
     message which contains a hyperlink to the existing object.
 
-    .. note ::
-
-        Combine with ``wtforms.validators.optional`` when a field is nullable to
+    .. note :: Combine with ``wtforms.validators.optional`` when a field is nullable to
         allow for None values.
     """
     field_flags = ('unique',)
