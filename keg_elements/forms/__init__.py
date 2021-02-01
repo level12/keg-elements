@@ -46,6 +46,34 @@ _not_given = ()
 
 
 class FieldMeta(object):
+    """Meta information for fields to override model-generated info.
+
+    Rather than forcing all-or-nothing acceptance of model-generated meta info from wtforms,
+    FieldMeta may be provided in the FieldsMeta nested class of the form to override specifics.
+
+    All modifications are applied to the field instance during the form generation process.
+
+    Example::
+
+        class PersonForm(ModelForm):
+            class Meta:
+                model = Person
+
+            class FieldsMeta:
+                name = FieldMeta('Full Name')
+
+    :param label_text: Force a label value.
+    :param description: Force a description value.
+    :param label_modifier: Callable to be called with the default label. label_text takes
+        precedence if both are provided. But, this modifier will apply to choices as well if
+        applicable and a choices_modifier is not given.
+    :param choices_modifier: Callable to be called with the label value for choices.
+    :param required: Force validators to be added/removed for requirement.
+    :param widget: Force a specific widget to be used for the field in render.
+    :param extra_validators: Add the given validators to those existing on the field.
+    :param coerce: Applies a specific coerce for field values. Applicable to select fields only.
+    :param default: Forces a default value on the field.
+    """
 
     def __init__(self, label_text=_not_given, description=_not_given, label_modifier=_not_given,
                  choices_modifier=_not_given, choices=None, required=_not_given, widget=_not_given,
@@ -265,6 +293,12 @@ class MultiCheckboxField(wtforms.fields.SelectMultipleField):
 
 
 class RequiredBoolRadioField(wtforms.fields.RadioField):
+    """A radio group field with true/false labels and a required validator.
+
+    :param true_label: Optional, defaults to Yes.
+    :param false_label: Optional, defaults to No.
+    :param validators: Optional. Any provided validators will be added to InputRequired.
+    """
     def __init__(self, *args, **kwargs):
         true_label = kwargs.pop('true_label', _('Yes'))
         false_label = kwargs.pop('false_label', _('No'))
@@ -399,25 +433,34 @@ class RelationshipFieldBase:
 
 class RelationshipField(RelationshipFieldBase, SelectField):
     """SelectField for relationships.
+
     Args:
+
         orm_cls (class): Model class of the relationship attribute. Used to query
-            records for populating select options.
+        records for populating select options.
+
         relationship_attr (str): Name of the attribute on form model that refers to
-            the relationship object. Typically this is a foreign key ID.
+        the relationship object. Typically this is a foreign key ID.
+
         label_attr (str): Name of attribute on relationship class to use for select
-            option labels.
+        option labels.
+
         fk_attr (str): Optional name of foreign key column of ORM class. If set to
-            None, coerce values to instances of ORM class. Otherwise, coerce values to
-            the attribute of ORM class the foreign key belongs to. Default is 'id'.
+        None, coerce values to instances of ORM class. Otherwise, coerce values to
+        the attribute of ORM class the foreign key belongs to. Default is 'id'.
+
         query_filter (callable): Optional SA query filter criterion for querying select
-            options. Can be a function that returns a filter criterion. Function is
-            called with the RelationshipField instance it belongs to.
+        options. Can be a function that returns a filter criterion. Function is
+        called with the RelationshipField instance it belongs to.
+
         coerce (callable): Optional function used to coerce form values. By default,
-            if fk_attr is set to None, values are coerced to instances of ORM class.
-            Otherwise, the default select coersion is applied. Setting this overrides
-            default behavior.
-        **kwargs: Passed to SelectField.__init__.
-    Ex.
+        if fk_attr is set to None, values are coerced to instances of ORM class.
+        Otherwise, the default select coersion is applied. Setting this overrides
+        default behavior.
+
+        kwargs: Passed to ``SelectField.__init__``.
+
+    Example::
         class Bar(Model):
             name = Column(Unicode(255))
             foos = relationship('Foo', foreign_keys='foos.id')
@@ -433,20 +476,27 @@ class RelationshipField(RelationshipFieldBase, SelectField):
 class RelationshipMultipleField(RelationshipFieldBase, SelectMultipleField):
     """SelectMultipleField for relationships.
     Args:
+
         orm_cls (class): Model class of the relationship attribute. Used to query
-            records for populating select options.
+        records for populating select options.
+
         relationship_attr (str): Name of the collection on form model that refers to
-            the relationship object.
+        the relationship object.
+
         label_attr (str): Name of attribute on relationship class to use for select
-            option labels.
+        option labels.
+
         query_filter (callable): Optional SA query filter criterion for querying select
-            options. Can be a function that returns a filter criterion. Function is
-            called with the RelationshipField instance it belongs to.
+        options. Can be a function that returns a filter criterion. Function is
+        called with the RelationshipField instance it belongs to.
+
         coerce (callable): Optional function used to coerce form values. By default,
-            values are coerced to instances of ORM class. Setting this overrides
-            default behavior.
-        **kwargs: Passed to SelectMultipleField.__init__.
-    Ex.
+        values are coerced to instances of ORM class. Setting this overrides
+        default behavior.
+
+        kwargs: Passed to ``SelectMultipleField.__init__``.
+
+    Example::
         class Bar(Model):
             name = Column(Unicode(255))
             foos = relationship('Foo', foreign_keys='foos.id')
@@ -524,6 +574,25 @@ def _max_for_numeric(digits, scale):
 
 
 class FormGenerator(FormGeneratorBase):
+    """Model form generator that applies field meta info, provides validators, etc.
+
+    Meta nested class directives (in addition to wtforms-alchemy):
+    - include_datetimes_with_default
+    - include_required_foreign_keys
+
+    Field class overrides:
+    - Use our SelectField instead of the WTForms default
+    - Use our RequiredBoolRadioField for non-nullable boolean fields
+    - Use RelationshipField for foreign key fields
+
+    Meta info modifiers:
+    - Use FieldsMeta.<field_name> if provided
+    - Falls back to FieldsMeta.__default__
+    - If none of the above, uses a blank FieldsMeta object, which will title case the label.
+
+    Validators:
+    - Applies range/scale numeric validators when applicable.
+    """
     def __init__(self, form_class):
         super(FormGenerator, self).__init__(form_class)
         self.fields_meta = getattr(self.form_class, 'FieldsMeta', None)
@@ -636,7 +705,10 @@ ___validator_creation_counter = 0
 
 
 def form_validator(func=None, only_when_fields_valid=False):
-    """Decorator used to mark a method as a form level validator"""
+    """Decorator used to mark a method as a form level validator.
+
+    :param only_when_fields_valid: Use to disable validator if form already has errors.
+    """
     if func is None:
         return functools.partial(form_validator, only_when_fields_valid=only_when_fields_valid)
 
@@ -699,6 +771,7 @@ class Form(BaseForm):
         return (self._fields[f] for f in order)
 
     def after_init(self, args, kwargs):
+        """Hook for providing customization on the form after fields are initialized."""
         pass
 
     def fields_todict(self):
@@ -706,6 +779,10 @@ class Form(BaseForm):
         return form_fields_to_dict(self)
 
     def validate(self):
+        """Applies validators and returns bool.
+
+        Methods decorated as form-level validators are run after WTForms generic validation.
+        """
         fields_valid = super(Form, self).validate()
 
         form_validators = {}
@@ -734,14 +811,17 @@ class Form(BaseForm):
 
     @property
     def form_errors(self):
+        """Form-level validator errors will be logged in this list."""
         return self._form_level_errors
 
     @property
     def field_errors(self):
+        """Field-level validator errors come from WTForms' errors."""
         return super().errors
 
     @property
     def errors(self):
+        """Field-level errors, plus form-level errors under the key "_form"."""
         errors = self.field_errors
         if self.form_errors:
             errors['_form'] = self.form_errors
@@ -779,6 +859,7 @@ BaseModelForm = model_form_factory(Form, meta=ModelFormMeta, form_generator=Form
 
 
 class ModelForm(BaseModelForm):
+    """Base model-generated form class that applies KegElements generator and meta."""
     @classmethod
     def get_session(cls):
         return db.session

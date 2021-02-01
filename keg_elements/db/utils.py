@@ -3,7 +3,6 @@ import math
 import random
 from decimal import Decimal
 
-import wrapt
 import sqlalchemy as sa
 from sqlalchemy.sql import expression
 from sqlalchemy.ext.compiler import compiles
@@ -35,17 +34,12 @@ def _sqlite_utcnow(element, compiler, **kw):
     return "CURRENT_TIMESTAMP"
 
 
-@wrapt.decorator
-def no_autoflush(wrapped, instance, args, kwargs):
-    autoflush = db.session.autoflush
-    db.session.autoflush = False
-    try:
-        return wrapped(*args, **kwargs)
-    finally:
-        db.session.autoflush = autoflush
-
-
 def has_column(orm_cls_or_table, column_name):
+    """Searches an entity for a column having the given key.
+
+    While a column's default key is the entity attribute name, a column may be given
+    an explicit key instead. This method uses sqlalchemy-utils to find the column.
+    """
     for column in sautils.get_columns(orm_cls_or_table):
         if column.key == column_name:
             return True
@@ -54,6 +48,7 @@ def has_column(orm_cls_or_table, column_name):
 
 
 def random_numeric(column):
+    """Find a random number that satisfies the given column's precision and scale."""
     fractional_digits = column.type.scale
     whole_digits = column.type.precision - fractional_digits
 
@@ -67,6 +62,12 @@ def random_numeric(column):
 
 
 def validate_unique_exc(exc, constraint_name=None):
+    """Check the given exception to see if it indicates a duplicate key error.
+
+    Supports SQLite, PostgreSQL, and MSSQL dialects.
+
+    Optionally provide a constraint_name kwarg for a stricter test.
+    """
     return _validate_unique_msg(db.engine.dialect.name, str(exc), constraint_name)
 
 
@@ -91,6 +92,7 @@ def _validate_unique_msg(dialect, msg, constraint_name=None):
 
 @contextlib.contextmanager
 def raises_unique_exc(constraint_name):
+    """pytest helper and context manager to ensure an exception result is a duplicate key error."""
     import pytest
     with pytest.raises(sa.exc.IntegrityError) as exc:
         yield
@@ -99,6 +101,8 @@ def raises_unique_exc(constraint_name):
 
 @contextlib.contextmanager
 def raises_check_exc(contraint_name):
+    """pytest helper and context manager to ensure an exception result is a check constraint
+       error."""
     import pytest
     with pytest.raises(sa.exc.IntegrityError) as exc:
         yield
@@ -123,7 +127,7 @@ def randemail(length, randomizer=randchars):
     """Generate a random email address at the given length.
     :param length: must be at least 7 or the function will throw a ValueError.
     :param randomizer: is a function for generating random characters. It must have an identical
-                      interface to `randchars`. The default function is `randchars`.
+    interface to `randchars`. The default function is `randchars`.
     """
     if length < 7:
         raise ValueError(_('length must be at least 7'))
@@ -135,6 +139,9 @@ def randemail(length, randomizer=randchars):
 
 
 def session_commit():
+    """Commit the db session, and roll back if there is a failure.
+
+    Raises the exception that caused the rollback."""
     try:
         db.session.commit()
     except Exception:
@@ -143,6 +150,9 @@ def session_commit():
 
 
 def session_flush():
+    """Flush the db session, and roll back if there is a failure.
+
+    Raises the exception that caused the rollback."""
     try:
         db.session.flush()
     except Exception:
@@ -162,40 +172,39 @@ class CollectionUpdater(object):
     from the collection.
     """
 
-    @no_autoflush
     def __init__(self, entity, attr_name, data):
         self.entity = entity
         self.attr_name = attr_name
         self.data = data
-        self.collection = getattr(entity, attr_name)
         self.keep_children = set()
-
         ent_cls = entity.__class__
-        queryable_attr = getattr(ent_cls, attr_name)
-        # Unless they sent in the wrong type, rel_prop should be a
-        # sqlalchemy.orm.properties.RelationshipProperty instance
-        rel_prop = queryable_attr.property
-        # now that we have the property, go through the mapper to get to the child entity class
-        self.child_cls = rel_prop.mapper.class_
 
-    @no_autoflush
+        with db.session.no_autoflush:
+            self.collection = getattr(entity, attr_name)
+            queryable_attr = getattr(ent_cls, attr_name)
+            # Unless they sent in the wrong type, rel_prop should be a
+            # sqlalchemy.orm.properties.RelationshipProperty instance
+            rel_prop = queryable_attr.property
+            # now that we have the property, go through the mapper to get to the child entity class
+            self.child_cls = rel_prop.mapper.class_
+
     def find_child(self, data):
         """Find the child record associated with the related object"""
-        child_entity_keys = self.child_cls.primary_keys()
-        supplied_keys = set(data.get(column.key)
-                            for column in child_entity_keys)
+        with db.session.no_autoflush:
+            child_entity_keys = self.child_cls.primary_keys()
+            supplied_keys = set(data.get(column.key)
+                                for column in child_entity_keys)
 
-        if None in supplied_keys:
+            if None in supplied_keys:
+                return None
+
+            for child in self.collection:
+                record_keys = set(getattr(child, col.key)
+                                  for col in child_entity_keys)
+                if record_keys == supplied_keys:
+                    return child
             return None
 
-        for child in self.collection:
-            record_keys = set(getattr(child, col.key)
-                              for col in child_entity_keys)
-            if record_keys == supplied_keys:
-                return child
-        return None
-
-    @no_autoflush
     def update(self):
         """Update the objects associated with the entity
 
@@ -209,30 +218,31 @@ class CollectionUpdater(object):
         matched objects in state, then remove/flush objects first. This clears the table for
         the new records from adds/edits.
         """
-        to_add = []
-        to_edit = []
-        for record in self.data:
-            child = self.find_child(record)
-            state = sa.inspect(child) if child else None
+        with db.session.no_autoflush:
+            to_add = []
+            to_edit = []
+            for record in self.data:
+                child = self.find_child(record)
+                state = sa.inspect(child) if child else None
 
-            if state and state.persistent:
-                to_edit.append((child, record))
-            else:
-                to_add.append(record)
+                if state and state.persistent:
+                    to_edit.append((child, record))
+                else:
+                    to_add.append(record)
 
-            self.keep_children.add(child)
+                self.keep_children.add(child)
 
-        self.remove_unmodified()
-        session_flush()
+            self._remove_unmodified()
+            session_flush()
 
-        for child, record in to_edit:
-            child.edit(_commit=False, **record)
+            for child, record in to_edit:
+                child.edit(_commit=False, **record)
 
-        for record in to_add:
-            child = self.child_cls.add(_commit=False, **record)
-            self.collection.append(child)
+            for record in to_add:
+                child = self.child_cls.add(_commit=False, **record)
+                self.collection.append(child)
 
-    def remove_unmodified(self):
+    def _remove_unmodified(self):
         remove_children = [child for child in self.collection if child not in self.keep_children]
         for child in remove_children:
             self.collection.remove(child)

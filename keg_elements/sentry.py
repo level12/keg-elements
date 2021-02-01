@@ -9,6 +9,20 @@ from sentry_sdk.integrations.flask import FlaskIntegration as SentryFlask
 
 
 class SentryEventFilter:
+    """Filter used with Sentry SDK to prevent secrets from being uploaded in exception reports.
+
+    Filtering may happen based on:
+    - variable name (e.g. password, key, token)
+    - module (e.g. cryptography, itsdangerous)
+    - config keys (e.g. SECRET_KEY)
+
+    If you subclass or override, and you are using the install_sentry method to set up Sentry
+    SDK, you must pass your event filter instance to install_sentry.
+
+    Types, variable names, and module sets can be provided in the constructor to extend filtering
+    on the defaults.
+    """
+
     # Filter out any variables having a type in the following tuple
     sanitized_types = (flask.config.Config,)
 
@@ -200,6 +214,7 @@ class SentryEventFilter:
 
 
 def install_sentry(app, integrations, release=None, event_filter=None, **kwargs):
+    """Init Sentry SDK with helpful defaults and an event filter."""
     sentry_dsn = app.config.get('SENTRY_DSN')
     if sentry_dsn is None:
         return

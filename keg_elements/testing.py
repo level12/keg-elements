@@ -12,6 +12,14 @@ from .db.utils import validate_unique_exc
 from .db.mixins import DefaultColsMixin
 
 ColumnCheck = namedtuple('ColumnCheck', 'name, required, fk, unique, timestamp')
+"""Validator tuple used in ``EntityBase`` to check column spec for common cases.
+
+:param name: Field name to check.
+:param required: Non-nullable status to verify.
+:param fk: Foreign key to verify, e.g. "foo.id". Multiple keys can be given as list, set, or CSV.
+:param unique: If true, verifies ``unique`` kwarg passed to column.
+:param timestamp: Can be ``True`` for creates and ``update`` for updates. Expects column defaults.
+"""
 ColumnCheck.__new__.__defaults__ = (True, None, None, None)
 
 
@@ -33,6 +41,22 @@ class DontCare(object):  # pragma: no cover
 
 
 class EntityBase(object):
+    """Base class for data model tests.
+
+    Class attributes:
+
+        entity_cls: SQLAlchemy entity class to test.
+
+        column_checks: Iterable of ColumnCheck instances to use in tests. An instance
+        for every field except id is expected for verification, and a test will fail if that
+        expectation is not met. Note, created/updated timestamp columns have checks
+        automatically generated and do not need to be specified by the developer.
+
+        timestamp_cols: Defaults to ('created_utc', 'updated_utc'), the timestamp columns.
+
+        delete_all_on: When to delete all records. Default "setup_class". Can also be "setup"
+        or None.
+    """
     entity_cls = None
     column_checks = None
     timestamp_cols = ('created_utc', 'updated_utc')
@@ -187,20 +211,39 @@ class EntityBase(object):
 
 
 class FormBase(object):
+    """Base class for testing forms. Assumes WTForms framework.
+
+    Class attributes:
+
+        form_cls: Form class to verify
+    """
     form_cls = None
 
     def ok_data(self, **kwargs):
+        """Returns data that should pass validation by default.
+
+        Provided kwargs should override the default set of data.
+        """
         return kwargs
 
     def test_disallowed_fields_not_present(self):
+        """Most forms will not want to have the record timestamps as fields. Check that here."""
         form = self.create_form()
         assert "created_utc" not in form
         assert "updated_utc" not in form
 
     def test_ok_data_valid(self):
+        """Assert that ``ok_data`` has valid data by default."""
         self.assert_valid()
 
     def create_form(self, obj=None, **kwargs):
+        """Creates a CSRF-less form instance.
+
+        Form data comes from ``ok_data`` with kwargs applied, or from a ``_form_data`` kwarg if
+        that is provided (i.e. bypasses ``ok_data`` defaults).
+
+        Object may be provided with the ``obj`` kwarg. Default None.
+        """
         data = kwargs.pop('_form_data', self.ok_data(**kwargs))
         # attempt to disable CSRF here with a patch. This covers a majority of cases in testing
         with mock.patch.dict(current_app.config, WTF_CSRF_ENABLED=False):
@@ -209,11 +252,13 @@ class FormBase(object):
         return form
 
     def assert_invalid(self, **kwargs):
+        """Create a form with the given kwargs, assert it is invalid, and return the form."""
         form = self.create_form(**kwargs)
         assert not form.validate(), "expected form errors"
         return form
 
     def assert_valid(self, **kwargs):
+        """Create a form with the given kwargs, assert it is valid, and return the form."""
         form = self.create_form(**kwargs)
         assert form.validate(), form.errors
         return form
@@ -221,6 +266,7 @@ class FormBase(object):
     def verify_field(
         self, name, label=None, required=False, choice_values=None, prefix=None, suffix=None
     ):
+        """Create a form and verify a field's parameters are configured."""
         if required is not None:
             data = {name: ""}
             form = self.create_form(**data)
