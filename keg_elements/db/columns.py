@@ -16,17 +16,18 @@ class TimeZoneType(sa.Unicode):
 
 
 class EncryptedUnicode(sa.TypeDecorator):
+    """
+    Unicode column type that encrypts value with the given key for persistance to storage.
+
+    :param key: A bytes object containing the encryption key or a callable that returns the key
+    :param encrypt: A callable that takes a unicode string and the encryption key as arguments
+        and returns the encrypted data as a bytes object.
+    :param decrypt: A callable that takes a bytes object and the encryption key as arguments
+        and returns the decrypted data as a unicode string.
+    """
     impl = sa.UnicodeText
 
     def __init__(self, *args, **kwargs):
-        """
-        Constructor for encrypted unicode type
-        :param key: A bytes object containing the encryption key or a callable that returns the key
-        :param encrypt: A callable that takes a unicode string and the encryption key as arguments
-            and returns the encrypted data as a bytes object.
-        :param decrypt: A callable that takes a bytes object and the encryption key as arguments
-            and returns the decrypted data as a unicode string.
-        """
         self._key = kwargs.pop('key')
         self._encrypt = kwargs.pop('encrypt', crypto.encrypt_str)
         self._decrypt = kwargs.pop('decrypt', crypto.decrypt_str)
@@ -54,35 +55,35 @@ class DBEnum(enum.Enum):
     """
     Base class for all database enum types.
 
-    To create a new enum, subclass this, add the enum values, and implement db_name().
+    To create a new enum, subclass this, add the enum values, and implement db_name()::
 
-    class MyEnum(DBEnum):
-        option1 = 'Option 1'
-        option2 = 'Option 2'
+        class MyEnum(DBEnum):
+            option1 = 'Option 1'
+            option2 = 'Option 2'
 
-        @classmethod
-        def db_name(cls):
-            return 'my_enum_db_name'
+            @classmethod
+            def db_name(cls):
+                return 'my_enum_db_name'
 
-    To declare a DB column of this type:
+    To declare a DB column of this type::
 
-    class MyEntity(db.Model):
-        option = sa.Column(MyEnum.db_type())
+        class MyEntity(db.Model):
+            option = sa.Column(MyEnum.db_type())
 
-    To set the choices on a form field:
+    To set the choices on a form field::
 
-    class MyEntityForm(wtforms.Form):
-        option = wtforms.SelectField(
-            'Option',
-            choices=MyEnum.form_options()
-            coerce=MyEnum.coerce
-        )
+        class MyEntityForm(wtforms.Form):
+            option = wtforms.SelectField(
+                'Option',
+                choices=MyEnum.form_options()
+                coerce=MyEnum.coerce
+            )
 
-    If using `ModelForm` the field will be configured with the above options automatically:
+    If using `ModelForm` the field will be configured with the above options automatically::
 
-    class MyEntityForm(ModelForm):
-        class Meta:
-            model = MyEntity
+        class MyEntityForm(ModelForm):
+            class Meta:
+                model = MyEntity
 
     """
     @classmethod

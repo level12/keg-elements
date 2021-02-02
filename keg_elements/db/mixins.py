@@ -19,7 +19,21 @@ import keg_elements.decorators as decor
 from keg_elements.extensions import lazy_gettext as _
 
 might_commit = decor.keyword_optional('_commit', after=dbutils.session_commit, when_missing=True)
+"""Decorator directing the wrapped method to commit db session upon completion.
+
+A `_commit` bool kwarg is added to the wrapped method's definition, allowing a developer to
+turn off the commit when calling.
+
+Exceptions during commit are raised after the session is rolled back.
+"""
 might_flush = decor.keyword_optional('_flush', after=dbutils.session_flush)
+"""Decorator directing the wrapped method to flush db session upon completion.
+
+A `_flush` bool kwarg is added to the wrapped method's definition, allowing a developer to
+turn off the flush when calling.
+
+Exceptions during flush are raised after the session is rolled back.
+"""
 
 
 @wrapt.decorator
@@ -43,6 +57,7 @@ def kwargs_match_entity(wrapped, instance, args, kwargs):
 
 
 class DefaultColsMixin(object):
+    """Basic entity mixin providing int primary key and created/updated timestamps."""
     id = sa.Column('id', sa.Integer, primary_key=True)
     created_utc = sa.Column(ArrowType, nullable=False, default=arrow.utcnow,
                             server_default=dbutils.utcnow())
@@ -51,6 +66,7 @@ class DefaultColsMixin(object):
 
 
 class MethodsMixin:
+    """Entity mixin providing developer/testing-centered methods."""
     def from_dict(self, data):
         """Update the instance with the passed information in `data`.
 
@@ -62,19 +78,19 @@ class MethodsMixin:
             incomplete objects
         """
 
-        @dbutils.no_autoflush
         def update_related(key, value, prop):
             """Update the entity based on the type of relationship it is"""
             related_class = prop.mapper.class_
 
-            if prop.uselist:
-                new_list = list()
-                for row in value:
-                    obj = related_class.add_or_edit(row, _commit=False)
-                    new_list.append(obj)
-                setattr(self, key, new_list)
-            else:
-                setattr(self, key, related_class.add_or_edit(value, _commit=False))
+            with db.session.no_autoflush:
+                if prop.uselist:
+                    new_list = list()
+                    for row in value:
+                        obj = related_class.add_or_edit(row, _commit=False)
+                        new_list.append(obj)
+                    setattr(self, key, new_list)
+                else:
+                    setattr(self, key, related_class.add_or_edit(value, _commit=False))
 
         mapper = self.__mapper__
         entity_props = {attr.key: attr for attr in mapper.attrs}
@@ -102,7 +118,8 @@ class MethodsMixin:
         :returns: a dictionary representation of the object
 
         .. note: By default hybrid properties are not included in the returned dict. To add a hybrid
-        property to the returned dict pass a list of the property names and they will be included.
+            property to the returned dict pass a list of the property names and they will be
+            included.
         """
         data = dict((name, getattr(self, name))
                     for name in self.column_names()
@@ -115,16 +132,24 @@ class MethodsMixin:
 
     @classmethod
     def column_names(cls):
+        """Return a set of column keys, which may not match attribute names."""
         return {col.key for col in cls.__mapper__.columns}
 
     @classmethod
     def primary_keys(cls):
+        """Helper to get the table's primary key columns."""
         return cls.__table__.primary_key.columns
 
     @might_commit
     @might_flush
     @classmethod
     def add(cls, **kwargs):
+        """Create a new persisted record constructed from the given kwargs.
+
+        :param _commit: enable/disable commit. Default True.
+        :param _flush: enable/disable flush. Default True.
+        :return: entity instance created and optionally persisted.
+        """
         obj = cls()
         obj.from_dict(kwargs)
         db.session.add(obj)
@@ -151,6 +176,14 @@ class MethodsMixin:
     @might_commit
     @classmethod
     def delete_cascaded(cls):
+        """For testing, remove all records from the table. Extend for dependencies.
+
+        By default, this affects only this entity. By design, though, the entity should
+        override to call `delete_cascaded` on any entities that have foreign key
+        dependence on this entity. Key cascades may cover some of these cases, but
+        db cascades are not always desireable, and tests often need to easily clear
+        a number of tables to ensure good starting state.
+        """
         cls.query.delete(synchronize_session=False)
         db.session.expire_all()
 
@@ -158,6 +191,13 @@ class MethodsMixin:
     @might_flush
     @classmethod
     def edit(cls, oid=None, **kwargs):
+        """Edit an object in session with the kwargs, and optionally flush or commit.
+
+        :param oid: the object identifier, normally the primary key
+        :param _commit: enable/disable commit. Default True.
+        :param _flush: enable/disable flush. Default True.
+        :return: entity instance edited and optionally flushed/committed
+        """
         try:
             primary_keys = oid or [kwargs.get(x.name)
                                    for x in cls.primary_keys()
@@ -215,12 +255,24 @@ class MethodsMixin:
 
         * Will automatically set most field types ignoring those passed in via kwargs.
         * Subclasses that have foreign key relationships should setup those relationships before
-          calling this method.
+          calling this method. See `testing_set_related` for additional information.
+
+        Random data that is set on a column comes from one of two sources:
+
+        * `random_data_for_column` entity method provides randoms for most normal column types
+        * `randomdata` is given in column info as the name of an entity method to call for data::
+
+            class MyEntity(MethodsMixin, db.Model):
+                foo = sa.Column(sa.Unicode, info={'randomdata': 'foo_generator'})
+
+                @classmethod
+                def foo_generator(cls):
+                    return 'bar'
 
         Special kwargs:
         _numeric_defaults_range: a tuple of (HIGH, LOW) which controls the acceptable defaults of
-                                 the two number types. Both integer and numeric (float) fields are
-                                 controlled by this setting.
+        the two number types. Both integer and numeric (float) fields are controlled by
+        this setting.
         """
 
         numeric_range = kwargs.pop('_numeric_defaults_range', None)
@@ -245,6 +297,10 @@ class MethodsMixin:
 
     @classmethod
     def random_data_for_column(cls, column, numeric_range):
+        """Provides random testing data for a number of column types.
+
+        Raises a ValueError if the type is not handled. In that case, override as needed.
+        """
         if 'randomdata' in column.info:
             if type(column.info['randomdata']) is str:
                 # assume randomdata the is name of a method on the class
@@ -348,10 +404,19 @@ class MethodsMixin:
                 else cls.edit(primary_keys, _commit=False, **data))
 
     def update_collection(self, attr_name, data):
+        """Update the specified relationship collection with the given data.
+
+        Attempt will be made to match existing collection records to update. If an existing
+        record is not in the data set, it will be removed.
+
+        :param attr_name: relationship attribute to update.
+        :param data: iterable of dicts representing records to add/update.
+        """
         dbutils.CollectionUpdater(self, attr_name, data).update()
 
 
 class DefaultMixin(DefaultColsMixin, MethodsMixin):
+    """Entity mixin combining DefaultColsMixin and MethodsMixin."""
     pass
 
 
@@ -366,28 +431,28 @@ class SoftDeleteMixin:
     column which indicates when it was deleted.
 
     .. note (NZ): This can complicate unique constraints, joins, and general business logic, but is
-    rather useful when you can't delete an object outright because it is connected to other
-    permanent objects which should never be deleted.
+        rather useful when you can't delete an object outright because it is connected to other
+        permanent objects which should never be deleted.
 
     .. note (NZ): ``SoftDeleteMixin`` should appear before ``MethodsMixin`` as the parent class of
-    the created entity so that the ``delete`` and ``testing_create`` methods are called in the
-    correct order.
+        the created entity so that the ``delete`` and ``testing_create`` methods are called in the
+        correct order.
 
         class MyTable(SoftDeleteMixin, MethodsMixin, Model):
             column1 = sa.Column(sa.Numeric)
 
 
     .. note (NZ): ``testing_create`` takes a special ``_is_deleted`` flag which enables you to
-    create an already deleted record or you can pass ``deleted_utc`` manually.
+        create an already deleted record or you can pass ``deleted_utc`` manually.
 
     .. note (NZ): There is a new event registered within SQLAlchemy to prevent accidental deletions
-    of entities that inherit from this class.
+        of entities that inherit from this class.
 
     This event is not fired for bulk operations (``session.delete``) and makes it possible to delete
     everything.
 
     To have finer grained control of this event for every entity, you can override the behavior by
-    implementing ``before_delete_event`` on the entity.
+    implementing ``before_delete_event`` on the entity::
 
         class MyEntity(SoftDeleteMixin, Model):
             column1 = sa.Column(sa.Numeric)
@@ -459,6 +524,10 @@ class LookupMixin(SoftDeleteMixin):
 
     @hybrid_property
     def is_active(self):
+        """Hybrid property returning a record's active status.
+
+        By default, deleted == inactive.
+        """
         return self.deleted_utc is not None
 
     @is_active.expression
@@ -483,19 +552,31 @@ class LookupMixin(SoftDeleteMixin):
 
     @classmethod
     def list_active(cls, include_ids=None, order_by=None):
+        """Fetch all records marked as active.
+
+        :param include_ids: iterable of int ids that should be included even if inactive.
+        :param order_by: column designation to use for SQLAlchemy when sorting values.
+        """
         return cls._active_query(include_ids, order_by).all()
 
     @classmethod
     def pairs_active(cls, include_ids=None, order_by=None):
+        """Fetch a list of (id, label) pairs for active records.
+
+        :param include_ids: iterable of int ids that should be included even if inactive.
+        :param order_by: column designation to use for SQLAlchemy when sorting values.
+        """
         query = cls._active_query(include_ids, order_by)
         return cls.pairs('id', 'label', query=query)
 
     @classmethod
     def get_by_label(cls, label):
+        """Fetch a lookup record by its label field."""
         return cls.get_by(label=label)
 
     @classmethod
     def get_by_code(cls, code):
+        """Fetch a lookup record by its code (internal) field."""
         return cls.get_by(code=code)
 
     def __repr__(self):

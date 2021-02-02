@@ -19,23 +19,46 @@ from keg_elements.extensions import lazy_gettext as _
 
 
 def aes_cipher(key, iv, mode=None):
+    """Wrapper to build AES cipher from cryptography.
+
+    :param key: AES key.
+    :param iv: Used to create a CBC mode if a mode isn't manually provided.
+    :param mode: Optional, provides an explicit mode to the cipher. CBC if not provided.
+    :returns: Cipher instance.
+    """
     algo = ciphers.algorithms.AES(key)
     mode = mode or ciphers.modes.CBC(iv)
     return ciphers.Cipher(algo, mode, backend=default_backend())
 
 
 def aes_encryptor(key, mode=None):
+    """Get encryptor cipher context for an AES key.
+
+    Init vector is generated randomly.
+
+    :param key: AES key.
+    :param mode: Optional, provides an explicit mode to the cipher. CBC if not provided.
+    :returns: Encryptor cipher context.
+    """
     iv = os.urandom(ciphers.algorithms.AES.block_size // 8)
     cipher = aes_cipher(key, iv, mode=mode)
     return cipher.encryptor(), iv
 
 
 def aes_decryptor(key, iv, mode=None):
+    """Get decryptor cipher context for an AES key.
+
+    :param key: AES key.
+    :param iv: Initialization vector used to construct the default CBC mode.
+    :param mode: Optional, provides an explicit mode to the cipher. CBC if not provided.
+    :returns: Decryptor cipher context.
+    """
     cipher = aes_cipher(key, iv=iv, mode=mode)
     return cipher.decryptor()
 
 
 def fernet_cipher(key):
+    """Build a Fernet cipher from the given key."""
     return fernet.Fernet(base64.urlsafe_b64encode(key))
 
 
@@ -82,27 +105,17 @@ def decrypt_str(cipher_text, key):
 
 
 def encrypt_file(key, in_fpath, out_fpath=None, chunksize=64 * 1024):
-    """ Encrypts a file using AES (CBC mode) with the
-        given key.
+    """ Encrypts a file using AES (CBC mode) with the given key.
 
-        key:
-            The encryption key - a string that must be
-            either 16, 24 or 32 bytes long. Longer keys
-            are more secure.
-
-        in_fpath:
-            Full path of the input file
-
-        out_fpath:
-            Full path of the output file.
-
-            If None, '<in_fpath>.enc' will be used.
-
-        chunksize:
-            Sets the size of the chunk which the function
-            uses to read and encrypt the file. Larger chunk
-            sizes can be faster for some files and machines.
-            chunksize must be divisible by 16.
+    :param key: The encryption key - a string that must be
+        either 16, 24 or 32 bytes long. Longer keys
+        are more secure.
+    :param in_fpath: Full path of the input file
+    :param out_fpath: Full path of the output file. If None, '<in_fpath>.enc' will be used.
+    :param chunksize: Sets the size of the chunk which the function uses to read and encrypt
+        the file. Larger chunk sizes can be faster for some files and machines. chunksize must
+        be divisible by 16.
+    :returns: Output file path string.
     """
     if not out_fpath:
         out_fpath = in_fpath + '.enc'
@@ -115,6 +128,24 @@ def encrypt_file(key, in_fpath, out_fpath=None, chunksize=64 * 1024):
 
 
 def encrypt_fileobj(key, in_fileobj, chunksize=64 * 1024):
+    """ Encrypts a file object using AES (CBC mode) with the given key.
+
+    Example::
+
+        with open('my_encrypted_file', mode='wb') as f:
+            for chunk in encrypt_fileobj(my_crypto_key, buffer):
+                f.write(chunk)
+
+    :param key: The encryption key - a string that must be
+        either 16, 24 or 32 bytes long. Longer keys
+        are more secure.
+    :param in_fpath: Full path of the input file
+    :param out_fpath: Full path of the output file. If None, '<in_fpath>.enc' will be used.
+    :param chunksize: Sets the size of the chunk which the function uses to read and encrypt
+        the file. Larger chunk sizes can be faster for some files and machines. chunksize must
+        be divisible by 16.
+    :returns: Output file path string.
+    """
     encryptor, iv = aes_encryptor(key)
     padder = padding.PKCS7(encryptor._ctx._cipher.block_size).padder()
 
@@ -149,6 +180,18 @@ def decrypt_file(key, in_fpath, out_fpath=None, chunksize=24 * 1024):
 
 
 def decrypt_bytesio(key, in_fpath, chunksize=24 * 1024):
+    """ Decrypts a file using AES (CBC mode) with the given key, and returns
+    the contents in a BytesIO stream.
+
+    :param key: The encryption key - a string that must be
+        either 16, 24 or 32 bytes long. Longer keys
+        are more secure.
+    :param in_fpath: Full path of the input file
+    :param chunksize: Sets the size of the chunk which the function uses to read and encrypt
+        the file. Larger chunk sizes can be faster for some files and machines. chunksize must
+        be divisible by 16.
+    :returns: Output file path string.
+    """
     with open(in_fpath, 'rb') as infile:
         bytes_fobj = io.BytesIO()
         decrypt_fileobj(key, infile, bytes_fobj, chunksize)
@@ -158,6 +201,19 @@ def decrypt_bytesio(key, in_fpath, chunksize=24 * 1024):
 
 
 def decrypt_fileobj(key, in_fileobj, out_fileobj, chunksize):
+    """ Decrypts a file object using AES (CBC mode) with the given key, and writes
+    the contents to the given output file object.
+
+    :param key: The encryption key - a string that must be
+        either 16, 24 or 32 bytes long. Longer keys
+        are more secure.
+    :param in_fileobj: Readable IO stream holding encrypted contents.
+    :param out_fileobj: Writeable IO stream for decrypted contents.
+    :param chunksize: Sets the size of the chunk which the function uses to read and encrypt
+        the file. Larger chunk sizes can be faster for some files and machines. chunksize must
+        be divisible by 16.
+    :returns: None.
+    """
     iv = in_fileobj.read(16)
     decryptor = aes_decryptor(key, iv)
     unpadder = padding.PKCS7(decryptor._ctx._cipher.block_size).unpadder()
@@ -172,10 +228,17 @@ def decrypt_fileobj(key, in_fileobj, out_fileobj, chunksize):
 
 
 def constant_time_compare(a, b):
+    """Wrapper for cryptography constant time comparison, which will defeat timing attacks."""
     return constant_time.bytes_eq(a, b)
 
 
 def salted_hmac(salt, value, secret):
+    """Create an HMAC for a value using the given salt and secret.
+
+    :param salt:
+    :param value:
+    :param secret:
+    """
     salt = force_bytes(salt)
     secret = force_bytes(secret)
     value = force_bytes(value)

@@ -11,11 +11,19 @@ Keg Elements
   :target: https://codecov.io/github/level12/keg-elements?branch=master
 
 
-Keg Elements is the testing ground for ideas and code that will eventually make their way into
-`Keg`_ or an official Keg extension.
+Keg Elements is a collection of helpers and base classes for building apps with
+`Keg`_ or Keg extensions.
 
 
 .. _Keg: https://pypi.python.org/pypi/Keg
+
+
+A Simple Example
+================
+
+For a simple example and a checklist of sorts for app setup, see the
+`Getting Started guide <https://keg-elements.readthedocs.io/en/stable/getting-started.html>`_ in the docs.
+
 
 Development
 ===========
@@ -52,3 +60,14 @@ Issues & Discussion
 
 Please direct questions, comments, bugs, feature requests, etc. to:
 https://github.com/level12/keg-elements/issues
+
+
+Links
+=====
+
+* Documentation: https://keg-elements.readthedocs.io/en/stable/index.html
+* Releases: https://pypi.org/project/KegElements/
+* Code: https://github.com/level12/keg-elements
+* Issue tracker: https://github.com/level12/keg-elements/issues
+* Keg framework: https://github.com/level12/keg
+* Questions & comments: http://groups.google.com/group/blazelibs
