@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.5.30 released 2021-02-02
+--------------------------
+
+- Add magnitude/range/type directives for random number generation in testing (a9ca44f_)
+- Set up documentation on readthedocs.io (f68c812_)
+
+.. _a9ca44f: https://github.com/level12/keg-elements/commit/a9ca44f
+.. _f68c812: https://github.com/level12/keg-elements/commit/f68c812
+
+
 0.5.29 released 2021-01-29
 --------------------------
 
