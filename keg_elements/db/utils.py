@@ -47,8 +47,54 @@ def has_column(orm_cls_or_table, column_name):
     return False
 
 
+def range_from_column(column):
+    if 'random_range' in column.info:
+        rand_range = column.info['random_range']
+        if not isinstance(rand_range, tuple) or len(rand_range) != 2:
+            raise Exception(
+                'random_range info for {} expected to be tuple with low and high'.format(
+                    column.key
+                ))
+        return rand_range
+
+    if 'random_magnitude' in column.info:
+        rand_mag = column.info['random_magnitude']
+        return (-rand_mag, rand_mag)
+
+    return None
+
+
+def random_int(column, default_range):
+    """Find a random number that satisfies the given column's data size and meta info.
+
+    :param column: SA column to find a range by type/info and generate a random number.
+    :param default_range: Tuple. Fallback range if type/info does not provide a range.
+    :returns: Random integer.
+    """
+    column_range = range_from_column(column)
+    if column_range:
+        return random.randint(*column_range)
+
+    print(column.type)
+
+    if type(column.type) is sa.Integer:
+        exponent = 31
+    elif type(column.type) is sa.SmallInteger:
+        exponent = 15
+    elif type(column.type) is sa.BigInteger:
+        exponent = 63
+    else:
+        return random.randint(*default_range)
+    magnitude = (2 ** exponent) - 1
+    return random.randint(-magnitude, magnitude)
+
+
 def random_numeric(column):
     """Find a random number that satisfies the given column's precision and scale."""
+    column_range = range_from_column(column)
+    if column_range:
+        return random.uniform(*column_range)
+
     fractional_digits = column.type.scale
     whole_digits = column.type.precision - fractional_digits
 

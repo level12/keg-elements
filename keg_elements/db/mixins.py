@@ -257,7 +257,7 @@ class MethodsMixin:
         * Subclasses that have foreign key relationships should setup those relationships before
           calling this method. See `testing_set_related` for additional information.
 
-        Random data that is set on a column comes from one of two sources:
+        Random data that is set on a column comes from one of these sources:
 
         * `random_data_for_column` entity method provides randoms for most normal column types
         * `randomdata` is given in column info as the name of an entity method to call for data::
@@ -268,6 +268,9 @@ class MethodsMixin:
                 @classmethod
                 def foo_generator(cls):
                     return 'bar'
+
+        * `random_magnitude` is given in column info to be treated as the +/- random range.
+        * `random_range` is given specifically as a low/high random range.
 
         Special kwargs:
         _numeric_defaults_range: a tuple of (HIGH, LOW) which controls the acceptable defaults of
@@ -296,7 +299,7 @@ class MethodsMixin:
         return cls.add(**kwargs)
 
     @classmethod
-    def random_data_for_column(cls, column, numeric_range):
+    def random_data_for_column(cls, column, numeric_range):  # noqa: C901
         """Provides random testing data for a number of column types.
 
         Raises a ValueError if the type is not handled. In that case, override as needed.
@@ -316,7 +319,9 @@ class MethodsMixin:
         elif isinstance(column.type, sa.types.Boolean):
             return random.choice([True, False])
         elif isinstance(column.type, sa.types.Integer):
-            return random.randint(*default_range)
+            if numeric_range is not None:
+                return random.randint(*default_range)
+            return dbutils.random_int(column, default_range)
         elif isinstance(column.type, sa.types.Float):
             return random.uniform(*default_range)
         elif isinstance(column.type, sa.types.Numeric):
