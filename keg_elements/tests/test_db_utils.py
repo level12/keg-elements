@@ -1,5 +1,6 @@
-import sys
 from decimal import Decimal
+import sys
+from unittest import mock
 
 import _pytest
 import pytest
@@ -313,3 +314,53 @@ def test_random_numeric(scale, prec, max, repeat):
     value = dbutils.random_numeric(col)
     assert value <= max
     assert value >= -max
+
+
+@mock.patch('keg_elements.db.utils.random.uniform', autospec=True, spec_set=True)
+def test_random_numeric_respects_magnitude(m_uniform):
+    col = sa.Column(sa.Numeric(18, 2), info={'random_magnitude': 100})
+    dbutils.random_numeric(col)
+    m_uniform.assert_called_once_with(-100, 100)
+
+
+@mock.patch('keg_elements.db.utils.random.uniform', autospec=True, spec_set=True)
+def test_random_numeric_respects_range(m_uniform):
+    col = sa.Column(sa.Numeric(18, 2), info={'random_range': (-50, 100)})
+    dbutils.random_numeric(col)
+    m_uniform.assert_called_once_with(-50, 100)
+
+
+@mock.patch('keg_elements.db.utils.random.randint', autospec=True, spec_set=True)
+def test_random_int_respects_magnitude(m_randint):
+    col = sa.Column(sa.Integer, info={'random_magnitude': 100})
+    dbutils.random_int(col, (-100, 100))
+    m_randint.assert_called_once_with(-100, 100)
+
+
+@mock.patch('keg_elements.db.utils.random.randint', autospec=True, spec_set=True)
+def test_random_int_respects_range(m_randint):
+    col = sa.Column(sa.Integer, info={'random_range': (-50, 100)})
+    dbutils.random_int(col, (-100, 100))
+    m_randint.assert_called_once_with(-50, 100)
+
+
+@mock.patch('keg_elements.db.utils.random.randint', autospec=True, spec_set=True)
+def test_random_int_falls_back_to_default_range(m_randint):
+    col = sa.Column(sa.Numeric(18, 2))
+    dbutils.random_int(col, (-100, 100))
+    m_randint.assert_called_once_with(-100, 100)
+
+
+@pytest.mark.parametrize(
+    'type_,magnitude',
+    [
+        (sa.SmallInteger, 32767),
+        (sa.Integer, 2147483647),
+        (sa.BigInteger, 9223372036854775807),
+    ]
+)
+@mock.patch('keg_elements.db.utils.random.randint', autospec=True, spec_set=True)
+def test_random_int_by_sa_type(m_randint, type_, magnitude):
+    col = sa.Column(type_)
+    dbutils.random_int(col, (-100, 100))
+    m_randint.assert_called_once_with(-magnitude, magnitude)
