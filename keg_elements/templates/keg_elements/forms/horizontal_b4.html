@@ -308,7 +308,7 @@
           novalidate
     >
         {{ form.hidden_tag() if form.hidden_tag }}
-        {% set tab_index=[start_tab_index|int] %}
+        {% set tab_index = start_tab_index %}
         {{ form_errors(form) }}
 
         {% if caller %}
@@ -316,17 +316,22 @@
         {% elif field_names %}
             {{ fields(form, field_names) }}
         {% else %}
-            {% for f in form %}
-                {% if not f.widget.input_type == 'hidden' %}
-                    {# Hidden fields are rendered by the `hidden_tag()` call above #}
-                    {{ render_field(f, tabIndex=tab_index.pop()) }}
-                    {% if tab_index.append(start_tab_index|int+loop.index) %} {% endif %}
-                {% endif %}
-            {% endfor %}
-
+            {{ render_form_fields(form, tab_index) }}
         {% endif %}
-        {{ submit_group(action_text=action_text, btn_class=btn_class, cancel_url=cancel_url, tab_index=tab_index[0]) }}
+        {{ submit_group(action_text=action_text, btn_class=btn_class, cancel_url=cancel_url, tab_index=tab_index) }}
     </form>
+{%- endmacro %}
+
+{% macro render_form_fields(form, start_tab_index=1, render_hidden=False) -%}
+{% set tab_index = start_tab_index|int %}
+{# Render hidden tags if flag is passed (for subforms only) #}
+{{ form.hidden_tag() if render_hidden and form.hidden_tag }}
+{% for f in form %}
+    {% if not f.widget.input_type == 'hidden' %}
+        {% set tab_index = tab_index + loop.index0 %}
+        {{ render_field(f, tabIndex=tab_index) }}
+    {% endif %}
+{% endfor %}
 {%- endmacro %}
 
 {% macro fields(form, field_names, start_tab_index=1) -%}
