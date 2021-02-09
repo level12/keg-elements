@@ -735,6 +735,9 @@ class Form(BaseForm):
         Forgetting a field or adding one which doesn't exist will cause the form to raise a
         ``ValueError`` and the form will not be rendered.
 
+        Note that _field_order should be used to ensure the form has the correct tab order, rather
+        than setting the tabindex manually on fields.
+
             class MyForm(Form):
                 _field_order = ('field1', 'field2',)
 
