@@ -7,6 +7,7 @@ from keg_elements.forms import Form
 from pyquery import PyQuery
 from wtforms import (
     BooleanField,
+    FormField,
     RadioField,
     StringField,
     HiddenField,
@@ -136,6 +137,27 @@ class TestGenericTemplates(TemplateTest):
         assert len(response('#dynamic [name="test"]')) == 1
         assert len(response('#b4 [name="test"]')) == 1
         assert len(response('#static [name="test"]')) == 0
+
+    def test_subform_fields(self):
+        class SubForm(Form):
+            test = StringField()
+            ninja = HiddenField()
+
+        class TestForm(Form):
+            sub = FormField(SubForm)
+
+        response = self.render('generic-form.html', {
+            'form': TestForm()
+        })
+
+        # Ensure subfields are rendered
+        assert len(response('#dynamic [name="sub-ninja"]'))
+        assert len(response('#b4 [name="sub-ninja"]'))
+        assert not len(response('#static [name="sub-ninja"]'))
+
+        assert len(response('#dynamic .form-control[name="sub-test"]'))
+        assert len(response('#b4 .form-control[name="sub-test"]'))
+        assert len(response('#static #sub-test'))
 
 
 class TestReadonlyOrDisabledFormRender(TemplateTest):

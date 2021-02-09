@@ -235,7 +235,9 @@
 {%- endmacro %}
 
 {% macro render_field(f) -%}
-    {% if f.type == 'BooleanField' %}
+    {% if f.type == 'FormField' %}
+        {{ render_form_fields(f, render_hidden=true) }}
+    {% elif f.type == 'BooleanField' %}
         {{ checkbox_field(f, **kwargs) }}
     {% elif f.type == 'RadioField' %}
         {{ radio_field(f, **kwargs) }}

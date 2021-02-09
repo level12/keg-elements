@@ -97,7 +97,9 @@
 {%- endmacro %}
 
 {% macro render_field(f) -%}
-    {% if f.type == 'RadioField' %}
+    {% if f.type == 'FormField' %}
+        {{ render_form_fields(f) }}
+    {% elif f.type == 'RadioField' %}
         {{ radio_field(f) }}
     {% else %}
         {{ field(f) }}
@@ -144,6 +146,12 @@
         {% endif %}
         {{ submit_group(action_text=action_text, btn_class=btn_class, cancel_url=cancel_url) }}
     </div>
+{%- endmacro %}
+
+{% macro render_form_fields(form) -%}
+    {% for f in form %}
+        {{ render_field(f) }}
+    {% endfor %}
 {%- endmacro %}
 
 {% macro fields(form, field_names) -%}

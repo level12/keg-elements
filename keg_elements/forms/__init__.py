@@ -733,16 +733,17 @@ class Form(BaseForm):
         variable to a tuple or list of field names (addressable via Form._fields['name_of_field'])
         and the form will render in that order. You must include all the fields, except CSRF.
         Forgetting a field or adding one which doesn't exist will cause the form to raise a
-        ``ValueError`` and the form will not be rendered.
+        ``ValueError`` and the form will not be rendered. Note that _field_order should be used to
+        ensure the form has the correct tab order, rather than setting the tabindex manually on
+        fields.
 
-        Note that _field_order should be used to ensure the form has the correct tab order, rather
-        than setting the tabindex manually on fields.
+    Example::
 
-            class MyForm(Form):
-                _field_order = ('field1', 'field2',)
+        class MyForm(Form):
+            _field_order = ('field1', 'field2',)
 
-                field1 = String('field1_label')  # Note that we don't use the label in the ordering
-                field2 = String()
+            field1 = String('field1_label')  # Note that we don't use the label in the ordering
+            field2 = String()
     """
     def __init__(self, *args, **kwargs):
         super(Form, self).__init__(*args, **kwargs)
