@@ -10,7 +10,7 @@ Installation
 ------------
 
 - Bare functionality: ``pip install kegelements``
-- Internationalization extensions: ``pip install keg-auth[i18n]``
+- Internationalization extensions: ``pip install kegelements[i18n]``
 
 
 .. _gs-templates:
