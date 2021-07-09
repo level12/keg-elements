@@ -24,6 +24,7 @@ class TestEntityBaseThing(testing.EntityBase):
         testing.ColumnCheck('float_check', required=False),
         testing.ColumnCheck('units', required=False),
         testing.ColumnCheck('status', required=False),
+        testing.ColumnCheck('date_check', required=False),
     ]
 
 

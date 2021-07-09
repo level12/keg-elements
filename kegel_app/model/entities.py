@@ -1,4 +1,5 @@
 import codecs
+import datetime
 import enum
 import random
 import uuid
@@ -44,6 +45,7 @@ class Thing(mixins.DefaultMixin, db.Model):
     float_check = db.Column(db.Float)
     units = db.Column(sa.Enum(Units, name='enum_units'))
     status = db.Column(ThingStatus.db_type())
+    date_check = db.Column(db.Date, default=datetime.date.today, onupdate=datetime.date.today)
 
     @sa.ext.hybrid.hybrid_property
     def name_and_color(self):
@@ -195,7 +197,6 @@ class AncillaryB(mixins.DefaultMixin, db.Model):
     def delete_cascaded(cls):
         UsesBoth.delete_cascaded()
         super().delete_cascaded()
-
 
 
 # Foreign keys to non-unique, non-primary key columns are not supported by MSSQL

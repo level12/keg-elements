@@ -1,4 +1,6 @@
+import arrow
 from collections import namedtuple
+import datetime
 from unittest import mock
 
 from keg import current_app
@@ -11,7 +13,8 @@ from werkzeug.datastructures import MultiDict
 from .db.utils import validate_unique_exc
 from .db.mixins import DefaultColsMixin
 
-ColumnCheck = namedtuple('ColumnCheck', 'name, required, fk, unique, timestamp')
+ColumnCheck = namedtuple('ColumnCheck',
+                         'name, required, fk, unique, timestamp, skip_callable_date_check')
 """Validator tuple used in ``EntityBase`` to check column spec for common cases.
 
 :param name: Field name to check.
@@ -19,8 +22,9 @@ ColumnCheck = namedtuple('ColumnCheck', 'name, required, fk, unique, timestamp')
 :param fk: Foreign key to verify, e.g. "foo.id". Multiple keys can be given as list, set, or CSV.
 :param unique: If true, verifies ``unique`` kwarg passed to column.
 :param timestamp: Can be ``True`` for creates and ``update`` for updates. Expects column defaults.
+:param skip_callable_date_check: If true, date cols won't validate that default vals are callable.
 """
-ColumnCheck.__new__.__defaults__ = (True, None, None, None)
+ColumnCheck.__new__.__defaults__ = (True, None, None, None, False)
 
 
 class DontCare(object):  # pragma: no cover
@@ -155,6 +159,21 @@ class EntityBase(object):
             if col_check.timestamp == 'update':
                 assert col.onupdate, 'Column "{}" should have onupdate set'.format(col.name)
             assert col.server_default, 'Column "{}" should have server_default set'.format(col.name)
+
+    def test_column_date_is_callable(self):
+        for col_check in self.column_check_generator():
+            if col_check.skip_callable_date_check:
+                continue
+            col = getattr(self.entity_cls, col_check.name)
+            if not isinstance(col.type, (sa.Date, sa.DateTime, ArrowType)):
+                continue
+            datetypes = (datetime.date, datetime.datetime, arrow.Arrow)
+            if col.default and isinstance(col.default.arg, datetypes):
+                raise AssertionError(f'Column {col.name} default value is set to an instantiated'
+                                     f' date type, this is probably not what you want.')
+            if col.onupdate and isinstance(col.onupdate.arg, datetypes):
+                raise AssertionError(f'Column {col.name} onupdate value is set to an instantiated'
+                                     f' date type, this is probably not what you want.')
 
     def test_column_numeric_scale_precision_set(self):
         for col_check in self.column_check_generator():
