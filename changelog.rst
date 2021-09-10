@@ -1,6 +1,25 @@
 Changelog
 =========
 
+0.6.0 released 2021-09-10
+-------------------------
+
+Note: due to the form field description change listed below, JS popover usage
+from the previous UX can be removed from apps.
+
+- Move form field descriptions to be more visible (f7a287e_)
+- Resolve jinja2 Markup deprecation (86cfe0e_)
+- Adds column check to verify date/time defaults are not set to an instantiated value Fixes #149 (d8489d1_)
+- Drop python 3.6 from testing, add 3.9 (93ee3df_)
+- Support webgrid form posts in GridView (requires webgrid's form args loader) (b945bb4_)
+
+.. _f7a287e: https://github.com/level12/keg-elements/commit/f7a287e
+.. _86cfe0e: https://github.com/level12/keg-elements/commit/86cfe0e
+.. _d8489d1: https://github.com/level12/keg-elements/commit/d8489d1
+.. _93ee3df: https://github.com/level12/keg-elements/commit/93ee3df
+.. _b945bb4: https://github.com/level12/keg-elements/commit/b945bb4
+
+
 0.5.30 released 2021-02-02
 --------------------------
 
