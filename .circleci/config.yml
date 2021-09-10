@@ -1,96 +1,67 @@
-version: 2
+version: 2.1
+commands:
+    runtests:
+        parameters:
+            toxcommand:
+                type: string
+                default: tox
+        steps:
+            - checkout
+
+            - run:
+                name: install tox
+                command: >
+                    pip install --upgrade --force-reinstall tox pip
+
+            - run:
+                name: version checks
+                command: |
+                    python --version
+                    pip --version
+                    tox --version
+
+            - run:
+                name: run tox
+                command: << parameters.toxcommand >>
+
+            - store_test_results:
+                path: .circleci/test-reports/
+
+            - run:
+                name: push code coverage
+                command: bash <(curl -s https://codecov.io/bash) -X coveragepy -t "1c18e756-0bd0-4106-98be-b2fedf1f88df"
 
 jobs:
-  postgres:
-    docker:
-      - image: level12/python-test-multi
-        environment:
-          SQLALCHEMY_DATABASE_URI: "postgresql://postgres:password@localhost/test"
-      - image: postgres:10.5
-        environment:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: test
-    steps:
-      - checkout
-
-      - run:
-          name: install tox and upgrade pip
-          command: pip install --progress-bar off -U pip tox
-
-      - run:
-          name: version checks
-          command: |
-            python --version
-            pip --version
-            virtualenv --version
-            tox --version
-
-      - run:
-          name: run tox
-          command: tox
-
-      - run:
-          name: upload code coverage
-          command: bash <(curl -s https://codecov.io/bash) -t  1c18e756-0bd0-4106-98be-b2fedf1f88df
-  sqlite:
-    docker:
-      - image: level12/python-test-multi
-        environment:
-          SQLALCHEMY_DATABASE_URI: "sqlite://"
-    steps:
-      - checkout
-
-      - run:
-          name: install tox and upgrade pip
-          command: pip install --progress-bar off -U pip tox
-
-      - run:
-          name: version checks
-          command: |
-            python --version
-            pip --version
-            virtualenv --version
-            tox --version
-
-      - run:
-          name: run tox
-          command: tox
-
-      - run:
-          name: upload code coverage
-          command: bash <(curl -s https://codecov.io/bash) -t  1c18e756-0bd0-4106-98be-b2fedf1f88df
-  mssql:
-    docker:
-      - image: level12/python-test-multi
-        environment:
-          SQLALCHEMY_DATABASE_URI: "mssql+pymssql://SA:Password12!@localhost:1433/tempdb"
-      - image: mcr.microsoft.com/mssql/server:2017-latest
-        environment:
-          ACCEPT_EULA: Y
-          SA_PASSWORD: "Password12!"
-    steps:
-      - checkout
-
-      - run:
-          name: install tox and upgrade pip
-          command: pip install --progress-bar off -U pip tox
-
-      - run:
-          name: version checks
-          command: |
-            python --version
-            pip --version
-            virtualenv --version
-            tox --version
-
-      - run:
-          name: run tox
-          command: tox -e py36-base,py37-base,py36-i18n,py37-i18n
-
-      - run:
-          name: upload code coverage
-          command: bash <(curl -s https://codecov.io/bash) -t  1c18e756-0bd0-4106-98be-b2fedf1f88df
+    postgres:
+        docker:
+            - image: level12/python-test-multi
+              environment:
+                SQLALCHEMY_DATABASE_URI: "postgresql://postgres:password@localhost/test"
+            - image: postgres:latest
+              environment:
+                POSTGRES_USER: postgres
+                POSTGRES_PASSWORD: password
+                POSTGRES_DB: test
+        steps:
+            - runtests
+    sqlite:
+        docker:
+            - image: level12/python-test-multi
+              environment:
+                  SQLALCHEMY_DATABASE_URI: "sqlite://"
+        steps:
+            - runtests
+    mssql:
+        docker:
+            - image: level12/python-test-multi
+              environment:
+                  SQLALCHEMY_DATABASE_URI: "mssql+pyodbc_mssql://SA:Password12!@localhost:1433/tempdb?driver=ODBC+Driver+17+for+SQL+Server"
+            - image: mcr.microsoft.com/mssql/server:2017-latest
+              environment:
+                ACCEPT_EULA: Y
+                SA_PASSWORD: "Password12!"
+        steps:
+            - runtests
 
 workflows:
     version: 2

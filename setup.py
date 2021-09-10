@@ -48,6 +48,9 @@ setup(
             'pyquery',
             'pytest',
             'pytest-cov',
+            # pinned to version in our package index.
+            'pyodbc==4.0.30',
+            'sqlalchemy_pyodbc_mssql',
             'tox',
             'freezegun',
             'webgrid',
