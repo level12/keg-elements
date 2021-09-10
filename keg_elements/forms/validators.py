@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from decimal import Decimal
 
-import jinja2
+import markupsafe
 from wtforms import ValidationError
 import re
 
@@ -100,6 +100,6 @@ class ValidateUnique(object):
             else:
                 text = _('This value must be unique but is already assigned to {link}.',
                          link=self.object_html_link(other))
-            msg = jinja2.Markup(text)
+            msg = markupsafe.Markup(text)
             raise ValidationError(msg)
         return True

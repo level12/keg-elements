@@ -1,5 +1,5 @@
 # coding=utf-8
-import jinja2
+import markupsafe
 import pytest
 import wtforms
 from werkzeug.datastructures import MultiDict
@@ -28,13 +28,13 @@ class TestUniqueValidator(object):
         form = UniqueForm(MultiDict({'uq_field': '1'}))
         assert form.uq_field.validate(form) is False
         assert form.uq_field.errors == [
-            jinja2.Markup('This value must be unique but is already assigned to link.')
+            markupsafe.Markup('This value must be unique but is already assigned to link.')
         ]
 
         form = UniqueForm(MultiDict({'uq_field': '1'}), obj=2)
         assert form.uq_field.validate(form) is False
         assert form.uq_field.errors == [
-            jinja2.Markup('This value must be unique but is already assigned to link.')
+            markupsafe.Markup('This value must be unique but is already assigned to link.')
         ]
 
     def test_no_object_link_provided(self):
@@ -47,7 +47,7 @@ class TestUniqueValidator(object):
         form = Form(MultiDict({'uq_field': '1'}))
         assert form.uq_field.validate(form) is False
         assert form.uq_field.errors == [
-            jinja2.Markup('This value must be unique but is already assigned.')
+            markupsafe.Markup('This value must be unique but is already assigned.')
         ]
 
     def test_get_obj(self):
