@@ -42,6 +42,13 @@ else:
     lazy_ngettext = ngettext
 
 
+class GridManager(webgrid.flask.WebGrid):
+    args_loaders = (
+        webgrid.extensions.RequestFormLoader,
+        *webgrid.flask.WebGrid.args_loaders
+    )
+
+
 class Grid(BaseGrid):
-    manager = webgrid.flask.WebGrid()
+    manager = GridManager()
     session_on = True
