@@ -75,8 +75,6 @@ def random_int(column, default_range):
     if column_range:
         return random.randint(*column_range)
 
-    print(column.type)
-
     if type(column.type) is sa.Integer:
         exponent = 31
     elif type(column.type) is sa.SmallInteger:
