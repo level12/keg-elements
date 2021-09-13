@@ -196,7 +196,7 @@
                 <label>
                     <input type="radio"
                            name="{{ field.id }}"
-                           id="{{ field.id }}"
+                           id="{{ field.id }}-{{ value | lower }}"
                            value="{{ value }}"
                            {{ 'checked' if checked }}
                            {{ 'disabled' if field.flags.disabled or (field.flags.readonly and not checked) }}
