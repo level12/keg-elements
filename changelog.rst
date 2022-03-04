@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.7.2 released 2022-03-04
+-------------------------
+
+- adjust form mixin interface to clarify methods related to forms and make overrides easier (2a326b5_)
+
+.. _2a326b5: https://github.com/level12/keg-elements/commit/2a326b5
+
+
 0.7.1 released 2022-03-04
 -------------------------
 
