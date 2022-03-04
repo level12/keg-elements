@@ -289,7 +289,7 @@ class TestValidators(FormBase):
         # test that other validation happens when type is wrong
         form = self.compose_meta(scale_check='aaa')
         form.validate()
-        assert 'Not a valid decimal value' in form.scale_check.errors
+        assert 'Not a valid decimal value.' in form.scale_check.errors
 
     def test_numeric_range_check(self):
         message = 'Number must be between -9999.9999 and 9999.9999.'
@@ -366,7 +366,7 @@ class TestFieldsToDict(FormBase):
         form = self.assert_invalid(color='blue')
         expected = {
             'name': {
-                'data': '',
+                'data': None,
                 'errors': ['This field is required.'],
                 'label': 'Name',
                 'required': True,
@@ -375,7 +375,7 @@ class TestFieldsToDict(FormBase):
                 'data': 'blue',
                 'errors': [],
                 'label': 'Color',
-                'required': False
+                'required': None
             },
         }
         assert form.fields_todict() == expected
@@ -385,7 +385,7 @@ class TestFieldsToDict(FormBase):
         form = self.assert_invalid(color='blue')
         expected = {
             'name': {
-                'data': '',
+                'data': None,
                 'errors': ['This field is required.'],
                 'label': 'Name',
                 'required': True,
@@ -394,7 +394,7 @@ class TestFieldsToDict(FormBase):
                 'data': 'blue',
                 'errors': [],
                 'label': 'Color',
-                'required': False
+                'required': None
             },
         }
         fields_data = form.fields_todict()
@@ -414,7 +414,7 @@ class TestFieldsToDict(FormBase):
         form = FruitForm(letter='b')
         form.validate()
         assert ke_forms.field_to_dict(form.letter) == \
-            {'data': 'b', 'errors': [], 'label': 'Letter', 'required': False}
+            {'data': 'b', 'errors': [], 'label': 'Letter', 'required': None}
         assert ke_forms.field_to_dict(form.letter2) == {
             'data': None,
             'errors': ['This field is required.'],
@@ -430,13 +430,13 @@ class TestFieldsToDict(FormBase):
                 'data': None,
                 'errors': [],
                 'label': 'Number',
-                'required': False,
+                'required': None,
             },
             {
                 'data': None,
                 'errors': [],
                 'label': 'Number',
-                'required': False,
+                'required': None,
             }
         ]
         assert ke_forms.field_to_dict(form.numbers2) == expected
@@ -457,15 +457,15 @@ class TestFieldsToDict(FormBase):
                     'required': True
                 },
                 'color': {
-                    'data': '',
+                    'data': None,
                     'errors': [],
                     'label': 'Color',
-                    'required': False
+                    'required': None
                 }
             },
             {
                 'number': {
-                    'data': '',
+                    'data': None,
                     'errors': ['This field is required.'],
                     'label': 'Number',
                     'required': True
@@ -474,7 +474,7 @@ class TestFieldsToDict(FormBase):
                     'data': 'blue',
                     'errors': [],
                     'label': 'Color',
-                    'required': False
+                    'required': None
                 }
             },
         ]
@@ -497,15 +497,15 @@ class TestFieldsToDict(FormBase):
                         'required': True,
                     },
                     'color': {
-                        'data': '',
+                        'data': None,
                         'errors': [],
                         'label': 'Color',
-                        'required': False,
+                        'required': None,
                     }
                 },
                 {
                     'number': {
-                        'data': '',
+                        'data': None,
                         'errors': ['This field is required.'],
                         'label': 'Number',
                         'required': True,
@@ -514,22 +514,22 @@ class TestFieldsToDict(FormBase):
                         'data': 'blue',
                         'errors': [],
                         'label': 'Color',
-                        'required': False,
+                        'required': None,
                     }
                 },
             ],
             'numbers2': [
                 {
-                    'data': '',
+                    'data': None,
                     'errors': [],
                     'label': 'Number',
-                    'required': False,
+                    'required': None,
                 },
                 {
-                    'data': '',
+                    'data': None,
                     'errors': [],
                     'label': 'Number',
-                    'required': False
+                    'required': None
                 }
             ]
         }
@@ -617,14 +617,12 @@ class TestFormLevelValidation(FormBase):
     def test_form_valid(self):
         form = self.assert_valid(num1=5, num2=37, num3=100)
         assert form.form_errors == []
-        assert form.field_errors == {}
         assert form.errors == {}
 
     def test_form_invalid(self):
         form = self.assert_invalid(num1=40, num2=3, num3=50)
         assert form.form_errors == ['Does not add up', 'Out of order']
-        assert form.field_errors == {}
-        assert form.errors == {'_form': ['Does not add up', 'Out of order']}
+        assert form.errors == {None: ['Does not add up', 'Out of order']}
 
     def test_stop_validation_with_error(self):
         class StopValidationForm(Form):
@@ -642,8 +640,7 @@ class TestFormLevelValidation(FormBase):
 
         form = self.assert_invalid(form_cls=StopValidationForm, s1='v1', s2='v2')
         assert form.form_errors == ['not equal']
-        assert form.field_errors == {}
-        assert form.errors == {'_form': ['not equal']}
+        assert form.errors == {None: ['not equal']}
 
     def test_stop_validation_no_error(self):
         class StopValidationForm(Form):
@@ -661,7 +658,6 @@ class TestFormLevelValidation(FormBase):
 
         form = self.assert_valid(form_cls=StopValidationForm, s1='v1', s2='v2')
         assert form.form_errors == []
-        assert form.field_errors == {}
         assert form.errors == {}
 
     def test_invalid_with_field_errors(self):
@@ -676,9 +672,8 @@ class TestFormLevelValidation(FormBase):
 
         form = self.assert_invalid(form_cls=InvalidFieldsForm, s1='1234', s2='4321')
         assert form.form_errors == ['not equal']
-        assert form.field_errors == {'s1': ['Field cannot be longer than 3 characters.']}
         assert form.errors == {
-            '_form': ['not equal'],
+            None: ['not equal'],
             's1': ['Field cannot be longer than 3 characters.']
         }
 
@@ -693,7 +688,6 @@ class TestFormLevelValidation(FormBase):
 
         form = self.assert_invalid(form_cls=InvalidFieldsForm, s1='1234', s2='4321')
         assert form.form_errors == []
-        assert form.field_errors == {'s1': ['Field cannot be longer than 3 characters.']}
         assert form.errors == {'s1': ['Field cannot be longer than 3 characters.']}
 
     def test_validators_inherited(self):
@@ -710,14 +704,12 @@ class TestFormLevelValidation(FormBase):
 
         form = self.assert_invalid(num1=7, num2=5, num3=51, form_cls=SubclassForm)
         assert form.form_errors == ['Out of order', 'Num3 is odd', 'Does not compute']
-        assert form.field_errors == {}
         assert form.errors == {
-            '_form': ['Out of order', 'Num3 is odd', 'Does not compute']
+            None: ['Out of order', 'Num3 is odd', 'Does not compute']
         }
 
         form = self.assert_valid(num1=6, num2=7, num3=50, form_cls=SubclassForm)
         assert form.form_errors == []
-        assert form.field_errors == {}
         assert form.errors == {}
 
 

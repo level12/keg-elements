@@ -71,7 +71,7 @@ class ValidateUnique(object):
     .. note :: Combine with ``wtforms.validators.optional`` when a field is nullable to
         allow for None values.
     """
-    field_flags = ('unique',)
+    field_flags = {'unique': True}
 
     def __init__(self, object_html_link=None):
         self.object_html_link = object_html_link

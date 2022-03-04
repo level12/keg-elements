@@ -1,9 +1,7 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
 import functools
 import inspect
 import logging
+import warnings
 from operator import attrgetter
 
 import flask
@@ -714,7 +712,7 @@ def form_validator(func=None, only_when_fields_valid=False):
 
     @functools.wraps(func)
     def wrapper(form):
-        if not only_when_fields_valid or not form.field_errors:
+        if not only_when_fields_valid or not form.errors:
             return func(form)
 
     global ___validator_creation_counter
@@ -796,36 +794,25 @@ class Form(BaseForm):
             }
             form_validators.update(cls_validators)
 
-        self._form_level_errors = []
         for validator in sorted(form_validators.values(), key=attrgetter('___creation_counter')):
             try:
                 validator(self)
             except StopValidation as e:
                 if e.args and e.args[0]:
-                    self._form_level_errors.append(e.args[0])
+                    self.form_errors.append(e.args[0])
                 break
             except ValueError as e:
-                self._form_level_errors.append(e.args[0])
+                self.form_errors.append(e.args[0])
 
-        return fields_valid and not self._form_level_errors
-
-    @property
-    def form_errors(self):
-        """Form-level validator errors will be logged in this list."""
-        return self._form_level_errors
+        return fields_valid and not self.form_errors
 
     @property
     def field_errors(self):
         """Field-level validator errors come from WTForms' errors."""
-        return super().errors
-
-    @property
-    def errors(self):
-        """Field-level errors, plus form-level errors under the key "_form"."""
-        errors = self.field_errors
-        if self.form_errors:
-            errors['_form'] = self.form_errors
-        return errors
+        warnings.warn(
+            'WTForms has form-level validation now, use form.errors instead', DeprecationWarning, 2
+        )
+        return self.errors
 
 
 BaseModelFormMeta = model_form_meta_factory()

@@ -147,7 +147,9 @@
     {% if field.type == "MultiCheckboxField" %}
         {{ multi_checkbox(field) }}
     {% else %}
-        {{ field(class_='form-control is-invalid' if field.errors else 'form-control', disabled=field.flags.disabled, readonly=field.flags.readonly, **kwargs) }}
+        {% if field.flags.disabled %}{% set _dummy = kwargs.update({'disabled': field.flags.disabled}) %}{% endif %}
+        {% if field.flags.readonly %}{% set _dummy = kwargs.update({'readonly': field.flags.readonly}) %}{% endif %}
+        {{ field(class_='form-control is-invalid' if field.errors else 'form-control', **kwargs) }}
     {% endif %}
     {{ field_errors(field) }}
 {% endmacro %}

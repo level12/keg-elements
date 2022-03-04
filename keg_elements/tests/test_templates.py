@@ -146,7 +146,7 @@ class TestReadonlyOrDisabledFormRender(TemplateTest):
         def field_flag(flags):
             """Creates a no-op validator that has the given field flags."""
             class FlaggedValidator(object):
-                field_flags = flags
+                field_flags = {flag_name: True for flag_name in flags}
 
                 def __call__(self, form, field):
                     pass
