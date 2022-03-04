@@ -142,6 +142,7 @@ class MethodsMixin:
 
     @might_commit
     @might_flush
+    @kwargs_match_entity
     @classmethod
     def add(cls, **kwargs):
         """Create a new persisted record constructed from the given kwargs.
