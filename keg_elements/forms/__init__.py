@@ -507,6 +507,7 @@ class RelationshipMultipleField(RelationshipFieldBase, SelectMultipleField):
     """
     def __init__(self, label, orm_cls, label_attr=None,
                  query_filter=None, coerce=_not_given, **kwargs):
+        coerce = coerce or self.coerce_to_int
         super().__init__(label, orm_cls, label_attr, None, query_filter, coerce, **kwargs)
 
     def get_data_filter(self):
@@ -516,6 +517,44 @@ class RelationshipMultipleField(RelationshipFieldBase, SelectMultipleField):
             return
         existing_ids = [obj.id for obj in self.data]
         return self.orm_cls.id.in_(existing_ids)
+
+    @staticmethod
+    def coerce_to_int(value):
+        return int(value)
+
+    def coerce_to_obj(self, value):
+        if type(value) in [int, str]:
+            return self.orm_cls.query.get(int(value))
+        else:
+            return value
+
+    def iter_choices(self):
+        selected_ids = [v.id for v in self.data or []]
+        for value, label in self.choices():
+            selected = selected_ids is not None and self.coerce(value) in selected_ids
+            yield (value, label, selected)
+
+    def process_formdata(self, valuelist):
+        try:
+            self.data = list(self.coerce_to_obj(v) for v in valuelist)
+        except ValueError:
+            raise ValueError(self.gettext('Invalid Choice: could not coerce'))
+
+    def process_data(self, value):
+        try:
+            self.data = list(v for v in value)
+        except (ValueError, TypeError):
+            self.data = None
+
+    def pre_validate(self, form):
+        if self.data:
+            values = list(c[0] for c in self.choices())
+            for d in self.data:
+                if str(d.id) not in values:
+                    raise ValueError(
+                        self.gettext("'%(value)s' is not a valid choice for this field")
+                        % dict(value=d)
+                    )
 
 
 class _TypeHintingTextInputBase(wtforms.widgets.TextInput):
