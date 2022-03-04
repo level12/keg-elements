@@ -281,15 +281,11 @@ class MethodsMixin:
         numeric_range = kwargs.pop('_numeric_defaults_range', None)
 
         insp = sa.inspection.inspect(cls)
-        is_property = lambda column: isinstance(column, sa.sql.elements.Label)
 
-        skippable = lambda column: (column.key in kwargs      # skip fields already in kwargs
-                                    or is_property(column)    # skip column properties
-                                    or column.foreign_keys    # skip foreign keys
-                                    or column.server_default  # skip fields with server defaults
-                                    or column.default         # skip fields with defaults
-                                    or column.primary_key     # skip any primary key
-                                    )
+        skippable = lambda column: (
+            column.key in kwargs                # skip fields already in kwargs
+            or cls.testing_skip_column(column)  # skip fields defined by class rules
+        )
 
         for column in (col for col in insp.columns if not skippable(col)):
             try:
@@ -299,6 +295,17 @@ class MethodsMixin:
                 pass
 
         return cls.add(**kwargs)
+
+    @classmethod
+    def testing_skip_column(cls, column):
+        is_property = lambda column: isinstance(column, sa.sql.elements.Label)
+        return (
+            is_property(column)       # skip column properties
+            or column.foreign_keys    # skip foreign keys
+            or column.server_default  # skip fields with server defaults
+            or column.default         # skip fields with defaults
+            or column.primary_key     # skip any primary key
+        )
 
     @classmethod
     def random_data_for_column(cls, column, numeric_range):  # noqa: C901
