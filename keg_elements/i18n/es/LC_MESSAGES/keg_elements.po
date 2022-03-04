@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: KegElements 0.5.8\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2020-05-12 16:29-0400\n"
+"POT-Creation-Date: 2022-03-04 14:20-0500\n"
 "PO-Revision-Date: 2018-08-22 09:06-0400\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: es\n"
@@ -17,9 +17,9 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.8.0\n"
+"Generated-By: Babel 2.9.1\n"
 
-#: keg_elements/crypto.py:143
+#: keg_elements/crypto.py:174
 msgid ""
 "If input file name doesn't end in \".enc\" then output filename must be "
 "given."
@@ -35,23 +35,23 @@ msgstr "Entrada Base36 demasiado grande"
 msgid "Negative base36 conversion input."
 msgstr "Entrada de conversión base36 negativa."
 
-#: keg_elements/views.py:27
+#: keg_elements/views.py:134
 msgid "Too many records to export as {}"
 msgstr "Demasiados registros para exportar como {}"
 
-#: keg_elements/db/columns.py:39
+#: keg_elements/db/columns.py:40
 msgid "Key must be at least 32 bytes long"
 msgstr "La clave debe tener al menos 32 bytes de longitud"
 
-#: keg_elements/db/mixins.py:40
+#: keg_elements/db/mixins.py:55
 msgid "Unknown column or relationship names in kwargs: {kwargs!r}"
 msgstr "Nombres desconocidos de columna o relación en kwargs: {kwargs!r}"
 
-#: keg_elements/db/mixins.py:94
+#: keg_elements/db/mixins.py:111
 msgid "Updating property types is not implemented."
 msgstr "La actualización de los tipos de propiedad no está implementada."
 
-#: keg_elements/db/mixins.py:165
+#: keg_elements/db/mixins.py:207
 msgid ""
 "No primary key was found in `oid` or `kwargs` for which to retrieve the "
 "object to edit"
@@ -59,35 +59,44 @@ msgstr ""
 "No se encontró ninguna clave primaria en `oid` o` kwargs` para la cual "
 "recuperar el objeto para editar"
 
-#: keg_elements/db/mixins.py:281
+#: keg_elements/db/mixins.py:353
 msgid "No randomization for this column type"
 msgstr "Sin aleatorización para este tipo de columna"
 
-#: keg_elements/db/utils.py:120
+#: keg_elements/db/utils.py:177
 msgid "length must be at least 7"
 msgstr "la longitud debe ser de al menos 7"
 
-#: keg_elements/forms/__init__.py:245
+#: keg_elements/forms/__init__.py:301
 msgid "Yes"
 msgstr "Sí"
 
-#: keg_elements/forms/__init__.py:246
+#: keg_elements/forms/__init__.py:302
 msgid "No"
 msgstr "No"
 
-#: keg_elements/forms/validators.py:33
+#: keg_elements/forms/__init__.py:541
+msgid "Invalid Choice: could not coerce"
+msgstr "Elección no válida: no se pudo coaccionar"
+
+#: keg_elements/forms/__init__.py:555
+#, python-format
+msgid "'%(value)s' is not a valid choice for this field"
+msgstr "'%(value)s' no es una opción válida para este campo"
+
+#: keg_elements/forms/validators.py:31
 msgid "Must only contain alphanumeric data."
 msgstr "Solo debe contener datos alfanuméricos."
 
-#: keg_elements/forms/validators.py:43
+#: keg_elements/forms/validators.py:41
 msgid "Value is not numeric."
 msgstr "El valor no es numérico."
 
-#: keg_elements/forms/validators.py:50
+#: keg_elements/forms/validators.py:49
 msgid "Field must have no more than {scale} decimal places."
 msgstr "El campo no debe tener más de {scale} decimales."
 
-#: keg_elements/forms/validators.py:88
+#: keg_elements/forms/validators.py:85
 msgid ""
 "Form must provide either `obj` or `_obj` property for uniqueness "
 "validation."
@@ -95,11 +104,11 @@ msgstr ""
 "El formulario debe proporcionar la propiedad `obj` o` _obj` para la "
 "validación de unicidad."
 
-#: keg_elements/forms/validators.py:102
+#: keg_elements/forms/validators.py:99
 msgid "This value must be unique but is already assigned."
 msgstr "Este valor debe ser único pero ya está asignado."
 
-#: keg_elements/forms/validators.py:105
+#: keg_elements/forms/validators.py:102
 msgid "This value must be unique but is already assigned to {link}."
 msgstr "Este valor debe ser exclusivo, pero ya tiene asignado a {link}."
 

@@ -3,10 +3,12 @@
         "language": "es",
         "plural-forms": "nplurals=2; plural=(n != 1)"
     },
+    "'%(value)s' is not a valid choice for this field": "'%(value)s' no es una opci\u00f3n v\u00e1lida para este campo",
     "Base36 input too large": "Entrada Base36 demasiado grande",
     "Field must have no more than {scale} decimal places.": "El campo no debe tener m\u00e1s de {scale} decimales.",
     "Form must provide either `obj` or `_obj` property for uniqueness validation.": "El formulario debe proporcionar la propiedad `obj` o` _obj` para la validaci\u00f3n de unicidad.",
     "If input file name doesn't end in \".enc\" then output filename must be given.": "Si el nombre del archivo de entrada no termina en \".enc\", se debe dar el nombre del archivo de salida.",
+    "Invalid Choice: could not coerce": "Elecci\u00f3n no v\u00e1lida: no se pudo coaccionar",
     "Key must be at least 32 bytes long": "La clave debe tener al menos 32 bytes de longitud",
     "Must only contain alphanumeric data.": "Solo debe contener datos alfanum\u00e9ricos.",
     "Negative base36 conversion input.": "Entrada de conversi\u00f3n base36 negativa.",
