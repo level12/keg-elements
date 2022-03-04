@@ -43,6 +43,7 @@ class Thing(mixins.DefaultMixin, db.Model):
     color = db.Column(db.Unicode, info=dict(randomdata='random_color'))
     scale_check = db.Column(db.Numeric(8, 4), info=dict(randomdata=random_scale_check))
     float_check = db.Column(db.Float)
+    float_check_prop = sa.orm.column_property(float_check + 6)
     units = db.Column(sa.Enum(Units, name='enum_units'))
     status = db.Column(ThingStatus.db_type())
     date_check = db.Column(db.Date, default=datetime.date.today, onupdate=datetime.date.today)

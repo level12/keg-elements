@@ -281,8 +281,10 @@ class MethodsMixin:
         numeric_range = kwargs.pop('_numeric_defaults_range', None)
 
         insp = sa.inspection.inspect(cls)
+        is_property = lambda column: isinstance(column, sa.sql.elements.Label)
 
         skippable = lambda column: (column.key in kwargs      # skip fields already in kwargs
+                                    or is_property(column)    # skip column properties
                                     or column.foreign_keys    # skip foreign keys
                                     or column.server_default  # skip fields with server defaults
                                     or column.default         # skip fields with defaults

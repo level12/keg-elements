@@ -175,7 +175,7 @@ class TestMethodsMixin:
         obj = ents.Thing.testing_create()
 
         expected = {'id', 'name', 'color', 'scale_check', 'float_check', 'updated_utc',
-                    'created_utc', 'units', 'status', 'date_check'}
+                    'created_utc', 'units', 'status', 'date_check', 'float_check_prop'}
         assert set(obj.to_dict().keys()) == expected
         assert set(obj.to_dict(exclude={'id'}).keys()) == expected - {'id'}
 
@@ -186,7 +186,8 @@ class TestMethodsMixin:
 
         assert dictionary == {
             'id': obj.id,
-            'name_and_color': obj.name_and_color
+            'name_and_color': obj.name_and_color,
+            'float_check_prop': obj.float_check_prop,
         }
 
     def test_random_data_for_column(self):
