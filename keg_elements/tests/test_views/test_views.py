@@ -8,6 +8,29 @@ from webgrid.extensions import RequestArgsLoader
 from kegel_app.model import entities as ents
 
 
+class TestDemoForm:
+    def test_get(self):
+        client = flask_webtest.TestApp(flask.current_app)
+        resp = client.get('/demo-form')
+        assert 'Input field' in resp
+
+    def test_post_valid(self):
+        client = flask_webtest.TestApp(flask.current_app)
+        resp = client.get('/demo-form')
+        resp.form['my_field'] = 'foo'
+        resp = resp.form.submit()
+        assert resp.flashes == [('success', 'Form submitted successfully.')]
+        assert resp.location.endswith('demo-grid')
+
+    def test_post_invalid(self):
+        client = flask_webtest.TestApp(flask.current_app)
+        resp = client.get('/demo-form')
+        resp = resp.form.submit()
+        assert resp.flashes == [('error', 'Form errors detected, see below for details.')]
+        assert resp.status_code == 200
+        assert 'Input field' in resp
+
+
 class TestDemoGrid:
     def setup(self):
         ents.Thing.delete_cascaded()

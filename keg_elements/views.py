@@ -4,8 +4,69 @@ from keg.web import BaseView
 from keg_elements.extensions import gettext as _
 
 
-class GridView(BaseView):
-    """Base view for simple grid pages."""
+class FormMixin:
+    """Mixin supporting simple form view setup"""
+    form_cls = None
+    """form class to construct, or callable returning a form instance."""
+    flash_success = ('Form submitted successfully.', 'success')
+    """flash message to show on post when form data has passed validation"""
+    flash_failure = ('Form errors detected, see below for details.', 'error')
+    """flash message to show on post when form data has failed validation"""
+    title = None
+    """Page title, will be assigned as title for the template."""
+
+    def form_default_object(self):
+        pass
+
+    def form_init(self):
+        defaults = self.form_default_object()
+        kwargs = {}
+        if defaults:
+            kwargs['obj'] = defaults
+        self.form = self.form_cls(**kwargs)
+        self.assign('form', self.form)
+
+    def get(self):
+        """GET method responder. By default, inits form to template."""
+        self.assign('title', self.title)
+        self.form_init()
+
+    def post(self):
+        """POST method responder.
+
+        Initializes the form and attempts to validate POSTed data. Flashes messages
+        if those attributes are set, then directs to on_form_[in]valid
+        as needed for additional workflow.
+        """
+        self.form_init()
+        if self.form.validate():
+            if self.flash_success:
+                flask.flash(*self.flash_success)
+            self.assign('form_success', True)
+            return self.on_form_valid()
+        else:
+            if self.flash_failure:
+                flask.flash(*self.flash_failure)
+            return self.on_form_invalid()
+
+    def on_form_valid(self):
+        """Action method for form that has passed validation.
+
+        This is usually where things like database transactions will go.
+        """
+        pass
+
+    def on_form_invalid(self):
+        """Action method for form that has failed validation."""
+        pass
+
+
+class FormView(FormMixin, BaseView):
+    """Base view for simple form pages."""
+
+
+class GridMixin:
+    """Mixin supporting simple grid view setup"""
     grid_cls = None
     """Grid class to construct, or callable returning a grid instance."""
     template = 'grid_view.html'
@@ -91,3 +152,7 @@ class GridView(BaseView):
         }))
 
         return flask.render_template(self.template, **template_args)
+
+
+class GridView(GridMixin, BaseView):
+    """Base view for simple grid pages."""
