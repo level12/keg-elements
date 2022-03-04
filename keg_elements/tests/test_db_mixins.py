@@ -219,6 +219,15 @@ class TestMethodsMixin:
 
         ents.Thing.testing_create(foo=1, bar=2, _baz=3, name='b', _check_kwargs=False)
 
+    def test_check_kwargs_in_edit(self):
+        thing = ents.Thing.testing_create(name='a')
+        with pytest.raises(AssertionError) as excinfo:
+            ents.Thing.edit(thing.id, fieldshouldnotexist='foo')
+        assert str(excinfo.value) == \
+            'Unknown column or relationship names in kwargs: [\'fieldshouldnotexist\']'
+
+        ents.Thing.edit(thing.id, fieldshouldnotexist='foo', _check_kwargs=False)
+
     def test_testing_create_flush_and_commit(self):
         obj = ents.Thing.testing_create(_flush=False, _commit=False)
         assert sa.inspect(obj).pending

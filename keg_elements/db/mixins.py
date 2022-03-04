@@ -189,6 +189,7 @@ class MethodsMixin:
 
     @might_commit
     @might_flush
+    @kwargs_match_entity
     @classmethod
     def edit(cls, oid=None, **kwargs):
         """Edit an object in session with the kwargs, and optionally flush or commit.

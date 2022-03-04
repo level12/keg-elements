@@ -1019,6 +1019,7 @@ class TestOrmRelationship(ThingForeignKeyRelationshipMixin, RelationshipMixin):
 class TestRelationshipFieldGenerator:
     def setup(self):
         ents.Thing.delete_cascaded()
+        db.session.expunge_all()
 
     def create_form(self, **kwargs):
         class RelatedThingForm(ModelForm):
