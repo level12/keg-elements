@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.7.1 released 2022-03-04
+-------------------------
+
+- add method errors out on invalid field name (9511f73_)
+
+.. _9511f73: https://github.com/level12/keg-elements/commit/9511f73
+
+
 0.7.0 released 2022-03-04
 -------------------------
 
