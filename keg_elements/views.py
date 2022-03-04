@@ -15,15 +15,18 @@ class FormMixin:
     title = None
     """Page title, will be assigned as title for the template."""
 
-    def form_default_object(self):
-        pass
+    def form_default(self):
+        """Returns default object to load in form during init."""
+        return
+
+    def form_create(self):
+        """Create the form instance with default object (if any)."""
+        default = self.form_default()
+        return self.form_cls(obj=default)
 
     def form_init(self):
-        defaults = self.form_default_object()
-        kwargs = {}
-        if defaults:
-            kwargs['obj'] = defaults
-        self.form = self.form_cls(**kwargs)
+        """Assign a form instance to the template."""
+        self.form = self.form_create()
         self.assign('form', self.form)
 
     def get(self):
@@ -43,20 +46,20 @@ class FormMixin:
             if self.flash_success:
                 flask.flash(*self.flash_success)
             self.assign('form_success', True)
-            return self.on_form_valid()
+            return self.form_on_valid()
         else:
             if self.flash_failure:
                 flask.flash(*self.flash_failure)
-            return self.on_form_invalid()
+            return self.form_on_invalid()
 
-    def on_form_valid(self):
+    def form_on_valid(self):
         """Action method for form that has passed validation.
 
         This is usually where things like database transactions will go.
         """
         pass
 
-    def on_form_invalid(self):
+    def form_on_invalid(self):
         """Action method for form that has failed validation."""
         pass
 

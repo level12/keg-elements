@@ -15,5 +15,5 @@ class DemoForm(FormView):
     blueprint = keg_element_blueprint
     form_cls = forms.DemoForm
 
-    def on_form_valid(self):
+    def form_on_valid(self):
         return flask.redirect('/demo-grid')
