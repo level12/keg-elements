@@ -1,6 +1,24 @@
 Changelog
 =========
 
+0.7.0 released 2022-03-04
+-------------------------
+
+- add base class/mixin for form views (fcf8f02_)
+- multiselect field will not coerce every option to an object, performance issue (0ccd609_)
+- edit method errors out on invalid field name (98ad0b0_)
+- factor test column data skipping (639bcb8_)
+- support SA column properties in test data generation (1148633_)
+- support WTForms 3.0.0 with form-level validation errors, field flags changes (794ce75_)
+
+.. _fcf8f02: https://github.com/level12/keg-elements/commit/fcf8f02
+.. _0ccd609: https://github.com/level12/keg-elements/commit/0ccd609
+.. _98ad0b0: https://github.com/level12/keg-elements/commit/98ad0b0
+.. _639bcb8: https://github.com/level12/keg-elements/commit/639bcb8
+.. _1148633: https://github.com/level12/keg-elements/commit/1148633
+.. _794ce75: https://github.com/level12/keg-elements/commit/794ce75
+
+
 0.6.0 released 2021-09-10
 -------------------------
 
