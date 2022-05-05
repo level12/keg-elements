@@ -1073,6 +1073,14 @@ class TestRelationshipFieldGenerator:
                                        obj=related_thing)
         assert form.thing_id.choice_values == ['', thing2.id, thing1.id]
 
+    def test_choices_data_filter_not_applied_incorrectly(self):
+        thing1 = ents.Thing.testing_create(name='foo', color='blue')
+        thing2 = ents.Thing.testing_create(name='bar', color='red')
+        thing3 = ents.Thing.testing_create(name='baz', color='purple')
+        related_thing = ents.RelatedThing.testing_create(thing=thing1)
+        form = self.create_custom_form({'query_filter': None}, obj=related_thing)
+        assert form.thing_id.choice_values == ['', thing2.id, thing3.id, thing1.id]
+
 
 class TestCollectionRelationship(RelationshipMixin):
     """Test field that corresponds to a SA collection."""
