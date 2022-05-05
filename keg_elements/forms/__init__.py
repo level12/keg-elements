@@ -409,7 +409,7 @@ class RelationshipFieldBase:
         # Having an existing value should filter the query.
         if self.data is not None:
             data_filter = self.get_data_filter()
-            if data_filter is not None:
+            if data_filter is not None and filter_terms:
                 filter_terms.append(data_filter)
 
         # Apply filter terms with or_, or directly, depending on length.
