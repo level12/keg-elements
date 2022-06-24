@@ -192,7 +192,7 @@ class MethodsMixin:
     @might_flush
     @kwargs_match_entity
     @classmethod
-    def edit(cls, oid=None, **kwargs):
+    def edit(cls, _oid=None, **kwargs):
         """Edit an object in session with the kwargs, and optionally flush or commit.
 
         :param oid: the object identifier, normally the primary key
@@ -201,9 +201,9 @@ class MethodsMixin:
         :return: entity instance edited and optionally flushed/committed
         """
         try:
-            primary_keys = oid or [kwargs.get(x.name)
-                                   for x in cls.primary_keys()
-                                   if x is not None]
+            primary_keys = _oid or [kwargs.get(x.name)
+                                    for x in cls.primary_keys()
+                                    if x is not None]
         except KeyError:
             raise AttributeError(_('No primary key was found in `oid` or `kwargs`'
                                    ' for which to retrieve the object to edit'))
