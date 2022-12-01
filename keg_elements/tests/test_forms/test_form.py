@@ -911,8 +911,9 @@ class RelationshipMixin:
 
 
 class ThingForeignKeyRelationshipMixin:
-    def setup(self):
+    def setup_method(self):
         ents.Thing.delete_cascaded()
+        db.session.remove()
 
     def get_field(self, form):
         raise NotImplementedError()  # pragma: no cover
@@ -1017,7 +1018,7 @@ class TestOrmRelationship(ThingForeignKeyRelationshipMixin, RelationshipMixin):
 
 
 class TestRelationshipFieldGenerator:
-    def setup(self):
+    def setup_method(self):
         ents.Thing.delete_cascaded()
         db.session.expunge_all()
 
@@ -1092,7 +1093,7 @@ class TestCollectionRelationship(RelationshipMixin):
 
         return ThingForm(**kwargs)
 
-    def setup(self):
+    def setup_method(self):
         ents.Thing.delete_cascaded()
 
     def test_relationship_options(self):

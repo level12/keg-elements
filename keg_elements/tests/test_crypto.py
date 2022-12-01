@@ -1,5 +1,4 @@
 from io import BytesIO
-from pathlib import Path
 
 import cryptography
 import pytest
@@ -182,12 +181,14 @@ class TestStreamEncryption:
 
         # implicit name for output file
         out_fpath = crypto.decrypt_file(CRYPTO_KEY, enc_fpath)
-        assert Path(out_fpath).open().read() == 'just some text'
+        with open(out_fpath) as fp:
+            assert fp.read() == 'just some text'
 
         # explicit name for output file
         fobj = tmpdir.join('tempfile-encrypted.txt')
         out_fpath = crypto.decrypt_file(CRYPTO_KEY, enc_fpath, fobj.strpath)
-        assert Path(out_fpath).open().read() == 'just some text'
+        with open(out_fpath) as fp:
+            assert fp.read() == 'just some text'
 
         # Input file name doesn't in ".enc" but no output file name given.
         with pytest.raises(ValueError) as excinfo:

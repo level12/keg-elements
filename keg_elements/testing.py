@@ -97,7 +97,7 @@ class EntityBase(object):
         else:
             cls.entity_cls.delete_all()
 
-    def setup(self):
+    def setup_method(self):
         if self.delete_all_on == 'setup':
             self.ent_delete_all()
 

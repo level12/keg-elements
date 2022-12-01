@@ -1,6 +1,13 @@
 import os
 
 
+class DefaultProfile(object):
+    KEG_KEYRING_ENABLE = False
+
+    SQLALCHEMY_TRACK_MODIFICATIONS = True
+    SQLALCHEMY_DATABASE_URI = os.environ.get('SQLALCHEMY_DATABASE_URI', 'sqlite://')
+
+
 class TestProfile(object):
     KEG_KEYRING_ENABLE = False
 

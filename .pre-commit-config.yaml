@@ -5,7 +5,6 @@ repos:
       - id: flake8
       - id: debug-statements
       - id: check-merge-conflict
-      - id: check-docstring-first
       - id: mixed-line-ending
 
   #- repo: https://github.com/ambv/black

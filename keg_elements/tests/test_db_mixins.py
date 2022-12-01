@@ -108,10 +108,10 @@ class TestMethodsMixin:
         assert obj.id == 1
         assert obj.other_pk == 1
 
-        with pytest.raises(sa.exc.IntegrityError):
+        with pytest.raises(sa.exc.InvalidRequestError, match='Incorrect number of values'):
             ents.MultiplePrimaryKeys.add_or_edit({'name': 'other', 'id': 1})
 
-        with pytest.raises(sa.exc.IntegrityError):
+        with pytest.raises(sa.exc.InvalidRequestError, match='Incorrect number of values'):
             ents.MultiplePrimaryKeys.add_or_edit({'name': 'other', 'other_pk': 1})
 
         ents.MultiplePrimaryKeys.add_or_edit({'name': 'other', 'id': 1, 'other_pk': 1})
@@ -234,6 +234,7 @@ class TestMethodsMixin:
         assert str(excinfo.value) == \
             'Unknown column or relationship names in kwargs: [\'fieldshouldnotexist\']'
 
+        db.session.remove()
         ents.Thing.add(name='kwargs-in-add', fieldshouldnotexist='foo', _check_kwargs=False)
 
     def test_testing_create_flush_and_commit(self):
@@ -357,7 +358,7 @@ class TestSoftDeleteMixin:
 
 
 class TestLookupMixin:
-    def setup(self):
+    def setup_method(self):
         ents.LookupTester.delete_cascaded()
 
     def _labels_in_list(labels, rows):

@@ -112,8 +112,8 @@ class TestDBEnum:
 
     @mock.patch('keg_elements.db.columns.random', autospec=True, spec_set=True)
     def test_random(self, m_random):
-        m_random.choice.side_effect = lambda l: l[1]
+        m_random.choice.side_effect = lambda option: option[1]
         assert self.Status.random() == self.Status.inactive
 
-        m_random.choice.side_effect = lambda l: l[2]
+        m_random.choice.side_effect = lambda option: option[2]
         assert self.Status.random() == self.Status.other

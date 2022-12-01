@@ -203,7 +203,9 @@ class MethodsMixin:
         try:
             primary_keys = oid or [kwargs.get(x.name)
                                    for x in cls.primary_keys()
-                                   if x is not None]
+                                   if x is not None and kwargs.get(x.name) is not None]
+            if not primary_keys:
+                raise KeyError
         except KeyError:
             raise AttributeError(_('No primary key was found in `oid` or `kwargs`'
                                    ' for which to retrieve the object to edit'))
@@ -411,9 +413,11 @@ class MethodsMixin:
         if isinstance(data, db.Model) or not data:
             return data
 
-        primary_keys = [data.get(x.name) for x in cls.primary_keys() if x
-                        is not None]
-        obj = cls.query.get(primary_keys)
+        primary_keys = [
+            data.get(x.name) for x in cls.primary_keys()
+            if x is not None and data.get(x.name) is not None
+        ]
+        obj = cls.query.get(primary_keys) if primary_keys else None
 
         return (cls.add(_commit=False, **data)
                 if obj is None

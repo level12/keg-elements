@@ -8,6 +8,11 @@ from webgrid.extensions import RequestArgsLoader
 from kegel_app.model import entities as ents
 
 
+def setup_module():
+    from keg.db import db
+    db.session.remove()
+
+
 class TestDemoForm:
     def test_get(self):
         client = flask_webtest.TestApp(flask.current_app)
@@ -32,7 +37,7 @@ class TestDemoForm:
 
 
 class TestDemoGrid:
-    def setup(self):
+    def setup_method(self):
         ents.Thing.delete_cascaded()
 
     def test_get(self):
