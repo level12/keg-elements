@@ -2,10 +2,11 @@ import functools
 import inspect
 import logging
 import warnings
+from decimal import Decimal
 from operator import attrgetter
 
+from blazeutils.strings import case_cw2dash
 import flask
-from decimal import Decimal
 from flask_wtf import FlaskForm as BaseForm
 from keg.db import db
 import sqlalchemy as sa
@@ -14,7 +15,7 @@ from sqlalchemy_utils import ArrowType, get_class_by_table
 import six
 import wtforms.fields
 import wtforms.form
-from wtforms.validators import InputRequired, Optional, StopValidation, NumberRange
+from wtforms.validators import InputRequired, Optional, StopValidation, NumberRange, AnyOf
 from wtforms_alchemy import (
     FormGenerator as FormGeneratorBase,
     model_form_factory,
@@ -796,20 +797,31 @@ class Form(BaseForm):
                 field1 = String('field1_label')  # Note that we don't use the label in the ordering
                 field2 = String()
     """
+    _form_ident_enabled = True
+    _form_ident_strict = True
+
     def __init__(self, *args, **kwargs):
         super(Form, self).__init__(*args, **kwargs)
         self._form_level_errors = []
         self._errors = None
         self.after_init(args, kwargs)
 
-    def __iter__(self):
-        order = getattr(self, '_field_order', None)
+    def __init_subclass__(cls):
+        cls.add_form_ident()
+        super().__init_subclass__()
 
-        if order is None:
+    def __iter__(self):
+        custom_field_order = getattr(self, '_field_order', None)
+
+        if custom_field_order is None:
             return super().__iter__()
 
-        has_csrf = hasattr(self, 'csrf_token')
-        order = (['csrf_token'] if has_csrf else []) + list(order)
+        order = []
+        if hasattr(self, 'csrf_token'):
+            order.append('csrf_token')
+        if self._form_ident_enabled:
+            order.append(self._form_ident_key())
+        order.extend(list(custom_field_order))
 
         declared = set(self._fields.keys())
         ordered = set(order)
@@ -870,6 +882,47 @@ class Form(BaseForm):
             'WTForms has form-level validation now, use form.errors instead', DeprecationWarning, 2
         )
         return self.errors
+
+    @classmethod
+    def add_form_ident(cls):
+        # may need to clean up from a superclass init, so we have fresh config here
+        key = cls._form_ident_key()
+        if hasattr(cls, key):
+            setattr(cls, key, None)
+
+        if not cls._form_ident_enabled:
+            return
+
+        if key.startswith('_'):
+            raise Exception('Cannot start form ident name with "_", since WTForms will ignore')
+
+        validators = []
+        value = cls._form_ident_value()
+        if cls._form_ident_strict:
+            validators.append(AnyOf([value]))
+
+        setattr(
+            cls,
+            key,
+            wtforms.fields.HiddenField(
+                default=value,
+                validators=validators,
+            )
+        )
+
+    @classmethod
+    def _form_ident_key(cls):
+        """Field name to embed as a hidden value for form identification. Default is keg_form_ident.
+
+        Note: this cannot start with an underscore, or WTForms will ignore the field.
+        """
+        return 'keg_form_ident'
+
+    @classmethod
+    def _form_ident_value(cls):
+        """Field value to embed for form identification. Default is class name converted to
+        dash notation."""
+        return case_cw2dash(cls.__name__)
 
 
 BaseModelFormMeta = model_form_meta_factory()

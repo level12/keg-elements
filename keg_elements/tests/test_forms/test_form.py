@@ -345,6 +345,7 @@ class TestValidators(FormBase):
 
 
 class FeaturesForm(Form):
+    _form_ident_enabled = False
     name = wtf.StringField(validators=[validators.data_required()])
     color = wtf.StringField()
 
@@ -355,6 +356,7 @@ class NumbersSubForm(wtf.Form):
 
 
 class NumbersForm(Form):
+    _form_ident_enabled = False
     numbers = wtf.FieldList(wtf.FormField(NumbersSubForm), min_entries=2)
     numbers2 = wtf.FieldList(wtf.StringField('Number'), min_entries=2)
 
@@ -561,6 +563,7 @@ class TestFieldOrder():
                 return 'token'
 
         class CSRF(Form):
+            _form_ident_enabled = False
             _field_order = ('num2', 'num1',)
 
             class Meta:
@@ -583,6 +586,18 @@ class TestFieldOrder():
 
         form = OrderedForm()
 
+        assert [x.name for x in form] == ['keg_form_ident', 'num3', 'num1', 'num2']
+
+    def test_field_order_no_ident(self):
+        class OrderedForm(Form):
+            _form_ident_enabled = False
+            _field_order = ('num3', 'num1', 'num2',)
+            num1 = wtf.IntegerField()
+            num2 = wtf.IntegerField()
+            num3 = wtf.IntegerField()
+
+        form = OrderedForm()
+
         assert [x.name for x in form] == ['num3', 'num1', 'num2']
 
     def test_field_unorder(self):
@@ -593,7 +608,64 @@ class TestFieldOrder():
 
         form = UnorderedForm()
 
-        assert [x.name for x in form] == ['num1', 'num2', 'num3']
+        assert [x.name for x in form] == ['num1', 'num2', 'num3', 'keg_form_ident']
+
+
+class TestFormIdentValidation(FormBase):
+    class MyForm(Form):
+        num1 = wtf.IntegerField()
+
+    form_cls = MyForm
+
+    def test_form_ident_validated(self):
+        form = self.assert_invalid(keg_form_ident='foo')
+        assert form.form_errors == []
+        assert form.errors == {'keg_form_ident': ['Invalid value, must be one of: my-form.']}
+        self.assert_valid(keg_form_ident='my-form')
+
+    def test_form_ident_validated_custom_key(self):
+        class TestForm(self.MyForm):
+            @classmethod
+            def _form_ident_key(cls):
+                return 'mycoolfield'
+
+        form = self.assert_invalid(form_cls=TestForm, mycoolfield='foo')
+        assert form.form_errors == []
+        assert form.errors == {'mycoolfield': ['Invalid value, must be one of: test-form.']}
+        self.assert_valid(form_cls=TestForm, mycoolfield='test-form')
+
+    def test_form_ident_validated_custom_key_invalid(self):
+        with pytest.raises(Exception, match='Cannot start form ident name with "_"'):
+            class TestForm(self.MyForm):
+                @classmethod
+                def _form_ident_key(cls):
+                    return '_mycoolfield'
+
+    def test_form_ident_validated_custom_value(self):
+        class TestForm(self.MyForm):
+            @classmethod
+            def _form_ident_value(cls):
+                return 'bar'
+
+        form = self.assert_invalid(form_cls=TestForm, keg_form_ident='foo')
+        assert form.form_errors == []
+        assert form.errors == {'keg_form_ident': ['Invalid value, must be one of: bar.']}
+        self.assert_valid(form_cls=TestForm, keg_form_ident='bar')
+
+    def test_form_ident_not_strict(self):
+        class TestForm(self.MyForm):
+            _form_ident_strict = False
+
+        self.assert_valid(form_cls=TestForm, keg_form_ident='foo')
+
+    def test_form_ident_not_exists(self):
+        class TestForm(self.MyForm):
+            _form_ident_enabled = False
+
+        form = TestForm()
+        assert not getattr(TestForm, 'keg_form_ident', None)
+        assert not getattr(form, 'keg_form_ident', None)
+        assert 'keg_form_ident' not in form._fields
 
 
 class TestFormLevelValidation(FormBase):
