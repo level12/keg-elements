@@ -36,12 +36,15 @@ jobs:
         docker:
             - image: level12/python-test-multi
               environment:
-                SQLALCHEMY_DATABASE_URI: "postgresql://postgres:password@localhost/test"
+                SQLALCHEMY_DATABASE_URI: "postgresql://postgres@localhost:54321/postgres"
             - image: postgres:latest
               environment:
                 POSTGRES_USER: postgres
-                POSTGRES_PASSWORD: password
-                POSTGRES_DB: test
+                # Ok for local dev, potentially UNSAFE in other applications.  Don't blindly copy & paste
+                # without considering implications.
+                POSTGRES_HOST_AUTH_METHOD: trust
+                POSTGRES_DB: postgres
+                PGPORT: 54321
         steps:
             - runtests
     sqlite:
@@ -55,11 +58,12 @@ jobs:
         docker:
             - image: level12/python-test-multi
               environment:
-                  SQLALCHEMY_DATABASE_URI: "mssql+pyodbc_mssql://SA:Password12!@localhost:1433/tempdb?driver=ODBC+Driver+17+for+SQL+Server"
-            - image: mcr.microsoft.com/mssql/server:2017-latest
+                  SQLALCHEMY_DATABASE_URI: "mssql+pyodbc_mssql://SA:Password12!@localhost:14331/tempdb?driver=ODBC+Driver+17+for+SQL+Server"
+            - image: mcr.microsoft.com/mssql/server
               environment:
                 ACCEPT_EULA: Y
-                SA_PASSWORD: "Password12!"
+                MSSQL_SA_PASSWORD: "Password12!"
+                MSSQL_TCP_PORT: 14331
         steps:
             - runtests
 

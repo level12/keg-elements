@@ -215,6 +215,67 @@ class MethodsMixin:
         return obj
 
     @classmethod
+    def insert(cls, values=None, **kwargs):
+        """Similar to ``add`` but without the ORM overhead. Useful for high data throughput
+        cases where having kwargs name validation and ORM ops/session on every iteration
+        would be inefficient.
+
+        Assumes the calling code is handling session flush/commit.
+
+        :param values: optional dict of values to insert
+        :param kwargs: values to insert, can be combined with the ``values`` dict
+        :return: primary key value(s). Note: SQLite does not support this
+        """
+        if values is None:
+            values = kwargs
+        else:
+            values.update(kwargs)
+
+        stmt = sa.insert(cls.__table__).values(**values)
+        if db.engine.dialect.name == 'sqlite':
+            return db.session.execute(stmt)
+        primary_keys = cls.primary_keys()
+        stmt = stmt.returning(*primary_keys)
+        result = db.session.execute(stmt)
+        if len(primary_keys) > 1:
+            return result.fetchone()
+        return result.scalar()
+
+    @classmethod
+    def update(cls, ent_id, values=None, **kwargs):
+        """Similar to ``edit`` but without the ORM overhead. Useful for high data throughput
+        cases where having kwargs name validation and ORM ops/session on every iteration
+        would be inefficient.
+
+        Assumes the calling code is handling session flush/commit.
+
+        Note: if the entitiy has multiple primary key columns, ``ent_id`` should be an iterable
+        with the values to match in the order of the column definitions as specified in the
+        SA model (i.e. the order of columns returned by ``cls.primary_keys()``).
+
+        :param ent_id: primary key value(s) to match for update
+        :param values: optional dict of values to insert
+        :param kwargs: values to insert, can be combined with the ``values`` dict
+        :return: db cursor result
+        """
+        if values is None:
+            values = kwargs
+        else:
+            values.update(kwargs)
+
+        stmt = (
+            sa.update(cls.__table__)
+            .values(**values)
+            .where(
+                *map(
+                    lambda pair: pair[0] == pair[1],
+                    zip(cls.primary_keys(), tolist(ent_id))
+                )
+            )
+        )
+        return db.session.execute(stmt)
+
+    @classmethod
     def get_by(cls, **kwargs):
         """Returns the instance of this class matching the given criteria or
         None if there is no record matching the criteria.

@@ -43,6 +43,7 @@ class TestMethodsMixin:
 
     def setup_method(self, fn):
         ents.Thing.delete_cascaded()
+        ents.MultiplePrimaryKeys.delete_cascaded()
 
     def test_add(self):
         ents.Thing.add(name='name', color='color', scale_check=1)
@@ -53,6 +54,36 @@ class TestMethodsMixin:
         assert row.name == 'name'
         assert row.color == 'color'
         assert row.scale_check == 1
+
+    def test_insert(self):
+        ret_id = ents.Thing.insert(name='name', color='color', scale_check=1)
+        assert ents.Thing.query.count() == 1
+
+        row = ents.Thing.query.first()
+
+        if db.engine.dialect.name != 'sqlite':
+            assert row.id == ret_id
+        assert row.name == 'name'
+        assert row.color == 'color'
+        assert row.scale_check == 1
+
+    def test_insert_values_dict(self):
+        ents.Thing.insert(values={'name': 'name'}, color='color', scale_check=1)
+        row = ents.Thing.query.first()
+
+        assert row.name == 'name'
+        assert row.color == 'color'
+        assert row.scale_check == 1
+
+    def test_insert_multiple_pk(self):
+        ret_id = ents.MultiplePrimaryKeys.insert(name='name', id=54, other_pk=5)
+        assert ents.MultiplePrimaryKeys.query.count() == 1
+
+        row = ents.MultiplePrimaryKeys.query.first()
+
+        if db.engine.dialect.name != 'sqlite':
+            assert (54, 5) == ret_id
+        assert row.name == 'name'
 
     def test_delete(self):
         thing = ents.Thing.testing_create()
@@ -79,6 +110,34 @@ class TestMethodsMixin:
 
         with pytest.raises(AttributeError):
             ents.Thing.edit(name='edited')
+
+    def test_update(self):
+        thing1 = ents.Thing.testing_create()
+
+        ents.Thing.update(thing1.id, name='edited', color='silver')
+        db.session.commit()
+        db.session.refresh(thing1)
+
+        assert thing1.name == 'edited'
+        assert thing1.color == 'silver'
+
+    def test_update_values_dict(self):
+        thing1 = ents.Thing.testing_create()
+
+        ents.Thing.update(thing1.id, values={'name': 'edited'}, color='silver')
+        db.session.commit()
+        db.session.refresh(thing1)
+
+        assert thing1.name == 'edited'
+        assert thing1.color == 'silver'
+
+    def test_update_multiple_pk(self):
+        row = ents.MultiplePrimaryKeys.testing_create(id=55, other_pk=6, name='foo')
+        ents.MultiplePrimaryKeys.update((55, 6), name='bar')
+        db.session.commit()
+        db.session.refresh(row)
+
+        assert row.name == 'bar'
 
     def test_from_dict(self):
         # Testing create uses `from_dict` so create objects by hand
