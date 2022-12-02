@@ -56,6 +56,22 @@ class Thing(mixins.DefaultMixin, db.Model):
     def name_and_color(cls):
         return cls.name + sa.sql.literal('-') + cls.color
 
+    @sa.ext.hybrid.hybrid_property
+    def hybrid_name(self):
+        return self.name
+
+    @hybrid_name.expression
+    def hybrid_name(cls):
+        return cls.name
+
+    @sa.ext.hybrid.hybrid_property
+    def hybrid_id(self):
+        return self.id
+
+    @hybrid_id.expression
+    def hybrid_id(cls):
+        return cls.id
+
     @classmethod
     def random_color(cls):
         return 'blue'

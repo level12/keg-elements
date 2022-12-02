@@ -944,7 +944,6 @@ class ThingForeignKeyRelationshipMixin:
         )
 
         self.assert_object_options(self.get_field(form), [foo_thing, thing1])
-        assert self.get_field(form).data == self.coerce(foo_thing.id)
 
     def test_options_sorted(self):
         thing_b = ents.Thing.testing_create(name='BBB')
@@ -1015,6 +1014,56 @@ class TestOrmRelationship(ThingForeignKeyRelationshipMixin, RelationshipMixin):
         form = self.create_form(self.create_relationship(),
                                 formdata=MultiDict({'thing': str(thing.id)}))
         assert form.thing.data == thing
+
+
+class TestOrmRelationshipOrmAttr(TestOrmRelationship):
+    """Test a relationship field that uses an ORM attr for the label."""
+
+    def create_relationship(self, query_filter=None):
+        return RelationshipField('Thing', ents.Thing, ents.Thing.name, query_filter=query_filter,
+                                 fk_attr=None)
+
+
+class TestOrmRelationshipOrmFkAttr(TestOrmRelationship):
+    """Test a relationship field that uses an ORM attr for the fk."""
+
+    def create_relationship(self, query_filter=None):
+        return RelationshipField('Thing', ents.Thing, 'name', query_filter=query_filter,
+                                 fk_attr=ents.Thing.id)
+
+    def create_form(self, relationship, **kwargs):
+        class RelatedThingForm(ModelForm):
+            thing_id = relationship
+
+            class Meta:
+                model = ents.RelatedThing
+
+        return RelatedThingForm(**kwargs)
+
+    def get_field(self, form):
+        return form.thing_id
+
+    def test_coerce_formdata(self):
+        thing = ents.Thing.testing_create()
+        form = self.create_form(self.create_relationship(),
+                                formdata=MultiDict({'thing_id': str(thing.id)}))
+        assert form.thing_id.data == thing.id
+
+
+class TestOrmRelationshipOrmHybridAttr(TestOrmRelationshipOrmAttr):
+    """Test a relationship field that uses an ORM hybrid property attr for the label."""
+
+    def create_relationship(self, query_filter=None):
+        return RelationshipField('Thing', ents.Thing, ents.Thing.hybrid_name,
+                                 query_filter=query_filter, fk_attr=None)
+
+
+class TestOrmRelationshipOrmHybridFkAttr(TestOrmRelationshipOrmFkAttr):
+    """Test a relationship field that uses an ORM hybrid property for the fk."""
+
+    def create_relationship(self, query_filter=None):
+        return RelationshipField('Thing', ents.Thing, 'name', query_filter=query_filter,
+                                 fk_attr=ents.Thing.hybrid_id)
 
 
 class TestRelationshipFieldGenerator:

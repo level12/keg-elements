@@ -331,10 +331,18 @@ class RelationshipFieldBase:
                  query_filter=None, coerce=_not_given, **kwargs):
         label = self.field_label_modifier(label)
         self.orm_cls = orm_cls
+
         self.label_attr = label_attr
         if self.label_attr is None:
             self.label_attr = self.get_best_label_attr()
+        if self.label_attr:
+            # compute this once and store on the object, rather than for each option
+            self.label_attr_name = self.compute_option_attr_name(self.label_attr)
+
         self.fk_attr = fk_attr
+        if self.fk_attr:
+            self.fk_attr_name = self.compute_option_attr_name(self.fk_attr)
+
         self.query_filter = query_filter
         if not self.fk_attr and not coerce:
             def coerce_to_orm_obj(value):
@@ -349,6 +357,19 @@ class RelationshipFieldBase:
             coerce = coerce_to_orm_obj
 
         super().__init__(label=label, choices=self.get_choices, coerce=coerce, **kwargs)
+
+    def compute_option_attr_name(self, base_attr):
+        """To access the label value on an option in the result set, we need to know what
+        attribute to use. Based on ``label_attr``, which can be string, SA ORM attr,
+        SA hybrid attr, etc., determine a sane attribute."""
+        retval = base_attr
+
+        if isinstance(base_attr, sa.orm.InstrumentedAttribute):
+            retval = base_attr.name
+        else:
+            retval = getattr(base_attr, '__name__', str(base_attr))
+
+        return retval
 
     def field_label_modifier(self, label):
         """Modifies the label to something more human-friendly.
@@ -366,11 +387,14 @@ class RelationshipFieldBase:
         return query
 
     def query_base(self):
-        return self.orm_cls.query.order_by(self.label_attr)
+        orm_label_attr = self.label_attr
+        if isinstance(self.label_attr, str):
+            orm_label_attr = getattr(self.orm_cls, self.label_attr)
+        return self.orm_cls.query.order_by(orm_label_attr)
 
     def get_data_filter(self):
         if self.fk_attr:
-            return getattr(self.orm_cls, self.fk_attr) == self.data
+            return getattr(self.orm_cls, self.fk_attr_name) == self.data
         else:
             return self.orm_cls.id == self.data.id
 
@@ -407,7 +431,7 @@ class RelationshipFieldBase:
 
     def get_option_label(self, obj):
         if self.label_attr:
-            return getattr(obj, self.label_attr)
+            return getattr(obj, self.label_attr_name)
 
         return str(obj)
 
@@ -416,7 +440,7 @@ class RelationshipFieldBase:
 
         def get_value(obj):
             if self.fk_attr:
-                return str(getattr(obj, self.fk_attr))
+                return str(getattr(obj, self.fk_attr_name))
 
             return str(obj.id)
 
@@ -436,9 +460,6 @@ class RelationshipField(RelationshipFieldBase, SelectField):
 
         orm_cls (class): Model class of the relationship attribute. Used to query
         records for populating select options.
-
-        relationship_attr (str): Name of the attribute on form model that refers to
-        the relationship object. Typically this is a foreign key ID.
 
         label_attr (str): Name of attribute on relationship class to use for select
         option labels.
@@ -477,9 +498,6 @@ class RelationshipMultipleField(RelationshipFieldBase, SelectMultipleField):
 
         orm_cls (class): Model class of the relationship attribute. Used to query
         records for populating select options.
-
-        relationship_attr (str): Name of the collection on form model that refers to
-        the relationship object.
 
         label_attr (str): Name of attribute on relationship class to use for select
         option labels.
