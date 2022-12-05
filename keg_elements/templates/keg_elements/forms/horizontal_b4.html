@@ -241,7 +241,7 @@
 
 {% macro form_errors(form) -%}
     {% if form.form_errors %}
-        <div class="invalid-feedback">
+        <div class="text-danger">
             {% for e in form.form_errors %}
                 <p>{{ e }}</p>
             {% endfor %}
