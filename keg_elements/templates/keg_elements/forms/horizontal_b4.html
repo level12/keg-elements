@@ -276,13 +276,17 @@
     cancel_url='',
     form_upload=false,
     dirty_check=false,
-    start_tab_index=1
+    start_tab_index=1,
+    form_id=None,
+    form_name=None
 ) -%}
 
     <form method="POST"
           action="{{ action_url }}"
           role="form"
           class="{{ class_ }} {{ 'was-validated needs-validation' if form.errors else 'needs-validation' }}"
+          {% if form_id %}id="{{ form_id }}"{% endif %}
+          {% if form_name %}name="{{ form_name }}"{% endif %}
           {% if form_upload %}enctype="multipart/form-data"{% endif %}
           {% if dirty_check %}data-dirty-check="on"{% endif %}
           novalidate
