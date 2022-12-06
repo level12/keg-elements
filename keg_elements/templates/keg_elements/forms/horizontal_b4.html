@@ -32,7 +32,7 @@
 #}
 
 {% macro div_form_group(field) -%}
-    <div class="form-group {{ 'required' if field.flags.required }} {{ kwargs.get('class_', '') }}">
+    <div class="form-group row {{ 'required' if field.flags.required }} {{ kwargs.get('class_', '') }}">
         {{ caller(**kwargs) }}
     </div>
 {%- endmacro %}
@@ -81,16 +81,14 @@
 {% macro field(field, label_visible=true) -%}
     {% call div_form_group(field, **kwargs) %}
         {% if (field.type != 'HiddenField' and field.type != 'CSRFTokenField') and label_visible %}
-            {{ field.label(class_='control-label') }}
+            {{ field.label(class_='col-form-label col-3') }}
         {% endif %}
-        <div class="form-row">
-            <div class="col">
-                <div class="labeled-group">
-                    {{ field_widget(field, **kwargs) }}
-                    {% if field.description %}
-                        {{ description(field) }}
-                    {% endif %}
-                </div>
+        <div class="col-9">
+            <div class="labeled-group">
+                {{ field_widget(field, **kwargs) }}
+                {% if field.description %}
+                    {{ description(field) }}
+                {% endif %}
             </div>
         </div>
     {% endcall %}
@@ -138,7 +136,7 @@
         <input type="checkbox" name="{{ field.name }}"
             {{ 'checked="checked"' if field.data and choice_id in field.data else "" }}
             class="custom-control-input" value="{{ choice_id }}" id="{{ field.id }}{{choice_id}}">
-        <label class="custom-control-label" for="{{ field.id }}{{ choice_id }}">{{choice}}</label>
+        <label class="col-form-label custom-control-label" for="{{ field.id }}{{ choice_id }}">{{choice}}</label>
     </div>
     {% endfor %}
     </div>
@@ -166,16 +164,19 @@
  #}
 {% macro checkbox_field(field) -%}
     {% call div_form_group(field, **kwargs) %}
-        <div class="unlabeled-group checkbox form-check custom-control custom-checkbox">
-            {{ field(type='checkbox', class_='form-check-input custom-control-input is-invalid' if field.errors else 'form-check-input custom-control-input', **kwargs) }}
-            <label class="form-check-label custom-control-label" for="{{ field.id }}">
-                {{ field.label }}
-            </label>
-            {{ field_errors(field) }}
+        <div class="col-sm-9 offset-sm-3">
+            <div class="pt-2 unlabeled-group checkbox form-check custom-control custom-checkbox">
+                {{ field(type='checkbox', class_='form-check-input custom-control-input' + (' is-invalid' if field.errors else ''), **kwargs) }}
+                {# pt-0 is to align the label with the checkbox by removing the padding #}
+                <label class="pt-0 col-form-label form-check-label custom-control-label" for="{{ field.id }}">
+                    {{ field.label }}
+                </label>
+                {{ field_errors(field) }}
+            </div>
+            {% if field.description %}
+                {{ description(field) }}
+            {% endif %}
         </div>
-        {% if field.description %}
-            {{ description(field) }}
-        {% endif %}
     {% endcall %}
 {%- endmacro %}
 
@@ -189,22 +190,23 @@
         {{ horiz_form.radio_field(form.answers) }}
  #}
 {% macro radio_field(field, label_visible=true, tabIndex=1) -%}
-    {% call div_form_group(field, **kwargs) %}
+    <fieldset class="form-group row {{ 'required' if field.flags.required }} {{ kwargs.get('class_', '') }}">
         {% if label_visible %}
-            {{ field.label(class_='control-label') }}
+            {{ field.label(class_='col-form-label col-3') }}
         {% endif %}
-        <div class="labeled-group">
+        <div class="col-9">
         {% for value, label, checked in field.iter_choices() %}
-            <div class="radio">
-                <label>
-                    <input type="radio"
-                           name="{{ field.id }}"
-                           id="{{ field.id }}"
-                           value="{{ value }}"
-                           {{ 'checked' if checked }}
-                           {{ 'disabled' if field.flags.disabled or (field.flags.readonly and not checked) }}
-                           tabIndex="{{tabIndex}}">
-                        {{ label }}
+            <div class="radio form-check">
+                <input type="radio"
+                    class=""form-check-input"
+                    name="{{ field.id }}"
+                    id="{{ field.id }}"
+                    value="{{ value }}"
+                    {{ 'checked' if checked }}
+                    {{ 'disabled' if field.flags.disabled or (field.flags.readonly and not checked) }}
+                    tabIndex="{{tabIndex}}">
+                <label class="form-check-label">
+                    {{ label }}
                 </label>
             </div>
         {% endfor %}
@@ -213,11 +215,11 @@
         {% if field.description %}
             {{ description(field) }}
         {% endif %}
-    {% endcall %}
+    </fieldset>
 {%- endmacro %}
 
 {% macro submit_group(action_text='Submit', btn_class='btn btn-primary', cancel_url='', tab_index=1) -%}
-    <div class="form-group">
+    <div class="form-group row col-9 offset-sm-3">
       <div class="unlabeled-group">
         <button type="submit" class="{{ btn_class }}" tabIndex="{{tab_index}}">{{ action_text }} </button>
         {% if cancel_url %}
@@ -228,12 +230,12 @@
 {%- endmacro %}
 
 {% macro render_field(f) -%}
-    {% if f.type == 'BooleanField' %}
+    {% if f is none %}
+        {# Do nothing b/c the field is None #}
+    {% elif f.type == 'BooleanField' %}
         {{ checkbox_field(f, **kwargs) }}
     {% elif f.type == 'RadioField' %}
         {{ radio_field(f, **kwargs) }}
-    {% elif f is none %}
-        {# Do nothing b/c the field is None #}
     {% else %}
         {{ field(f, **kwargs) }}
     {% endif %}
