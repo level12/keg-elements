@@ -1,0 +1,38 @@
+{% set base_template = config.get('BASE_TEMPLATE') or config.get('KEG_BASE_TEMPLATE') %}
+{% if base_template %}
+    {% extends base_template %}
+{% endif %}
+
+{% macro grid_scripts() %}
+    <script src="{{ url_for('webgrid.static', filename='webgrid.js') }}"></script>
+    <script src="{{ url_for('webgrid.static', filename='jquery.multiple.select.js') }}"></script>
+{% endmacro %}
+
+{% block page_content %}
+    {% block page_content_title %}
+    <h1>{{ title }}</h1>
+    {% endblock %}
+
+    {% block pre_grid %}{% endblock %}
+
+    <section id="grid-body">
+        <div class="preamble">
+            {% block preamble %}
+            {% endblock %}
+        </div>
+        {{ grid.html() | safe}}
+    </section>
+
+    {% block post_grid %}{% endblock %}
+
+    {% if not base_template %}
+        {{ grid_scripts() }}
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    {% if base_template %}
+        {{ super() }}
+        {{ grid_scripts() }}
+    {% endif %}
+{% endblock %}

@@ -72,8 +72,8 @@ class GridMixin:
     """Mixin supporting simple grid view setup"""
     grid_cls = None
     """Grid class to construct, or callable returning a grid instance."""
-    template = 'grid-view.html'
-    """Template to render. Defaults to grid-view.html, but this is not provided by keg_elements."""
+    template = 'keg-elements/grid-view.html'
+    """Template to render. Defaults to keg-elements/grid-view.html"""
     title = None
     """Page title, will be assigned as title for the template."""
 

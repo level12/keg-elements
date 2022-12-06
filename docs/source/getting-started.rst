@@ -110,3 +110,31 @@ The desired workflow here is to run tox, update strings in the PO files as neces
 .. code::
 
     tox -e i18n
+
+
+Upgrade Notes
+=============
+
+While we attempt to preserve backward compatibility, some KegElements versions do introduce
+breaking changes. This list should provide information on needed app changes.
+
+- 0.8.0
+  - ``pytest`` removed support for nose-style methods, so base test classes (e.g. ``EntityBase``)
+  now use ``setup_method`` instead of ``setup``
+  - Bootstrap 4 "horizontal" form templates had been broken and were displaying forms in the
+  vertical style instead. This has been resolved, which means forms will change to showing with
+  horizontal layout. If this is not desired, you will need to override the form templates/macros.
+  - Template files now follow keg's more recent naming scheme to use dashes instead of underscores.
+  E.g. ``keg_elements/forms/horizontal_b4.html`` became ``keg-elements/forms/horizontal-b4.html``
+  - The older Bootstrap 3 macro template (``horizontal.html``) has been renamed for
+  namespacing to ``horizontal-b3.html``.
+  - ``keg-elements/form-view.html`` and ``keg-elements/grid-view.html`` are now available, but
+  need a config value (either ``BASE_TEMPLATE`` or ``KEG_BASE_TEMPLATE``) set to represent the
+  parent to extend.
+  - forms now have an ident field built-in to assist in identifying the form from POSTed data.
+  If a form's render is customized in the template layer, the ident field may be missing. A few
+  options for moving forward:
+
+    - add the field in render (identified by the result of the form's ``_form_ident_key`` method)
+    - turn off ident validation by setting ``_form_ident_strict`` to ``False`` on the form class
+    - turn off the field by setting ``_form_ident_enabled`` to ``False`` on the form class
