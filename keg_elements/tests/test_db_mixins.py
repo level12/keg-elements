@@ -5,7 +5,6 @@ from keg.db import db
 import arrow
 import freezegun
 import pytest
-import six
 import sqlalchemy as sa
 import sqlalchemy_utils as sautils
 import keg_elements.db.mixins as mixins
@@ -252,8 +251,8 @@ class TestMethodsMixin:
     def test_random_data_for_column(self):
         func = mixins.MethodsMixin.random_data_for_column
 
-        assert type(func(sa.Column(sa.Unicode), None)) == six.text_type
-        assert type(func(sa.Column(sa.String), None)) == six.text_type
+        assert type(func(sa.Column(sa.Unicode), None)) == str
+        assert type(func(sa.Column(sa.String), None)) == str
         assert type(func(sa.Column(sa.Integer), None)) == int
         assert type(func(sa.Column(sa.Boolean), None)) == bool
         assert type(func(sa.Column(sa.Numeric(1, 1)), None)) == Decimal
@@ -262,7 +261,7 @@ class TestMethodsMixin:
         assert type(func(sa.Column(sa.Date), None)) == datetime.date
         assert type(func(sa.Column(sa.DateTime), None)) == datetime.datetime
         assert type(func(sa.Column(sautils.ArrowType), None)) == arrow.Arrow
-        assert isinstance(func(sa.Column(sautils.EmailType), None), six.text_type)
+        assert isinstance(func(sa.Column(sautils.EmailType), None), str)
         assert isinstance(func(sa.Column(columns.TimeZoneType), None), str)
 
         with pytest.raises(ValueError):

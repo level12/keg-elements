@@ -12,7 +12,6 @@ from keg.db import db
 import sqlalchemy as sa
 from markupsafe import Markup
 from sqlalchemy_utils import ArrowType, get_class_by_table
-import six
 import wtforms.fields
 import wtforms.form
 from wtforms.validators import InputRequired, Optional, StopValidation, NumberRange, AnyOf
@@ -221,9 +220,9 @@ def select_coerce(es_pass_thru, coerce, value):
     try:
         return int(value)
     except ValueError as e:
-        if 'invalid literal for int()' not in six.text_type(e):
+        if 'invalid literal for int()' not in str(e):
             raise
-        return six.text_type(value)
+        return str(value)
 
 
 class SelectMixin:
@@ -753,8 +752,8 @@ def field_to_dict(field):
 
 
 def form_fields_to_dict(form):
-    return dict((six.text_type(name), field_to_dict(field))
-                for name, field in six.iteritems(form._fields))
+    return dict((str(name), field_to_dict(field))
+                for name, field in form._fields.items())
 
 
 ___validator_creation_counter = 0
@@ -858,7 +857,7 @@ class Form(BaseForm):
         # WTForms will not include the methods on form instances so we get them from the classes.
         for cls in reversed(self.__class__.__mro__):
             cls_validators = {
-                name: attr for name, attr in six.iteritems(cls.__dict__)
+                name: attr for name, attr in cls.__dict__.items()
                 if getattr(attr, '___form_validator', False)
             }
             form_validators.update(cls_validators)

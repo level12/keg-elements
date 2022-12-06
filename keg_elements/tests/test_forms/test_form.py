@@ -1,11 +1,8 @@
-from __future__ import absolute_import, unicode_literals
-
 import sys
 
 from keg.db import db
 import pytest
 from pyquery import PyQuery as pq
-import six
 from werkzeug.datastructures import MultiDict
 import wtforms as wtf
 from wtforms import validators
@@ -66,7 +63,7 @@ class FruitForm(Form):
     letter2 = SelectField(validators=[validators.InputRequired()], choices=[('a', 'a'), ('b', 'b')])
     number = SelectField(validators=[validators.Optional()], choices=[(1, '1'), (0, '0')])
     numstr = SelectField(validators=[validators.Optional()], choices=[('1', '1'), ('0', '0')],
-                         coerce=six.text_type)
+                         coerce=str)
 
 
 class TestSelectField(FormBase):

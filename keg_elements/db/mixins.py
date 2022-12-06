@@ -5,7 +5,6 @@ import random
 import arrow
 import blazeutils.strings
 import pytz
-import six
 import sqlalchemy as sa
 import wrapt
 from blazeutils import tolist
@@ -95,7 +94,7 @@ class MethodsMixin:
         mapper = self.__mapper__
         entity_props = {attr.key: attr for attr in mapper.attrs}
 
-        for key, value in six.iteritems(data):
+        for key, value in data.items():
             prop = entity_props.get(key)
             is_column = isinstance(prop, sa.orm.properties.ColumnProperty)
             is_relationship = isinstance(prop, sa.orm.properties.RelationshipProperty)

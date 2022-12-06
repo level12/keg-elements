@@ -1,6 +1,3 @@
-import six
-
-
 def force_bytes(s, encoding='utf-8', errors='strict'):
     """Force objects to byte representation"""
     # Handle the common case first for performance reasons.
@@ -10,6 +7,6 @@ def force_bytes(s, encoding='utf-8', errors='strict'):
         else:
             return s.decode('utf-8', errors).encode(encoding, errors)
     elif isinstance(s, memoryview):
-        return s.tobytes() if six.PY2 else bytes(s)
+        return bytes(s)
     else:
         return s.encode(encoding, errors)

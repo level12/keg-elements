@@ -5,7 +5,6 @@ from unittest import mock
 
 from keg import current_app
 from pyquery import PyQuery
-import six
 import sqlalchemy as sa
 from sqlalchemy_utils import ArrowType
 from werkzeug.datastructures import MultiDict
@@ -126,7 +125,7 @@ class EntityBase(object):
             fk_count = len(col.foreign_keys)
             if col_check.fk:
                 # normalize `fk` into a set
-                if isinstance(col_check.fk, six.string_types):
+                if isinstance(col_check.fk, str):
                     # 'foo.bar' => {'foo.bar'}
                     # 'foo.bar,baz.qux' => {'foo.bar', 'baz.qux'}
                     # 'foo.bar, baz.qux' => {'foo.bar', 'baz.qux'}

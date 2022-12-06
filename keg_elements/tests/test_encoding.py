@@ -1,9 +1,8 @@
-import six
 import keg_elements.encoding as encoding
 
 
 def test_force_bytes():
-    memory = memoryview('a') if six.PY2 else memoryview(b'a')
+    memory = memoryview(b'a')
 
     assert encoding.force_bytes(memory) == b'a'
     assert encoding.force_bytes('a') == b'a'
