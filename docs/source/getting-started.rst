@@ -124,6 +124,9 @@ breaking changes. This list should provide information on needed app changes.
   - Bootstrap 4 "horizontal" form templates had been broken and were displaying forms in the
   vertical style instead. This has been resolved, which means forms will change to showing with
   horizontal layout. If this is not desired, you will need to override the form templates/macros.
+  - Tab index setting has been removed from the form macro templates. tabindex > 0 is not
+  recommended for accessibility. The _field_order attribute of the form should be used to
+  indirectly control tab order, instead of setting tabindex explicitly.
   - Template files now follow keg's more recent naming scheme to use dashes instead of underscores.
   E.g. ``keg_elements/forms/horizontal_b4.html`` became ``keg-elements/forms/horizontal-b4.html``
   - The older Bootstrap 3 macro template (``horizontal.html``) has been renamed for

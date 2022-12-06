@@ -93,10 +93,10 @@
     {% endcall %}
 {%- endmacro %}
 
-{% macro submit_group(action_text='Done', btn_class='btn btn-primary', cancel_url='', tab_index="1") -%}
+{% macro submit_group(action_text='Done', btn_class='btn btn-primary', cancel_url='') -%}
     <div class="form-group">
         <div class="unlabeled-group">
-          <a tabIndex={{tab_index}} href="{{cancel_url}}" class="{{ btn_class }}">{{ action_text }}</a>
+          <a href="{{cancel_url}}" class="{{ btn_class }}">{{ action_text }}</a>
         </div>
     </div>
 {%- endmacro %}
@@ -135,8 +135,7 @@
     class_='form-horizontal',
     btn_class='btn btn-primary',
     cancel_url='',
-    dirty_check=false,
-    start_tab_index=1
+    dirty_check=false
 ) -%}
     <div class="{{ class_ }}">
         {% if caller %}
@@ -152,13 +151,13 @@
     </div>
 {%- endmacro %}
 
-{% macro fields(form, field_names, start_tab_index=1) -%}
+{% macro fields(form, field_names) -%}
     {% for field_name in field_names %}
         {{ render_field(form[field_name]) }}
     {% endfor %}
 {%- endmacro %}
 
-{% macro section(heading, form, field_names, start_tab_index=1) -%}
+{% macro section(heading, form, field_names) -%}
     <h2>{{heading}}</h2>
     {% if caller %}
         {{ caller() }}
