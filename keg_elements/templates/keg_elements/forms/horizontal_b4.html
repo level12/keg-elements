@@ -124,6 +124,7 @@
         })
     })
 </script>
+{{ datetime_helper() }}
 {% endmacro %}
 
 {% macro multi_checkbox(field) %}
@@ -329,4 +330,10 @@
     {% else %}
         {{ fields(form, field_names, start_tab_index) }}
     {% endif %}
+{%- endmacro %}
+
+{% macro datetime_helper() -%}
+    <script type="text/javascript">
+        {% include "keg_elements/forms/datetime_helper.js" %}
+    </script>
 {%- endmacro %}
