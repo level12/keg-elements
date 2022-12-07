@@ -220,6 +220,8 @@
         {{ checkbox_field(f, **kwargs) }}
     {% elif f.type == 'RadioField' %}
         {{ radio_field(f, **kwargs) }}
+    {% elif f.type == 'FormField' %}
+        {{ render_form_fields(f, render_hidden=true) }}
     {% else %}
         {{ field(f, **kwargs) }}
     {% endif %}
@@ -285,16 +287,20 @@
         {% elif field_names %}
             {{ fields(form, field_names) }}
         {% else %}
-            {% for f in form %}
-                {% if not f.widget.input_type == 'hidden' %}
-                    {# Hidden fields are rendered by the `hidden_tag()` call above #}
-                    {{ render_field(f) }}
-                {% endif %}
-            {% endfor %}
-
+            {{ render_form_fields(form) }}
         {% endif %}
         {{ submit_group(action_text=action_text, btn_class=btn_class, cancel_url=cancel_url) }}
     </form>
+{%- endmacro %}
+
+{% macro render_form_fields(form, render_hidden=false) -%}
+    {# Render hidden tags if flag is passed (for subforms only) #}
+    {{ form.hidden_tag() if render_hidden and form.hidden_tag }}
+    {% for f in form %}
+        {% if not f.widget.input_type == 'hidden' %}
+            {{ render_field(f) }}
+        {% endif %}
+    {% endfor %}
 {%- endmacro %}
 
 {% macro fields(form, field_names) -%}
