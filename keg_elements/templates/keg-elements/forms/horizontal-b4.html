@@ -182,9 +182,9 @@
         {% for value, label, checked in field.iter_choices() %}
             <div class="radio form-check">
                 <input type="radio"
-                    class=""form-check-input"
+                    class="form-check-input{{' is-invalid' if field.errors }}"
                     name="{{ field.id }}"
-                    id="{{ field.id }}"
+                    id="{{ field.id }}-{{ value | lower }}"
                     value="{{ value }}"
                     {{ 'checked' if checked }}
                     {{ 'disabled' if field.flags.disabled or (field.flags.readonly and not checked) }}
@@ -192,9 +192,9 @@
                 <label class="form-check-label">
                     {{ label }}
                 </label>
+                {% if loop.last %}{{ field_errors(field) }}{% endif %}
             </div>
         {% endfor %}
-        {{ field_errors(field) }}
         </div>
         {% if field.description %}
             {{ description(field) }}
