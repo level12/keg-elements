@@ -20,15 +20,15 @@ class TestDefaultColsMixin:
 
     @pytest.mark.skipif(db.engine.dialect.name != 'sqlite', reason='SQLite only test')
     def test_default_ordering(self):
-        thing1 = ents.Thing.testing_create(id=6)
-        thing2 = ents.Thing.testing_create(id=5)
-        thing3 = ents.Thing.testing_create(id=7)
+        thing1 = ents.Thing.fake(id=6)
+        thing2 = ents.Thing.fake(id=5)
+        thing3 = ents.Thing.fake(id=7)
 
         assert ents.Thing.query.all() == [thing2, thing1, thing3]
 
     def test_utc_default(self):
         with freezegun.freeze_time('2020-01-01 13:01:01', tz_offset=4):
-            thing = ents.Thing.testing_create()
+            thing = ents.Thing.fake()
         assert thing.created_utc.format() == '2020-01-01 17:01:01+00:00'
         assert thing.updated_utc.format() == '2020-01-01 17:01:01+00:00'
 
@@ -85,7 +85,7 @@ class TestMethodsMixin:
         assert row.name == 'name'
 
     def test_delete(self):
-        thing = ents.Thing.testing_create()
+        thing = ents.Thing.fake()
         assert ents.Thing.query.count() == 1
 
         ents.Thing.delete(thing.id)
@@ -95,14 +95,14 @@ class TestMethodsMixin:
         assert ents.Thing.delete(1) is False
 
     def test_delete_cascaded(self):
-        ents.Thing.testing_create()
+        ents.Thing.fake()
         assert ents.Thing.query.count() == 1
 
         ents.Thing.delete_cascaded()
         assert ents.Thing.query.count() == 0
 
     def test_edit(self):
-        thing1 = ents.Thing.testing_create()
+        thing1 = ents.Thing.fake()
 
         ents.Thing.edit(thing1.id, name='edited')
         assert thing1.name == 'edited'
@@ -111,7 +111,7 @@ class TestMethodsMixin:
             ents.Thing.edit(name='edited')
 
     def test_update(self):
-        thing1 = ents.Thing.testing_create()
+        thing1 = ents.Thing.fake()
 
         ents.Thing.update(thing1.id, name='edited', color='silver')
         db.session.commit()
@@ -121,7 +121,7 @@ class TestMethodsMixin:
         assert thing1.color == 'silver'
 
     def test_update_values_dict(self):
-        thing1 = ents.Thing.testing_create()
+        thing1 = ents.Thing.fake()
 
         ents.Thing.update(thing1.id, values={'name': 'edited'}, color='silver')
         db.session.commit()
@@ -131,7 +131,7 @@ class TestMethodsMixin:
         assert thing1.color == 'silver'
 
     def test_update_multiple_pk(self):
-        row = ents.MultiplePrimaryKeys.testing_create(id=55, other_pk=6, name='foo')
+        row = ents.MultiplePrimaryKeys.fake(id=55, other_pk=6, name='foo')
         ents.MultiplePrimaryKeys.update((55, 6), name='bar')
         db.session.commit()
         db.session.refresh(row)
@@ -181,13 +181,13 @@ class TestMethodsMixin:
             assert ents.Thing.get_by(id=1) is None
 
         def returns_object_when_one_exists():
-            thing = ents.Thing.testing_create()
+            thing = ents.Thing.fake()
 
             assert ents.Thing.get_by(id=thing.id) == thing
 
         def raises_when_multiple_exists():
-            ents.Thing.testing_create(name='foo')
-            ents.Thing.testing_create(name='foo')
+            ents.Thing.fake(name='foo')
+            ents.Thing.fake(name='foo')
 
             with pytest.raises(sa.orm.exc.MultipleResultsFound):
                 ents.Thing.get_by(name='foo')
@@ -197,9 +197,9 @@ class TestMethodsMixin:
         raises_when_multiple_exists()
 
     def test_get_where(self):
-        thing1 = ents.Thing.testing_create(name='thing1', color='black')
-        ents.Thing.testing_create(name='thing2', color='black', scale_check=10)
-        thing3 = ents.Thing.testing_create(name='thing3', color='orange', scale_check=10)
+        thing1 = ents.Thing.fake(name='thing1', color='black')
+        ents.Thing.fake(name='thing2', color='black', scale_check=10)
+        thing3 = ents.Thing.fake(name='thing3', color='orange', scale_check=10)
 
         assert ents.Thing.get_where(ents.Thing.name == 'thing1') == thing1
         assert ents.Thing.get_where(ents.Thing.name == 'thing5') is None
@@ -210,8 +210,8 @@ class TestMethodsMixin:
             ents.Thing.get_where(ents.Thing.color == 'black')
 
     def test_pairs_takes_name_and_value_and_returns_list_of_tuples(self):
-        thing1 = ents.Thing.testing_create(name='A', color='orange')
-        thing2 = ents.Thing.testing_create(name='B', color='black')
+        thing1 = ents.Thing.fake(name='A', color='orange')
+        thing2 = ents.Thing.fake(name='B', color='black')
 
         expected = [(thing1.id, 'A'), (thing2.id, 'B')]
         assert ents.Thing.pairs('id', 'name') == expected
@@ -230,7 +230,7 @@ class TestMethodsMixin:
                                 items=lambda obj: obj.id) == expected
 
     def test_to_dict(self):
-        obj = ents.Thing.testing_create()
+        obj = ents.Thing.fake()
 
         expected = {'id', 'name', 'color', 'scale_check', 'float_check', 'updated_utc',
                     'created_utc', 'units', 'status', 'date_check', 'float_check_prop'}
@@ -267,18 +267,18 @@ class TestMethodsMixin:
         with pytest.raises(ValueError):
             assert type(func(sa.Column(sa.LargeBinary), None))
 
-    def test_check_kwargs_in_testing_create(self):
-        ents.Thing.testing_create(name='a')
+    def test_check_kwargs_in_fake(self):
+        ents.Thing.fake(name='a')
 
         with pytest.raises(AssertionError) as excinfo:
-            ents.Thing.testing_create(foo=1, bar=2, _baz=3, name='b')
+            ents.Thing.fake(foo=1, bar=2, _baz=3, name='b')
         assert str(excinfo.value) == \
             'Unknown column or relationship names in kwargs: [\'bar\', \'foo\']'
 
-        ents.Thing.testing_create(foo=1, bar=2, _baz=3, name='b', _check_kwargs=False)
+        ents.Thing.fake(foo=1, bar=2, _baz=3, name='b', _check_kwargs=False)
 
     def test_check_kwargs_in_edit(self):
-        thing = ents.Thing.testing_create(name='a')
+        thing = ents.Thing.fake(name='a')
         with pytest.raises(AssertionError) as excinfo:
             ents.Thing.edit(thing.id, fieldshouldnotexist='foo')
         assert str(excinfo.value) == \
@@ -296,38 +296,38 @@ class TestMethodsMixin:
         ents.Thing.add(name='kwargs-in-add', fieldshouldnotexist='foo', _check_kwargs=False)
 
     def test_testing_create_flush_and_commit(self):
-        obj = ents.Thing.testing_create(_flush=False, _commit=False)
+        obj = ents.Thing.fake(_flush=False, _commit=False)
         assert sa.inspect(obj).pending
         db.session.rollback()
         assert sa.inspect(obj).transient
 
-        obj = ents.Thing.testing_create(_flush=True, _commit=False)
+        obj = ents.Thing.fake(_flush=True, _commit=False)
         assert sa.inspect(obj).persistent
         db.session.rollback()
         assert sa.inspect(obj).transient
 
-        obj = ents.Thing.testing_create(_flush=False, _commit=True)
+        obj = ents.Thing.fake(_flush=False, _commit=True)
         assert sa.inspect(obj).persistent
         db.session.rollback()
         assert sa.inspect(obj).persistent
 
     def test_override_random_data_generation(self):
-        obj = ents.Thing.testing_create()
+        obj = ents.Thing.fake()
         assert obj.color == 'blue'
         assert obj.scale_check == Decimal('12.3456')
 
     def test_related_object_created(self):
-        obj = ents.RelatedThing.testing_create()
+        obj = ents.RelatedThing.fake()
         assert obj.thing
 
     def test_related_object_respects_id(self):
-        thing = ents.Thing.testing_create()
-        obj = ents.RelatedThing.testing_create(thing_id=thing.id)
+        thing = ents.Thing.fake()
+        obj = ents.RelatedThing.fake(thing_id=thing.id)
         assert obj.thing is thing
 
     def test_related_object_respects_relationship_attr(self):
-        thing = ents.Thing.testing_create()
-        obj = ents.RelatedThing.testing_create(thing=thing)
+        thing = ents.Thing.fake()
+        obj = ents.RelatedThing.fake(thing=thing)
         assert obj.thing is thing
 
     def test_related_object_bad_attributes(self):
@@ -348,7 +348,7 @@ class TestMethodsMixin:
         )
         assert isinstance(kwargs['foo'], ents.Thing)
 
-        thing = ents.Thing.testing_create()
+        thing = ents.Thing.fake()
         kwargs = {'foo': thing}
         MyObject.testing_set_related(
             kwargs, ents.Thing, _relationship_name='foo', _relationship_field='bar'
@@ -371,14 +371,14 @@ class TestSoftDeleteMixin:
         db.session.remove()
 
     def test_delete_sets_field(self):
-        sdt1 = ents.SoftDeleteTester.testing_create()
+        sdt1 = ents.SoftDeleteTester.fake()
 
         assert sdt1.deleted_utc is None
         assert ents.SoftDeleteTester.delete(sdt1.id)
         assert sdt1.deleted_utc is not None
 
     def test_manual_delete_raises_error(self):
-        sdt1 = ents.SoftDeleteTester.testing_create()
+        sdt1 = ents.SoftDeleteTester.fake()
 
         db.session.delete(sdt1)
 
@@ -391,7 +391,7 @@ class TestSoftDeleteMixin:
         assert not ents.SoftDeleteTester.delete(1234)
 
     def test_delete_cascaded_still_works(self):
-        ents.SoftDeleteTester.testing_create()
+        ents.SoftDeleteTester.fake()
 
         assert ents.SoftDeleteTester.query.count() == 1
 
@@ -399,14 +399,14 @@ class TestSoftDeleteMixin:
         assert ents.SoftDeleteTester.query.count() == 0
 
     def test_testing_create_allows_is_deleted_flag(self):
-        sdt1 = ents.SoftDeleteTester.testing_create()
+        sdt1 = ents.SoftDeleteTester.fake()
         assert sdt1.deleted_utc is None
 
-        sdt1 = ents.SoftDeleteTester.testing_create(_is_deleted=True)
+        sdt1 = ents.SoftDeleteTester.fake(_is_deleted=True)
         assert sdt1.deleted_utc is not None
 
     def test_deleting_the_parent_deletes_the_child(self):
-        sdt1 = ents.SoftDeleteTester.testing_create()
+        sdt1 = ents.SoftDeleteTester.fake()
         assert sdt1.hdp == ents.HardDeleteParent.query.one()
 
         with pytest.raises(mixins.HardDeleteProhibitedError):
@@ -426,11 +426,11 @@ class TestLookupMixin:
         return True
 
     def test_list_active(self):
-        a = ents.LookupTester.testing_create(label='a', deleted_utc=None)
-        b = ents.LookupTester.testing_create(label='b', deleted_utc=None)
-        c = ents.LookupTester.testing_create(label='c', deleted_utc=None)
-        d = ents.LookupTester.testing_create(label='d', deleted_utc=arrow.now())
-        e = ents.LookupTester.testing_create(label='e', deleted_utc=arrow.now())
+        a = ents.LookupTester.fake(label='a', deleted_utc=None)
+        b = ents.LookupTester.fake(label='b', deleted_utc=None)
+        c = ents.LookupTester.fake(label='c', deleted_utc=None)
+        d = ents.LookupTester.fake(label='d', deleted_utc=arrow.now())
+        e = ents.LookupTester.fake(label='e', deleted_utc=arrow.now())
 
         rows = ents.LookupTester.list_active()
         assert [a, b, c] == rows
@@ -445,11 +445,11 @@ class TestLookupMixin:
         assert [a, b, c, d, e] == rows
 
     def test_pairs_active(self):
-        a = ents.LookupTester.testing_create(label='a', deleted_utc=None)
-        b = ents.LookupTester.testing_create(label='b', deleted_utc=None)
-        c = ents.LookupTester.testing_create(label='c', deleted_utc=None)
-        d = ents.LookupTester.testing_create(label='d', deleted_utc=arrow.now())
-        e = ents.LookupTester.testing_create(label='e', deleted_utc=arrow.now())
+        a = ents.LookupTester.fake(label='a', deleted_utc=None)
+        b = ents.LookupTester.fake(label='b', deleted_utc=None)
+        c = ents.LookupTester.fake(label='c', deleted_utc=None)
+        d = ents.LookupTester.fake(label='d', deleted_utc=arrow.now())
+        e = ents.LookupTester.fake(label='e', deleted_utc=arrow.now())
 
         def make_pairs(*records):
             return [(record.id, record.label) for record in records]
@@ -467,18 +467,18 @@ class TestLookupMixin:
         assert make_pairs(a, b, c, d, e) == pairs
 
     def test_get_by_label(self):
-        a = ents.LookupTester.testing_create(label='a', deleted_utc=None)
-        b = ents.LookupTester.testing_create(label='b', deleted_utc=None)
+        a = ents.LookupTester.fake(label='a', deleted_utc=None)
+        b = ents.LookupTester.fake(label='b', deleted_utc=None)
 
         assert ents.LookupTester.get_by_label('a') == a
         assert ents.LookupTester.get_by_label('b') == b
 
     def test_get_by_code(self):
-        a = ents.LookupTester.testing_create(label='a', code='foo', deleted_utc=None)
-        ents.LookupTester.testing_create(label='b', deleted_utc=None)
+        a = ents.LookupTester.fake(label='a', code='foo', deleted_utc=None)
+        ents.LookupTester.fake(label='b', deleted_utc=None)
 
         assert ents.LookupTester.get_by_code('foo') == a
 
     def test_repr(self):
-        a = ents.LookupTester.testing_create(label='a', deleted_utc=None)
+        a = ents.LookupTester.fake(label='a', deleted_utc=None)
         assert str(a) == '<LookupTester {}:a>'.format(a.id)

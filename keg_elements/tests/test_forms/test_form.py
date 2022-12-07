@@ -994,8 +994,8 @@ class ThingForeignKeyRelationshipMixin:
         return value
 
     def test_relationship_options(self):
-        ents.Thing.testing_create(name='Foo')
-        thing1 = ents.Thing.testing_create()
+        ents.Thing.fake(name='Foo')
+        thing1 = ents.Thing.fake()
         form = self.create_form(
             self.create_relationship(lambda this: this.orm_cls.name != 'Foo')
         )
@@ -1003,8 +1003,8 @@ class ThingForeignKeyRelationshipMixin:
         self.assert_object_options(self.get_field(form), [thing1])
 
     def test_options_include_form_obj_value(self):
-        foo_thing = ents.Thing.testing_create(name='Foo')
-        thing1 = ents.Thing.testing_create(name='Thing 1')
+        foo_thing = ents.Thing.fake(name='Foo')
+        thing1 = ents.Thing.fake(name='Thing 1')
         related_thing = ents.RelatedThing(thing=foo_thing, name='Related')
         db.session.commit()
         form = self.create_form(
@@ -1015,9 +1015,9 @@ class ThingForeignKeyRelationshipMixin:
         self.assert_object_options(self.get_field(form), [foo_thing, thing1])
 
     def test_options_sorted(self):
-        thing_b = ents.Thing.testing_create(name='BBB')
-        thing_c = ents.Thing.testing_create(name='CCC')
-        thing_a = ents.Thing.testing_create(name='AAA')
+        thing_b = ents.Thing.fake(name='BBB')
+        thing_c = ents.Thing.fake(name='CCC')
+        thing_a = ents.Thing.fake(name='AAA')
         form = self.create_form(
             self.create_relationship(lambda this: this.orm_cls.name != 'Foo')
         )
@@ -1025,8 +1025,8 @@ class ThingForeignKeyRelationshipMixin:
         self.assert_object_options(self.get_field(form), [thing_a, thing_b, thing_c])
 
     def test_no_query_filter(self):
-        foo_thing = ents.Thing.testing_create(name='Foo')
-        thing1 = ents.Thing.testing_create(name='Thing 1')
+        foo_thing = ents.Thing.fake(name='Foo')
+        thing1 = ents.Thing.fake(name='Thing 1')
         form = self.create_form(self.create_relationship())
 
         self.assert_object_options(self.get_field(form), [foo_thing, thing1])
@@ -1050,7 +1050,7 @@ class TestForeignKeyRelationship(ThingForeignKeyRelationshipMixin, RelationshipM
         return form.thing_id
 
     def test_coerce_formdata(self):
-        thing = ents.Thing.testing_create()
+        thing = ents.Thing.fake()
         form = self.create_form(self.create_relationship(),
                                 formdata=MultiDict({'thing_id': str(thing.id)}))
         assert form.thing_id.data == thing.id
@@ -1079,7 +1079,7 @@ class TestOrmRelationship(ThingForeignKeyRelationshipMixin, RelationshipMixin):
         return form.thing
 
     def test_coerce_formdata(self):
-        thing = ents.Thing.testing_create()
+        thing = ents.Thing.fake()
         form = self.create_form(self.create_relationship(),
                                 formdata=MultiDict({'thing': str(thing.id)}))
         assert form.thing.data == thing
@@ -1113,7 +1113,7 @@ class TestOrmRelationshipOrmFkAttr(TestOrmRelationship):
         return form.thing_id
 
     def test_coerce_formdata(self):
-        thing = ents.Thing.testing_create()
+        thing = ents.Thing.fake()
         form = self.create_form(self.create_relationship(),
                                 formdata=MultiDict({'thing_id': str(thing.id)}))
         assert form.thing_id.data == thing.id
@@ -1163,8 +1163,8 @@ class TestRelationshipFieldGenerator:
         assert form.thing_id.label.text == 'Thing'
 
     def test_choices(self):
-        thing1 = ents.Thing.testing_create(name='foo')
-        thing2 = ents.Thing.testing_create(name='bar')
+        thing1 = ents.Thing.fake(name='foo')
+        thing2 = ents.Thing.fake(name='bar')
         form = self.create_form()
         assert form.thing_id.choice_values == ['', thing2.id, thing1.id]
 
@@ -1173,30 +1173,30 @@ class TestRelationshipFieldGenerator:
         assert isinstance(form.thing_id.validators[0], validators.InputRequired)
 
     def test_custom_label_attr(self):
-        thing1 = ents.Thing.testing_create(name='foo', color='blue')
-        thing2 = ents.Thing.testing_create(name='bar', color='red')
+        thing1 = ents.Thing.fake(name='foo', color='blue')
+        thing2 = ents.Thing.fake(name='bar', color='red')
         form = self.create_custom_form({'label_attr': 'color'})
         assert form.thing_id.choice_values == ['', thing1.id, thing2.id]
 
     def test_choices_filtered(self):
-        ents.Thing.testing_create(name='foo', color='blue')
-        thing2 = ents.Thing.testing_create(name='bar', color='red')
+        ents.Thing.fake(name='foo', color='blue')
+        thing2 = ents.Thing.fake(name='bar', color='red')
         form = self.create_custom_form({'query_filter': ents.Thing.name != 'foo'})
         assert form.thing_id.choice_values == ['', thing2.id]
 
     def test_choices_included(self):
-        thing1 = ents.Thing.testing_create(name='foo', color='blue')
-        thing2 = ents.Thing.testing_create(name='bar', color='red')
-        related_thing = ents.RelatedThing.testing_create(thing=thing1)
+        thing1 = ents.Thing.fake(name='foo', color='blue')
+        thing2 = ents.Thing.fake(name='bar', color='red')
+        related_thing = ents.RelatedThing.fake(thing=thing1)
         form = self.create_custom_form({'query_filter': ents.Thing.name != 'foo'},
                                        obj=related_thing)
         assert form.thing_id.choice_values == ['', thing2.id, thing1.id]
 
     def test_choices_data_filter_not_applied_incorrectly(self):
-        thing1 = ents.Thing.testing_create(name='foo', color='blue')
-        thing2 = ents.Thing.testing_create(name='bar', color='red')
-        thing3 = ents.Thing.testing_create(name='baz', color='purple')
-        related_thing = ents.RelatedThing.testing_create(thing=thing1)
+        thing1 = ents.Thing.fake(name='foo', color='blue')
+        thing2 = ents.Thing.fake(name='bar', color='red')
+        thing3 = ents.Thing.fake(name='baz', color='purple')
+        related_thing = ents.RelatedThing.fake(thing=thing1)
         form = self.create_custom_form({'query_filter': None}, obj=related_thing)
         assert form.thing_id.choice_values == ['', thing2.id, thing3.id, thing1.id]
 
@@ -1223,8 +1223,8 @@ class TestCollectionRelationship(RelationshipMixin):
         ents.Thing.delete_cascaded()
 
     def test_relationship_options(self):
-        ents.RelatedThing.testing_create(name='Foo')
-        thing1 = ents.RelatedThing.testing_create()
+        ents.RelatedThing.fake(name='Foo')
+        thing1 = ents.RelatedThing.fake()
         form = self.create_form(
             self.create_relationship(lambda this: this.orm_cls.name != 'Foo')
         )
@@ -1232,10 +1232,10 @@ class TestCollectionRelationship(RelationshipMixin):
         self.assert_object_options(form.related_things, [thing1])
 
     def test_options_include_form_obj_value(self):
-        foo_thing = ents.RelatedThing.testing_create(name='Foo')
-        thing1 = ents.RelatedThing.testing_create(name='Thing 1')
-        thing2 = ents.RelatedThing.testing_create(name='Thing 2')
-        thing_obj = ents.Thing.testing_create(related_things=[thing1, thing2])
+        foo_thing = ents.RelatedThing.fake(name='Foo')
+        thing1 = ents.RelatedThing.fake(name='Thing 1')
+        thing2 = ents.RelatedThing.fake(name='Thing 2')
+        thing_obj = ents.Thing.fake(related_things=[thing1, thing2])
         form = self.create_form(
             self.create_relationship(lambda this: ~this.orm_cls.id.in_([thing1.id, thing2.id])),
         )
@@ -1254,10 +1254,10 @@ class TestCollectionRelationship(RelationshipMixin):
             class Meta:
                 model = ents.ManyToManyThing
 
-        thing1 = ents.Thing.testing_create()
-        thing2 = ents.Thing.testing_create()
-        thing3 = ents.Thing.testing_create()
-        manything = ents.ManyToManyThing.testing_create(things=[thing1, thing2])
+        thing1 = ents.Thing.fake()
+        thing2 = ents.Thing.fake()
+        thing3 = ents.Thing.fake()
+        manything = ents.ManyToManyThing.fake(things=[thing1, thing2])
 
         form = ManyThingsForm(obj=manything)
         # form data level should be ORM instances

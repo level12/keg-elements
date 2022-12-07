@@ -314,7 +314,7 @@ class MethodsMixin:
 
     @kwargs_match_entity
     @classmethod
-    def testing_create(cls, **kwargs):
+    def fake(cls, **kwargs):
         """Create an object for testing with default data appropriate for the field type
 
         * Will automatically set most field types ignoring those passed in via kwargs.
@@ -457,7 +457,7 @@ class MethodsMixin:
 
         # generic logic to respect existing kwargs setting on either field
         if not {relationship_name, relationship_field} & set(kwargs.keys()):
-            kwargs[relationship_name] = model.testing_create(
+            kwargs[relationship_name] = model.fake(
                 *testing_create_args,
                 **testing_create_kwargs
             )
@@ -562,9 +562,9 @@ class SoftDeleteMixin:
     @might_commit
     @might_flush
     @classmethod
-    def testing_create(cls, *args, _is_deleted=False, **kwargs):
+    def fake(cls, *args, _is_deleted=False, **kwargs):
         kwargs.setdefault('deleted_utc', arrow.utcnow() if _is_deleted else None)
-        return super().testing_create(*args, **kwargs)
+        return super().fake(*args, **kwargs)
 
     @staticmethod
     def sqla_before_delete_event(mapper, connection, target):

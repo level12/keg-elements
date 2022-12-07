@@ -98,9 +98,9 @@ class RelatedThing(mixins.DefaultMixin, db.Model):
     ))
 
     @classmethod
-    def testing_create(cls, **kwargs):
+    def fake(cls, **kwargs):
         cls.testing_set_related(kwargs, Thing)
-        return super(RelatedThing, cls).testing_create(**kwargs)
+        return super(RelatedThing, cls).fake(**kwargs)
 
 
 class OtherThing(mixins.DefaultMixin, db.Model):
@@ -118,10 +118,10 @@ class OtherThing(mixins.DefaultMixin, db.Model):
     ))
 
     @classmethod
-    def testing_create(cls, **kwargs):
+    def fake(cls, **kwargs):
         cls.testing_set_related(kwargs, Thing)
         kwargs.setdefault('unique_field', str(uuid.uuid4()))
-        return super(OtherThing, cls).testing_create(**kwargs)
+        return super(OtherThing, cls).fake(**kwargs)
 
 
 class ManyToManyThing(mixins.DefaultMixin, db.Model):
@@ -182,11 +182,11 @@ class AncillaryA(mixins.DefaultMixin, db.Model):
     )
 
     @classmethod
-    def testing_create(cls, **kwargs):
+    def fake(cls, **kwargs):
         if 'thing_id' not in kwargs:
-            kwargs['thing_id'] = Thing.testing_create().id
+            kwargs['thing_id'] = Thing.fake().id
 
-        return super(AncillaryA, cls).testing_create(**kwargs)
+        return super(AncillaryA, cls).fake(**kwargs)
 
     @classmethod
     def delete_cascaded(cls):
@@ -204,11 +204,11 @@ class AncillaryB(mixins.DefaultMixin, db.Model):
     )
 
     @classmethod
-    def testing_create(cls, **kwargs):
+    def fake(cls, **kwargs):
         if 'thing_id' not in kwargs:
-            kwargs['thing_id'] = Thing.testing_create().id
+            kwargs['thing_id'] = Thing.fake().id
 
-        return super(AncillaryB, cls).testing_create(**kwargs)
+        return super(AncillaryB, cls).fake(**kwargs)
 
     @classmethod
     def delete_cascaded(cls):
@@ -235,19 +235,19 @@ class UsesBoth(mixins.DefaultMixin, db.Model):
     ancillary_b_id = sa.Column(sa.Integer, nullable=False)
 
     @classmethod
-    def testing_create(cls, **kwargs):
+    def fake(cls, **kwargs):
         if 'thing_id' not in kwargs:
-            kwargs['thing_id'] = Thing.testing_create().id
+            kwargs['thing_id'] = Thing.fake().id
 
         thing_id = kwargs['thing_id']
 
         if 'ancillary_a_id' not in kwargs:
-            kwargs['ancillary_a_id'] = AncillaryA.testing_create(thing_id=thing_id).id
+            kwargs['ancillary_a_id'] = AncillaryA.fake(thing_id=thing_id).id
 
         if 'ancillary_b_id' not in kwargs:
-            kwargs['ancillary_b_id'] = AncillaryB.testing_create(thing_id=thing_id).id
+            kwargs['ancillary_b_id'] = AncillaryB.fake(thing_id=thing_id).id
 
-        return super(UsesBoth, cls).testing_create(**kwargs)
+        return super(UsesBoth, cls).fake(**kwargs)
 
 
 class ConstraintTester(mixins.DefaultMixin, db.Model):
@@ -263,9 +263,9 @@ class ConstraintTester(mixins.DefaultMixin, db.Model):
     )
 
     @classmethod
-    def testing_create(cls, **kwargs):
+    def fake(cls, **kwargs):
         kwargs.setdefault('check', random.randint(0, 100))
-        return super(ConstraintTester, cls).testing_create(**kwargs)
+        return super(ConstraintTester, cls).fake(**kwargs)
 
 
 class HardDeleteParent(mixins.DefaultMixin, db.Model):
@@ -284,9 +284,9 @@ class SoftDeleteTester(mixins.SoftDeleteMixin, mixins.DefaultMixin, db.Model):
         HardDeleteParent, backref=sa.orm.backref('sdts', cascade='all,delete-orphan'))
 
     @classmethod
-    def testing_create(cls, **kwargs):
-        kwargs['hdp_id'] = kwargs.get('hpd_id') or HardDeleteParent.testing_create().id
-        return super().testing_create(**kwargs)
+    def fake(cls, **kwargs):
+        kwargs['hdp_id'] = kwargs.get('hpd_id') or HardDeleteParent.fake().id
+        return super().fake(**kwargs)
 
 
 class DefaultNumeric(mixins.DefaultMixin, db.Model):

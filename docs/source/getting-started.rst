@@ -48,7 +48,7 @@ KegElements provides model mixins with helpful default columns and methods::
         __tablename__ = 'things'
 
         # id, created_utc, updated_utc provided via mixin
-        # tests can use Thing.testing_create to get an instance with random data
+        # tests can use Thing.fake() to get an instance with random data
 
         name = db.Column(db.Unicode(50), nullable=False)
         color = db.Column(db.Unicode)
@@ -121,6 +121,7 @@ breaking changes. This list should provide information on needed app changes.
 - 0.8.0
   - ``pytest`` removed support for nose-style methods, so base test classes (e.g. ``EntityBase``)
   now use ``setup_method`` instead of ``setup``
+  - MethodsMixin's ``testing_create`` renamed to ``fake`` for brevity
   - Bootstrap 4 "horizontal" form templates had been broken and were displaying forms in the
   vertical style instead. This has been resolved, which means forms will change to showing with
   horizontal layout. If this is not desired, you will need to override the form templates/macros.

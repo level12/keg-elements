@@ -12,7 +12,7 @@ from keg_elements.db import columns
 class TestColumns(object):
 
     def test_testing_create_for_timezone_columns(self):
-        obj = ents.ColumnTester.testing_create()
+        obj = ents.ColumnTester.fake()
         assert obj.time_zone in pytz.common_timezones
 
         obj.time_zone = 'other'
@@ -21,7 +21,7 @@ class TestColumns(object):
 
     def test_encrypted_null(self):
         ents.ColumnTester.delete_cascaded()
-        obj = ents.ColumnTester.testing_create(encrypted1=None, encrypted2=None, encrypted3=None)
+        obj = ents.ColumnTester.fake(encrypted1=None, encrypted2=None, encrypted3=None)
         assert obj.encrypted1 is None
         assert obj.encrypted2 is None
         assert obj.encrypted3 is None
@@ -32,7 +32,7 @@ class TestColumns(object):
 
     def test_store_encrypted(self):
         ents.ColumnTester.delete_cascaded()
-        obj = ents.ColumnTester.testing_create(encrypted1='Foo', encrypted2='Bar', encrypted3='Baz')
+        obj = ents.ColumnTester.fake(encrypted1='Foo', encrypted2='Bar', encrypted3='Baz')
         assert obj.encrypted1 == 'Foo'
         assert obj.encrypted2 == 'Bar'
         assert obj.encrypted3 == 'Baz'

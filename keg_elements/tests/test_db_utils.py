@@ -43,7 +43,7 @@ class TestUpdateCollection(object):
         ents.RelatedThing.delete_cascaded()
 
     def test_add(self):
-        thing = ents.Thing.testing_create()
+        thing = ents.Thing.fake()
         assert not thing.related_things
 
         data = [{'name': 'test', 'is_enabled': True}]
@@ -55,9 +55,9 @@ class TestUpdateCollection(object):
         assert related.is_enabled
 
     def test_edit(self):
-        thing = ents.Thing.testing_create()
-        related1_id = ents.RelatedThing.testing_create(thing=thing, name='a').id
-        related2_id = ents.RelatedThing.testing_create(thing=thing, name='x').id
+        thing = ents.Thing.fake()
+        related1_id = ents.RelatedThing.fake(thing=thing, name='a').id
+        related2_id = ents.RelatedThing.fake(thing=thing, name='x').id
 
         data = [
             {'id': related1_id, 'name': 'b', 'is_enabled': False},
@@ -79,9 +79,8 @@ class TestUpdateCollection(object):
         assert not related2.is_enabled
 
     def test_append_id_none(self):
-        thing = ents.Thing.testing_create()
-        related = ents.RelatedThing.testing_create(thing=thing, name='a',
-                                                   is_enabled=True)
+        thing = ents.Thing.fake()
+        related = ents.RelatedThing.fake(thing=thing, name='a', is_enabled=True)
 
         data = [
             {'is_enabled': False}
@@ -95,8 +94,8 @@ class TestUpdateCollection(object):
         assert not related.is_enabled
 
     def test_remove(self):
-        thing = ents.Thing.testing_create()
-        ents.RelatedThing.testing_create(thing=thing, name='a', is_enabled=True)
+        thing = ents.Thing.fake()
+        ents.RelatedThing.fake(thing=thing, name='a', is_enabled=True)
         assert len(thing.related_things) == 1
 
         data = []
@@ -105,8 +104,8 @@ class TestUpdateCollection(object):
         assert len(thing.related_things) == 0
 
     def test_replace_with_unique_constraint(self):
-        thing = ents.Thing.testing_create()
-        other = ents.OtherThing.testing_create(thing=thing)
+        thing = ents.Thing.fake()
+        other = ents.OtherThing.fake(thing=thing)
 
         data = [
             {
@@ -124,19 +123,19 @@ class TestExceptionHelpers:
         ents.ConstraintTester.delete_cascaded()
 
     def test_validate_unique_exception_unnamed(self):
-        ents.ConstraintTester.testing_create(unique1=1)
+        ents.ConstraintTester.fake(unique1=1)
         with pytest.raises(Exception) as exc:
-            ents.ConstraintTester.testing_create(unique1=1)
+            ents.ConstraintTester.fake(unique1=1)
         assert dbutils.validate_unique_exc(exc.value) is True
 
         with pytest.raises(Exception) as exc:
-            ents.ConstraintTester.testing_create(check=101)
+            ents.ConstraintTester.fake(check=101)
         assert dbutils.validate_unique_exc(exc.value) is False
 
     def test_validate_unique_exception_named(self):
-        ents.ConstraintTester.testing_create(unique2=1)
+        ents.ConstraintTester.fake(unique2=1)
         with pytest.raises(Exception) as exc:
-            ents.ConstraintTester.testing_create(unique2=1)
+            ents.ConstraintTester.fake(unique2=1)
         assert dbutils.validate_unique_exc(exc.value, 'uq_constraint_tester_unique2') is True
 
     def test_validate_unique_msg_postgres(self):
@@ -197,24 +196,24 @@ class TestExceptionHelpers:
 
     @pytest.mark.skipif(sys.version_info.major < 3, reason='requires python 3')
     def test_raises_unique_exception(self):
-        ents.ConstraintTester.testing_create(unique2=1)
+        ents.ConstraintTester.fake(unique2=1)
 
         @dbutils.raises_unique_exc('uq_constraint_tester_unique2')
         def make_dup():
-            ents.ConstraintTester.testing_create(unique2=1)
+            ents.ConstraintTester.fake(unique2=1)
 
         make_dup()
 
         @dbutils.raises_unique_exc('uq_constraint_tester_unique2')
         def make_uq():
-            ents.ConstraintTester.testing_create()
+            ents.ConstraintTester.fake()
 
         with pytest.raises(_pytest.outcomes.Failed):
             make_uq()
 
         @dbutils.raises_unique_exc('uq_constraint_tester_unique2')
         def make_ck():
-            ents.ConstraintTester.testing_create(check=101)
+            ents.ConstraintTester.fake(check=101)
 
         with pytest.raises(AssertionError):
             make_ck()
@@ -274,21 +273,21 @@ class TestExceptionHelpers:
     def test_raises_check_exc(self):
         @dbutils.raises_check_exc('ck_constraint_tester_check')
         def make_fail():
-            ents.ConstraintTester.testing_create(check=101)
+            ents.ConstraintTester.fake(check=101)
 
         make_fail()
 
         @dbutils.raises_check_exc('ck_constraint_tester_check')
         def make_pass():
-            ents.ConstraintTester.testing_create()
+            ents.ConstraintTester.fake()
 
         with pytest.raises(_pytest.outcomes.Failed):
             make_pass()
 
         @dbutils.raises_check_exc('ck_constraint_tester_check')
         def make_uq():
-            ents.ConstraintTester.testing_create(unique1=1)
-            ents.ConstraintTester.testing_create(unique1=1)
+            ents.ConstraintTester.fake(unique1=1)
+            ents.ConstraintTester.fake(unique1=1)
 
         with pytest.raises(AssertionError):
             make_uq()

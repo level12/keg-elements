@@ -102,7 +102,7 @@ class EntityBase(object):
 
     def test_add(self):
         self.ent_delete_all()
-        o = self.entity_cls.testing_create()
+        o = self.entity_cls.fake()
         assert self.entity_cls.query.count() == 1
         if hasattr(self.entity_cls, 'id'):
             assert o.id
@@ -219,9 +219,9 @@ class EntityBase(object):
             )
 
     def check_unique_constraint(self, **kwargs):
-        self.entity_cls.testing_create(**kwargs)
+        self.entity_cls.fake(**kwargs)
         try:
-            self.entity_cls.testing_create(**kwargs)
+            self.entity_cls.fake(**kwargs)
             raise AssertionError('Uniqueness error was not encountered.')
         except Exception as e:
             if not validate_unique_exc(e):
