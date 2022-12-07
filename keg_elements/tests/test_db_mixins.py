@@ -104,7 +104,7 @@ class TestMethodsMixin:
     def test_edit(self):
         thing1 = ents.Thing.fake()
 
-        ents.Thing.edit(thing1.id, name='edited')
+        ents.Thing.edit(_oid=thing1.id, name='edited')
         assert thing1.name == 'edited'
 
         with pytest.raises(AttributeError):
