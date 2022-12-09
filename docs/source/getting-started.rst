@@ -33,6 +33,17 @@ app, include the core blueprint in the app::
 Note, if you are using `keg-auth` in your app, the above is not required. That library pulls
 in the templates to support auth views.
 
+For base templates that help standardize form/grid views, the template to extend is referenced
+from settings. The first of these defined is used:
+
+    -  `BASE_TEMPLATE`
+    -  `KEG_BASE_TEMPLATE`
+
+Form selects are rendered with select2 in templates extending ``keg-elements/form-view.html``.
+``keg-elements/select2-scripts.html`` and ``keg-elements/select2-styles.html`` can be included
+in templates to render select2s without extending form-view. Apps can opt out of select2
+rendering with ``KEG_USE_SELECT2`` config.
+
 
 .. _gs-model:
 

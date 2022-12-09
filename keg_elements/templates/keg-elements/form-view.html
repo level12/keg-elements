@@ -9,13 +9,9 @@
     {% extends base_template %}
 {% endif %}
 
-{% if use_select2 is not defined %}
-    {% set use_select2 = config.get('KEG_USE_SELECT2', True) %}
-{% endif %}
-
 {% block scripts %}
 {{ super() }}
-{% if use_select2 %}
+{% if config.get('KEG_USE_SELECT2', True) %}
     {% include 'keg-elements/forms/select2-scripts.html' %}
 {% endif %}
 {{ horizontal.custom_js() }}
@@ -23,7 +19,7 @@
 
 {% block styles %}
 {{ super() }}
-{% if use_select2 %}
+{% if config.get('KEG_USE_SELECT2', True) %}
     {% include 'keg-elements/forms/select2-styles.html' %}
 {% endif %}
 {{ horizontal.custom_css() }}
@@ -31,8 +27,9 @@
 
 {% block page_content %}
     {% block page_content_title %}
+        {% if title %}
         <h1>{{ title }}</h1>
+        {% endif %}
     {% endblock %}
-    FOO
     {% block form %}{% endblock %}
 {% endblock %}
