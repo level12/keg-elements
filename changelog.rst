@@ -1,6 +1,50 @@
 Changelog
 =========
 
+0.8.0 released 2022-12-12
+-------------------------
+
+- fix select2 inclusion in form view template, document template updates (d01f7dc_)
+- support rendering WTForms form fields (e0e3136_)
+- resolve radio ID duplication and error display in Bootstrap 4 (74b7215_)
+- **BC break** change oid kwarg in MethodsMixin.edit to _oid (4d67937_)
+- **BC break** replace testing_create with fake, for brevity (747d208_)
+- drop remaining python 2 support and six usage (decd030_)
+- add stable requirements set for CI (1fbcea4_)
+- **BC break** drop tabindex explicit arguments from form macro templates (09c4e8b_)
+- add generic form-view.html and grid-view.html templates (1eb8db2_)
+- fix Bootstrap 4 usage for horizontal forms (57fc4ab_)
+- build in datetime form controls helper, namespaced for keg-elements (d098f07_)
+- change form-level error class used to one Bootstrap 4 will display (55b9c67_)
+- allow passing name and/or id to form in form macro (fe1ac26_)
+- enable skipped sqlite tests and fix session breakage (90e2d88_)
+- add a form ident field to the keg-elements base form (941e4a7_)
+- add query-level insert/update methods to supplement ORM-level add/edit (60fac30_)
+- prevent select box choices filtered improperly when no query applied (aef1cf0_)
+- handle SA ORM attributes and hybrid properties for relationship form fields (97244de_)
+- resolve library warnings and deprecations (9ecb616_)
+
+.. _d01f7dc: https://github.com/level12/keg-elements/commit/d01f7dc
+.. _e0e3136: https://github.com/level12/keg-elements/commit/e0e3136
+.. _74b7215: https://github.com/level12/keg-elements/commit/74b7215
+.. _4d67937: https://github.com/level12/keg-elements/commit/4d67937
+.. _747d208: https://github.com/level12/keg-elements/commit/747d208
+.. _decd030: https://github.com/level12/keg-elements/commit/decd030
+.. _1fbcea4: https://github.com/level12/keg-elements/commit/1fbcea4
+.. _09c4e8b: https://github.com/level12/keg-elements/commit/09c4e8b
+.. _1eb8db2: https://github.com/level12/keg-elements/commit/1eb8db2
+.. _57fc4ab: https://github.com/level12/keg-elements/commit/57fc4ab
+.. _d098f07: https://github.com/level12/keg-elements/commit/d098f07
+.. _55b9c67: https://github.com/level12/keg-elements/commit/55b9c67
+.. _fe1ac26: https://github.com/level12/keg-elements/commit/fe1ac26
+.. _90e2d88: https://github.com/level12/keg-elements/commit/90e2d88
+.. _941e4a7: https://github.com/level12/keg-elements/commit/941e4a7
+.. _60fac30: https://github.com/level12/keg-elements/commit/60fac30
+.. _aef1cf0: https://github.com/level12/keg-elements/commit/aef1cf0
+.. _97244de: https://github.com/level12/keg-elements/commit/97244de
+.. _9ecb616: https://github.com/level12/keg-elements/commit/9ecb616
+
+
 0.7.2 released 2022-03-04
 -------------------------
 
