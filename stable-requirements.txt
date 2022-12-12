@@ -5,7 +5,7 @@ attrs==22.1.0
 beautifulsoup4==4.11.1
 BlazeUtils==0.7.0
 blinker==1.5
-certifi==2022.9.24
+certifi==2022.12.7
 cffi==1.15.1
 cfgv==3.3.1
 click==8.1.3
