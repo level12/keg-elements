@@ -148,8 +148,10 @@ class TestMigrationUtils:
             'ALTER TABLE abc.test_table2 ALTER COLUMN test_column2 TYPE test_enum USING test_column2::test_enum;',  # noqa: E501
         ]
 
-    @pytest.mark.skipif(db.engine.dialect.name != 'postgresql', reason='Postgres only test')
     def test_postgres_get_enum_values(self):
+        if db.engine.dialect.name != 'postgresql':
+            pytest.skip('Postgres only test')
+
         with self.get_context('postgresql', engine=db.engine, as_sql=False):
             sa.Enum('value1', 'value2', 'value3', name='test_enum').create(op.get_bind())
 

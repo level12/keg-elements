@@ -18,8 +18,10 @@ class TestDefaultColsMixin:
     def setup_method(self, fn):
         ents.Thing.delete_cascaded()
 
-    @pytest.mark.skipif(db.engine.dialect.name != 'sqlite', reason='SQLite only test')
     def test_default_ordering(self):
+        if db.engine.dialect.name != 'sqlite':
+            pytest.skip('SQLite only test')
+
         thing1 = ents.Thing.fake(id=6)
         thing2 = ents.Thing.fake(id=5)
         thing3 = ents.Thing.fake(id=7)
