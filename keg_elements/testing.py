@@ -234,8 +234,10 @@ class FormBase(object):
     Class attributes:
 
         form_cls: Form class to verify
+        form_cls_factory: Method returning a form class (use instead of form_cls)
     """
     form_cls = None
+    form_cls_factory = None
 
     def ok_data(self, **kwargs):
         """Returns data that should pass validation by default.
@@ -262,10 +264,14 @@ class FormBase(object):
 
         Object may be provided with the ``obj`` kwarg. Default None.
         """
+        form_cls = kwargs.pop('form_cls', None) or self.form_cls
+        if not form_cls and self.form_cls_factory:
+            form_cls = self.form_cls_factory()
+
         data = kwargs.pop('_form_data', self.ok_data(**kwargs))
         # attempt to disable CSRF here with a patch. This covers a majority of cases in testing
         with mock.patch.dict(current_app.config, WTF_CSRF_ENABLED=False):
-            form = self.form_cls(MultiDict(data), obj=obj)
+            form = form_cls(MultiDict(data), obj=obj)
 
         return form
 
