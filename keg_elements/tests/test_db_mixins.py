@@ -81,7 +81,7 @@ class TestMethodsMixin:
         row = ents.MultiplePrimaryKeys.query.first()
 
         if db.engine.dialect.name != 'sqlite':
-            assert (54, 5) == ret_id
+            assert (5, 54) == ret_id
         assert row.name == 'name'
 
     def test_delete(self):
@@ -91,7 +91,7 @@ class TestMethodsMixin:
         ents.Thing.delete(thing.id)
         assert ents.Thing.query.count() == 0
 
-        assert ents.Thing.query.get(1) is None
+        assert ents.Thing.get(1) is None
         assert ents.Thing.delete(1) is False
 
     def test_delete_cascaded(self):
@@ -132,7 +132,7 @@ class TestMethodsMixin:
 
     def test_update_multiple_pk(self):
         row = ents.MultiplePrimaryKeys.fake(id=55, other_pk=6, name='foo')
-        ents.MultiplePrimaryKeys.update((55, 6), name='bar')
+        ents.MultiplePrimaryKeys.update((6, 55), name='bar')
         db.session.commit()
         db.session.refresh(row)
 
@@ -174,6 +174,13 @@ class TestMethodsMixin:
 
         ents.MultiplePrimaryKeys.add_or_edit({'name': 'other', 'id': 1, 'other_pk': 1})
         assert obj.name == 'other'
+
+    def test_get(self):
+        thing = ents.Thing.fake(name='banana')
+        assert ents.Thing.get(thing.id).name == 'banana'
+        ents.MultiplePrimaryKeys.fake(id=1, other_pk=2, name='banana')
+        assert ents.MultiplePrimaryKeys.get((2, 1)).name == 'banana'
+        assert ents.MultiplePrimaryKeys.get({'id': 1, 'other_pk': 2}).name == 'banana'
 
     def test_get_by(self):
 

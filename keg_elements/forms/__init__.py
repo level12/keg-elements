@@ -349,7 +349,7 @@ class RelationshipFieldBase:
                 """Coerce ID to relationship object."""
                 # If coming form formdata, we'll get a string ID.
                 if isinstance(value, str):
-                    return self.orm_cls.query.get(value)
+                    return self.orm_cls.get(value)
 
                 # If coming from object data, we'll get an ORM instance.
                 return value
@@ -542,7 +542,7 @@ class RelationshipMultipleField(RelationshipFieldBase, SelectMultipleField):
 
     def coerce_to_obj(self, value):
         if type(value) in [int, str]:
-            return self.orm_cls.query.get(int(value))
+            return self.orm_cls.get(int(value))
         else:
             return value
 
