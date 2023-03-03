@@ -1,6 +1,18 @@
 Changelog
 =========
 
+0.9.0 released 2023-03-03
+-------------------------
+
+- support SQLAlchemy 2.0 (fce6248_)
+- support keg testing app context changes (4122e9e_)
+- fixed upgrade notes in documentation (514b8ff_)
+
+.. _fce6248: https://github.com/level12/keg-elements/commit/fce6248
+.. _4122e9e: https://github.com/level12/keg-elements/commit/4122e9e
+.. _514b8ff: https://github.com/level12/keg-elements/commit/514b8ff
+
+
 0.8.0 released 2022-12-12
 -------------------------
 
