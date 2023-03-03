@@ -42,7 +42,7 @@ setup(
         'sentry_sdk',
     ],
     extras_require={
-        'dev': [
+        'tests': [
             'alembic',
             'flask-webtest',
             'pre-commit',

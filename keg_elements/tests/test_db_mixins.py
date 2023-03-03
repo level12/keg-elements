@@ -132,7 +132,8 @@ class TestMethodsMixin:
 
     def test_update_multiple_pk(self):
         row = ents.MultiplePrimaryKeys.fake(id=55, other_pk=6, name='foo')
-        ents.MultiplePrimaryKeys.update((6, 55), name='bar')
+        id_key = (55, 6) if ents.MultiplePrimaryKeys.primary_keys()[0].name == 'id' else (6, 55)
+        ents.MultiplePrimaryKeys.update(id_key, name='bar')
         db.session.commit()
         db.session.refresh(row)
 
@@ -179,7 +180,8 @@ class TestMethodsMixin:
         thing = ents.Thing.fake(name='banana')
         assert ents.Thing.get(thing.id).name == 'banana'
         ents.MultiplePrimaryKeys.fake(id=1, other_pk=2, name='banana')
-        assert ents.MultiplePrimaryKeys.get((2, 1)).name == 'banana'
+        id_key = (1, 2) if ents.MultiplePrimaryKeys.primary_keys()[0].name == 'id' else (2, 1)
+        assert ents.MultiplePrimaryKeys.get(id_key).name == 'banana'
         assert ents.MultiplePrimaryKeys.get({'id': 1, 'other_pk': 2}).name == 'banana'
 
     def test_get_by(self):
