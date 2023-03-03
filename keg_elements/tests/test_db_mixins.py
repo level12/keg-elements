@@ -81,7 +81,8 @@ class TestMethodsMixin:
         row = ents.MultiplePrimaryKeys.query.first()
 
         if db.engine.dialect.name != 'sqlite':
-            assert (5, 54) == ret_id
+            id_key = (54, 5) if ents.MultiplePrimaryKeys.primary_keys()[0].name == 'id' else (5, 54)
+            assert id_key == ret_id
         assert row.name == 'name'
 
     def test_delete(self):
