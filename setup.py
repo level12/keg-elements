@@ -34,7 +34,7 @@ setup(
     install_requires=[
         'arrow',
         'Flask-WTF',
-        'Keg',
+        'Keg>=0.11.0',
         'pytz',
         'WTForms-Alchemy>=0.18.0',
         'wtforms>=3.0.0',
