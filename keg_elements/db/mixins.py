@@ -165,7 +165,7 @@ class MethodsMixin:
         :rtype: bool
         :return: The result of the operation
         """
-        obj = cls.query.get(oid)
+        obj = cls.get(oid)
 
         if obj is None:
             return False
@@ -209,7 +209,7 @@ class MethodsMixin:
             raise AttributeError(_('No primary key was found in `oid` or `kwargs`'
                                    ' for which to retrieve the object to edit'))
 
-        obj = cls.query.get(primary_keys)
+        obj = cls.get(primary_keys)
         obj.from_dict(kwargs)
         return obj
 
@@ -273,6 +273,11 @@ class MethodsMixin:
             )
         )
         return db.session.execute(stmt)
+
+    @classmethod
+    def get(cls, ident, **kwargs):
+        """Wraps db.session.get"""
+        return db.session.get(cls, ident, **kwargs)
 
     @classmethod
     def get_by(cls, **kwargs):
@@ -477,7 +482,7 @@ class MethodsMixin:
             data.get(x.name) for x in cls.primary_keys()
             if x is not None and data.get(x.name) is not None
         ]
-        obj = cls.query.get(primary_keys) if primary_keys else None
+        obj = cls.get(primary_keys) if primary_keys else None
 
         return (cls.add(_commit=False, **data)
                 if obj is None
@@ -612,7 +617,7 @@ class LookupMixin(SoftDeleteMixin):
 
     @is_active.expression
     def is_active(cls):
-        return sa.sql.case([(cls.deleted_utc.is_(None), sa.true())], else_=sa.false())
+        return sa.sql.case((cls.deleted_utc.is_(None), sa.true()), else_=sa.false())
 
     @classmethod
     def _active_query(cls, include_ids=None, order_by=None):

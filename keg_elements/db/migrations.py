@@ -102,12 +102,12 @@ def postgres_get_enum_values(op, enum_name, schema=None):
         enum_name = f'{schema}.{enum_name}'
 
     results = op.get_bind().execute(
-        sa.select([
+        sa.select(
             sa.func.unnest(
                 sa.func.enum_range(
                     sa.text('NULL::{}'.format(enum_name))
                 )
             )
-        ])
+        )
     )
     return [x for x, in results.fetchall()]

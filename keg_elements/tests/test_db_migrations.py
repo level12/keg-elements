@@ -21,12 +21,12 @@ class Context(MigrationContext):
 
 class TestMigrationUtils:
     @contextmanager
-    def get_context(self, dialect_name, engine=None, as_sql=True):
+    def get_context(self, dialect_name, connection=None, as_sql=True):
         dialect = getattr(sa.dialects, dialect_name).dialect()
         output = io.StringIO()
         context = Context(
             dialect,
-            engine,
+            connection,
             dict(as_sql=as_sql, output_buffer=output, literal_binds=as_sql)
         )
         op._proxy = Operations(context)
@@ -152,11 +152,12 @@ class TestMigrationUtils:
         if db.engine.dialect.name != 'postgresql':
             pytest.skip('Postgres only test')
 
-        with self.get_context('postgresql', engine=db.engine, as_sql=False):
-            sa.Enum('value1', 'value2', 'value3', name='test_enum').create(op.get_bind())
+        with db.engine.begin() as conn:
+            with self.get_context('postgresql', connection=conn, as_sql=False):
+                sa.Enum('value1', 'value2', 'value3', name='test_enum').create(op.get_bind())
 
-            results = migrations.postgres_get_enum_values(
-                op,
-                'test_enum',
-            )
-        assert results == ['value1', 'value2', 'value3']
+                results = migrations.postgres_get_enum_values(
+                    op,
+                    'test_enum',
+                )
+            assert results == ['value1', 'value2', 'value3']

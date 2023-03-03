@@ -1005,8 +1005,7 @@ class ThingForeignKeyRelationshipMixin:
     def test_options_include_form_obj_value(self):
         foo_thing = ents.Thing.fake(name='Foo')
         thing1 = ents.Thing.fake(name='Thing 1')
-        related_thing = ents.RelatedThing(thing=foo_thing, name='Related')
-        db.session.commit()
+        related_thing = ents.RelatedThing.fake(thing=foo_thing, name='Related')
         form = self.create_form(
             self.create_relationship(lambda this: this.orm_cls.name != 'Foo'),
             obj=related_thing,
@@ -1073,7 +1072,7 @@ class TestOrmRelationship(ThingForeignKeyRelationshipMixin, RelationshipMixin):
         return RelatedThingForm(**kwargs)
 
     def coerce(self, value):
-        return ents.Thing.query.get(value)
+        return ents.Thing.get(value)
 
     def get_field(self, form):
         return form.thing

@@ -92,10 +92,15 @@ class RelatedThing(mixins.DefaultMixin, db.Model):
                            server_default=sa.false())
 
     thing_id = sa.Column(sa.Integer, sa.ForeignKey(Thing.id), nullable=False)
-    thing = sa.orm.relationship(lambda: Thing, backref=sa.orm.backref(
-        'related_things',
-        cascade='all, delete-orphan'
-    ))
+    thing = sa.orm.relationship(
+        lambda: Thing,
+        backref=sa.orm.backref(
+            "related_things",
+            cascade="all, delete-orphan",
+            cascade_backrefs=False,
+        ),
+        cascade_backrefs=False,
+    )
 
     @classmethod
     def fake(cls, **kwargs):
@@ -112,10 +117,15 @@ class OtherThing(mixins.DefaultMixin, db.Model):
     unique_field = db.Column(db.Unicode(50), unique=True, nullable=False)
 
     thing_id = sa.Column(sa.Integer, sa.ForeignKey(Thing.id, ondelete='cascade'), nullable=False)
-    thing = sa.orm.relationship(lambda: Thing, backref=sa.orm.backref(
-        'other_things',
-        cascade='all, delete-orphan'
-    ))
+    thing = sa.orm.relationship(
+        lambda: Thing,
+        backref=sa.orm.backref(
+            "other_things",
+            cascade="all, delete-orphan",
+            cascade_backrefs=False,
+        ),
+        cascade_backrefs=False,
+    )
 
     @classmethod
     def fake(cls, **kwargs):
@@ -129,9 +139,11 @@ class ManyToManyThing(mixins.DefaultMixin, db.Model):
 
     name = db.Column(db.Unicode(50), nullable=False)
 
-    things = sa.orm.relationship(lambda: Thing,
-                                 secondary=many_things_mapper,
-                                 backref='manys')
+    things = sa.orm.relationship(
+        lambda: Thing,
+        secondary=many_things_mapper,
+        backref=sa.orm.backref("manys", cascade_backrefs=False),
+    )
 
 
 class ThingWithRequiredBoolean(mixins.DefaultMixin, db.Model):
@@ -281,7 +293,12 @@ class SoftDeleteTester(mixins.SoftDeleteMixin, mixins.DefaultMixin, db.Model):
         nullable=False
     )
     hdp = sa.orm.relationship(
-        HardDeleteParent, backref=sa.orm.backref('sdts', cascade='all,delete-orphan'))
+        HardDeleteParent,
+        backref=sa.orm.backref(
+            "sdts", cascade="all,delete-orphan", cascade_backrefs=False
+        ),
+        cascade_backrefs=False,
+    )
 
     @classmethod
     def fake(cls, **kwargs):
