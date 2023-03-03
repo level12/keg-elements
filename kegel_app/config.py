@@ -18,5 +18,3 @@ class TestProfile(object):
     # SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:@localhost/keg-elem-test'
 
     SQLALCHEMY_DATABASE_URI = os.environ.get('SQLALCHEMY_DATABASE_URI', 'sqlite://')
-    # TODO: remove after testing complete with SA 2.0
-    SQLALCHEMY_ENGINE_OPTIONS = {'future': True}
