@@ -1,0 +1,7 @@
+{% if config.get('KEG_TEMPLATE_FLAVOR', 'bootstrap') == 'bootstrap' %}
+    {% if config.get('KEG_BOOTSTRAP_MAJOR_VERSION', 5) >= 5 %}
+        {% include 'keg-elements/forms/tomselect-scripts.html' %}
+    {% else %}
+        {% include 'keg-elements/forms/select2-scripts.html' %}
+    {% endif %}
+{% endif %}
