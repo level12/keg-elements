@@ -52,6 +52,7 @@ setup(
             'pytest-cov',
             # pinned to version in our package index.
             'pyodbc==4.0.34',
+            'responses',
             'sqlalchemy_pyodbc_mssql',
             'tox',
             'freezegun',

@@ -1,4 +1,5 @@
 import base64
+import contextlib
 import re
 import urllib.parse
 
@@ -6,6 +7,16 @@ import flask
 import sentry_sdk
 from sentry_sdk.integrations.logging import LoggingIntegration as SentryLogging
 from sentry_sdk.integrations.flask import FlaskIntegration as SentryFlask
+
+try:
+    import requests
+except ImportError:
+    requests = None
+
+try:
+    import yaml
+except ImportError:
+    yaml = None
 
 
 class SentryEventFilter:
@@ -236,3 +247,157 @@ def install_sentry(app, integrations, release=None, event_filter=None, **kwargs)
         send_default_pii=True,  # include user details
         **kwargs
     )
+
+
+class SentryMonitorError(Exception):
+    pass
+
+
+class SentryMonitorConfigError(Exception):
+    pass
+
+
+class SentryMonitor:
+    """Sentry allows monitoring scheduled job execution, and exposes this feature in its
+    API. SentryMonitor wraps usage.
+
+    Init the class with the Sentry org name, "base" monitor key, and the environment to
+    tie the monitor to in Sentry.
+
+    Note: environment is not yet well-supported. At the time of this writing, there is no
+    support for removing a single environment. So, monitors will currently be single-env,
+    and each monitor key is given a suffix of the env name.
+
+    Config YAML format::
+
+        jobs:
+            my-cron-job:
+                checkin_margin: 1 # in minutes
+                schedule_type: crontab
+                schedule: '30 2 * * *'
+                max_runtime: 1 # in minutes
+                timezone: Etc/UTC
+            other-stats-run:
+                checkin_margin: 1
+                schedule_type: interval
+                schedule: [6, minute]
+                max_runtime: 1
+                timezone: Etc/UTC
+
+
+    """
+    def __init__(self, org: str, key: str, env: str):
+        if requests is None:
+            raise Exception('requests library required for Sentry monitoring')
+
+        self.org = org
+        self.key = key
+        self.env = env
+        self.dsn = flask.current_app.config.get('SENTRY_DSN')
+        self.checkin_id = None
+        self.status = None
+
+    @classmethod
+    def read_config(cls, path):
+        """Safe-load YAML from the file at ``path``."""
+        if yaml is None:
+            raise Exception('pyyaml library required for Sentry monitoring')
+        with open(path, 'rb') as f:
+            return yaml.safe_load(f)
+
+    @classmethod
+    def apply_config(cls, org: str, config_data: dict):
+        """Runs monitor config on Sentry API for each job in config data."""
+        env = flask.current_app.config.get('SENTRY_ENVIRONMENT')
+        return_data = {}
+        error_data = {}
+        for key, monitor_config in config_data.get('jobs', {}).items():
+            # monitor gets created via the check-in, which requires status
+            config_data = {
+                'monitor_config': monitor_config,
+                'status': 'ok',
+                'environment': env,
+            }
+            monitor = SentryMonitor(org, key, env)
+            try:
+                return_data[key] = monitor.make_request(config_data)
+                if not return_data[key].get('id'):
+                    error_data[key] = return_data[key]
+            except SentryMonitorError as exc:
+                error_data[key] = str(exc)
+
+        if error_data:
+            raise SentryMonitorConfigError(error_data)
+
+        return return_data
+
+    @property
+    def monitor_key(self):
+        return f'{self.key}-{self.env}'.lower()
+
+    @property
+    def url(self):
+        mkey = self.monitor_key
+        base = f'https://sentry.io/api/0/organizations/{self.org}/monitors/{mkey}/checkins/'
+        if self.checkin_id:
+            return f'{base}{self.checkin_id}/'
+        return base
+
+    def make_request(self, payload):
+        method = requests.put if self.checkin_id else requests.post
+        resp = method(
+            self.url,
+            json=payload,
+            headers={
+                'Authorization': f'DSN {self.dsn}',
+            },
+            timeout=10,
+        )
+        if resp.status_code >= 400:
+            raise SentryMonitorError(f'{resp.status_code}: {resp.content}')
+        return resp.json()
+
+    def ping_status(self, status):
+        self.status = status
+        data = self.make_request({'status': status, 'environment': self.env})
+        if 'id' in data:
+            # Store the ID so further status updates in this "session" are tied to the same
+            # checkin. Prevents issues with overlap of job runs.
+            self.checkin_id = data['id']
+        return data
+
+    def ping_ok(self):
+        return self.ping_status('ok')
+
+    def ping_error(self):
+        return self.ping_status('error')
+
+    def ping_in_progress(self):
+        return self.ping_status('in_progress')
+
+
+@contextlib.contextmanager
+def sentry_monitor_job(org: str, key: str, env: str = None, do_ping: bool = False):
+    """Context manager for running in_progress, then ok status pings on a Sentry monitor.
+
+    Sentry will not be pinged unless the ``do_ping`` kwarg is True (default is False).
+
+    ``env`` will default to ``SENTRY_ENVIRONMENT`` config value if not specified.
+
+    Context manager returns the ``SentryMonitor`` instance. The wrapped code may ping a
+    different ending status (such as if an error result should occur without an
+    exception). Exceptions will result in an error status."""
+    env = env or flask.current_app.config.get('SENTRY_ENVIRONMENT')
+    if not do_ping:
+        yield
+    else:
+        monitor = SentryMonitor(org, key, env)
+        monitor.ping_in_progress()
+        try:
+            yield monitor
+            if monitor.status == 'in_progress':
+                # Code wrapped in context may have manually pinged another status
+                monitor.ping_ok()
+        except Exception:
+            monitor.ping_error()
+            raise
