@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.9.1 released 2023-05-22
+-------------------------
+
+- support monitoring jobs with Sentry (8bd9cb5_)
+
+.. _8bd9cb5: https://github.com/level12/keg-elements/commit/8bd9cb5
+
+
 0.9.0 released 2023-03-03
 -------------------------
 
