@@ -425,11 +425,11 @@ class TestSentryMonitorUtils:
                 matchers.json_params_matcher({'status': 'in_progress', 'environment': 'testenv'}),
             ],
         )
-        with pytest.raises(sentry.SentryMonitorError, match='something wrong'):
+        with pytest.raises(sentry.SentryMonitorError, match='Max retries exceeded'):
             with sentry.sentry_monitor_job('myorg', 'monitor-key', do_ping=True):
                 pass
 
-        assert resp_in_progress.call_count == 1
+        assert resp_in_progress.call_count == 4
 
     @responses.activate
     @mock.patch.dict('flask.current_app.config', {

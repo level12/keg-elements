@@ -14,6 +14,11 @@ except ImportError:
     requests = None
 
 try:
+    import urllib3
+except ImportError:
+    urllib3 = None
+
+try:
     import yaml
 except ImportError:
     yaml = None
@@ -344,18 +349,30 @@ class SentryMonitor:
         return base
 
     def make_request(self, payload):
-        method = requests.put if self.checkin_id else requests.post
-        resp = method(
-            self.url,
-            json=payload,
-            headers={
-                'Authorization': f'DSN {self.dsn}',
-            },
-            timeout=10,
+        retry_strategy = urllib3.util.retry.Retry(
+            total=3,
+            backoff_factor=1,
+            allowed_methods=['POST', 'PUT'],
+            status_forcelist=[429, 500, 502, 503, 504],
         )
-        if resp.status_code >= 400:
-            raise SentryMonitorError(f'{resp.status_code}: {resp.content}')
-        return resp.json()
+        adapter = requests.sessions.HTTPAdapter(max_retries=retry_strategy)
+        with requests.Session() as session:
+            session.mount('https://', adapter)
+            method = session.put if self.checkin_id else session.post
+            try:
+                resp = method(
+                    self.url,
+                    json=payload,
+                    headers={
+                        'Authorization': f'DSN {self.dsn}',
+                    },
+                    timeout=10,
+                )
+                if resp.status_code >= 400:
+                    raise SentryMonitorError(f'{resp.status_code}: {resp.content}')
+                return resp.json()
+            except requests.exceptions.RetryError as e:
+                raise SentryMonitorError(str(e))
 
     def ping_status(self, status):
         self.status = status
