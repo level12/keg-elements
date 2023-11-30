@@ -171,10 +171,10 @@ class TestDefaultTypeOfRequiredBooleanField(FormBase):
 
     def test_field_types(self):
         form = self.compose_meta()
-        assert type(form.nullable_boolean) == wtf.fields.BooleanField
-        assert type(form.required_boolean) == ke_forms.RequiredBoolRadioField
-        assert type(form.required_boolean_with_default) == wtf.fields.BooleanField
-        assert type(form.required_boolean_with_server_default) == ke_forms.RequiredBoolRadioField
+        assert type(form.nullable_boolean) is wtf.fields.BooleanField
+        assert type(form.required_boolean) is ke_forms.RequiredBoolRadioField
+        assert type(form.required_boolean_with_default) is wtf.fields.BooleanField
+        assert type(form.required_boolean_with_server_default) is ke_forms.RequiredBoolRadioField
 
 
 class TestFieldMeta(FormBase):
@@ -201,7 +201,7 @@ class TestFieldMeta(FormBase):
 
     def test_widget_no_override(self):
         form = self.compose_meta()
-        assert type(form.color.widget) == wtforms_components.widgets.TextInput
+        assert type(form.color.widget) is wtforms_components.widgets.TextInput
 
     def test_widget_override(self):
         class WidgetOverrideFieldsMeta:
@@ -209,7 +209,7 @@ class TestFieldMeta(FormBase):
             color = FieldMeta(widget=wtf.widgets.TextArea())
 
         form = self.compose_meta(fields_meta_cls=WidgetOverrideFieldsMeta)
-        assert type(form.color.widget) == wtf.widgets.TextArea
+        assert type(form.color.widget) is wtf.widgets.TextArea
 
     def test_extra_validators(self):
         class ExtraValidatorsFieldsMeta:
