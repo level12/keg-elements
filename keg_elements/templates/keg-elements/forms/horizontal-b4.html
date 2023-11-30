@@ -179,7 +179,7 @@
             {{ field.label(class_='col-form-label col-3') }}
         {% endif %}
         <div class="col-9">
-        {% for value, label, checked in field.iter_choices() %}
+        {% for value, label, checked, kw in field.iter_choices() %}
             <div class="radio form-check">
                 <input type="radio"
                     class="form-check-input{{' is-invalid' if field.errors }}"

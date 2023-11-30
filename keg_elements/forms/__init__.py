@@ -242,7 +242,10 @@ class SelectMixin:
 
     def iter_choices(self):
         if self.add_blank_choice:
-            yield ('', '', (self.coerce, False))
+            template_list = list(self._choices_generator([('', '')]))
+            template = list(template_list[0])
+            template[2] = (self.coerce, False)
+            yield tuple(template)
         for value in super().iter_choices():
             yield value
 

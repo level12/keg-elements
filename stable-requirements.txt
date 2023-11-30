@@ -76,7 +76,7 @@ WebOb==1.8.7
 WebTest==3.0.0
 Werkzeug==2.2.2
 wrapt==1.14.1
-WTForms==3.0.1
+WTForms==3.1.1
 WTForms-Alchemy==0.18.0
 WTForms-Components==0.10.5
 XlsxWriter==3.0.3

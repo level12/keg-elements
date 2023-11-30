@@ -76,7 +76,7 @@
             {{ field.label(class_='control-label') }}
         {% endif %}
         <div class="labeled-group">
-        {% for value, label, checked in field.iter_choices() %}
+        {% for value, label, checked, kw in field.iter_choices() %}
             {% if checked %}
                 <p id="{{ field.id }}" class="form-control-static">{{ label }}</p>
             {% endif %}

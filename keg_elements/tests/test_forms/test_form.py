@@ -974,7 +974,7 @@ class RelationshipMixin:
             *object_options
         ] if has_blank else object_options
         index = 0
-        for value, label, selected in field.iter_choices():
+        for value, label, selected, *other_args in field.iter_choices():
             assert expected_choices[index] == (value, label)
             index += 1
 
