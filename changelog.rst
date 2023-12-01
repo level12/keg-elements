@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.10.0 released 2023-12-01
+--------------------------
+
+- flake8 fixes in tests (f6d862e_)
+- support wtforms 3.1 change to choices iteration (3ec5abe_)
+
+.. _f6d862e: https://github.com/level12/keg-elements/commit/f6d862e
+.. _3ec5abe: https://github.com/level12/keg-elements/commit/3ec5abe
+
+
 0.9.1 released 2023-05-22
 -------------------------
 
