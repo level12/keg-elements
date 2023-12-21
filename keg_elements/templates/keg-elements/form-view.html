@@ -1,7 +1,7 @@
 {% if is_read_only %}
     {% import 'keg-elements/forms/horizontal-static.html' as horizontal %}
 {% else %}
-    {% import 'keg-elements/forms/horizontal-b4.html' as horizontal %}
+    {% import 'keg-elements/forms/horizontal.html' as horizontal %}
 {% endif %}
 
 {% set base_template = config.get('BASE_TEMPLATE') or config.get('KEG_BASE_TEMPLATE') %}
@@ -9,18 +9,18 @@
     {% extends base_template %}
 {% endif %}
 
-{% block scripts %}
+{% block keg_scripts %}
 {{ super() }}
-{% if config.get('KEG_USE_SELECT2', True) %}
-    {% include 'keg-elements/forms/select2-scripts.html' %}
+{% if config.get('KEG_USE_ENHANCED_SELECTS', True) %}
+    {% include 'keg-elements/forms/enhanced-select-scripts.html' %}
 {% endif %}
 {{ horizontal.custom_js() }}
 {% endblock %}
 
-{% block styles %}
+{% block keg_styles %}
 {{ super() }}
-{% if config.get('KEG_USE_SELECT2', True) %}
-    {% include 'keg-elements/forms/select2-styles.html' %}
+{% if config.get('KEG_USE_ENHANCED_SELECTS', True) %}
+    {% include 'keg-elements/forms/enhanced-select-styles.html' %}
 {% endif %}
 {{ horizontal.custom_css() }}
 {% endblock %}

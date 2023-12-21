@@ -1,0 +1,3 @@
+{% if config.get('KEG_TEMPLATE_FLAVOR', 'bootstrap') == 'bootstrap' %}
+    {% extends 'keg-elements/forms/horizontal-b' + config.get('KEG_BOOTSTRAP_MAJOR_VERSION', 5)|string + '.html' %}
+{% endif %}

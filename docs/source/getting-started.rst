@@ -42,7 +42,7 @@ from settings. The first of these defined is used:
 Form selects are rendered with select2 in templates extending ``keg-elements/form-view.html``.
 ``keg-elements/select2-scripts.html`` and ``keg-elements/select2-styles.html`` can be included
 in templates to render select2s without extending form-view. Apps can opt out of select2
-rendering with ``KEG_USE_SELECT2`` config.
+rendering with ``KEG_USE_ENHANCED_SELECTS`` config.
 
 
 .. _gs-model:
