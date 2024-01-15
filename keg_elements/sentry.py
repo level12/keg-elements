@@ -1,6 +1,7 @@
 import base64
 import contextlib
 import re
+import sys
 import urllib.parse
 
 import flask
@@ -261,7 +262,7 @@ class SentryMonitor:
     """Sentry allows monitoring scheduled job execution, and exposes this feature in its
     API. SentryMonitor wraps usage.
 
-    Init the class with the Sentry org name, "base" monitor key, and the environment to
+    Init the class with the "base" monitor key, and the environment to
     tie the monitor to in Sentry.
 
     Note: environment is not yet well-supported. At the time of this writing, there is no
@@ -273,28 +274,32 @@ class SentryMonitor:
         jobs:
             my-cron-job:
                 checkin_margin: 1 # in minutes
-                schedule_type: crontab
-                schedule: '30 2 * * *'
+                schedule:
+                  type: crontab
+                  value: '30 2 * * *'
                 max_runtime: 1 # in minutes
+                failure_issue_threshold: 2 # optional
                 timezone: Etc/UTC
             other-stats-run:
                 checkin_margin: 1
-                schedule_type: interval
-                schedule: [6, minute]
+                schedule:
+                  type: interval
+                  value: 6
+                  unit: minute
                 max_runtime: 1
                 timezone: Etc/UTC
 
 
     """
-    def __init__(self, org: str, key: str, env: str):
+    def __init__(self, key: str, env: str):
         if requests is None:
             raise Exception('requests library required for Sentry monitoring')
 
-        self.org = org
         self.key = key
         self.env = env
         self.dsn = flask.current_app.config.get('SENTRY_DSN')
         self.checkin_id = None
+        self.start_timestamp = None
         self.status = None
 
     @classmethod
@@ -306,22 +311,17 @@ class SentryMonitor:
             return yaml.safe_load(f)
 
     @classmethod
-    def apply_config(cls, org: str, config_data: dict):
+    def apply_config(cls, config_data: dict):
         """Runs monitor config on Sentry API for each job in config data."""
         env = flask.current_app.config.get('SENTRY_ENVIRONMENT')
         return_data = {}
         error_data = {}
         for key, monitor_config in config_data.get('jobs', {}).items():
             # monitor gets created via the check-in, which requires status
-            config_data = {
-                'monitor_config': monitor_config,
-                'status': 'ok',
-                'environment': env,
-            }
-            monitor = SentryMonitor(org, key, env)
+            monitor = SentryMonitor(key, env)
             try:
-                return_data[key] = monitor.make_request(config_data)
-                if not return_data[key].get('id'):
+                return_data[key] = monitor.configure(monitor_config)
+                if not return_data[key]:
                     error_data[key] = return_data[key]
             except SentryMonitorError as exc:
                 error_data[key] = str(exc)
@@ -335,49 +335,50 @@ class SentryMonitor:
     def monitor_key(self):
         return f'{self.key}-{self.env}'.lower()
 
-    @property
-    def url(self):
-        mkey = self.monitor_key
-        base = f'https://sentry.io/api/0/organizations/{self.org}/monitors/{mkey}/checkins/'
-        if self.checkin_id:
-            return f'{base}{self.checkin_id}/'
-        return base
-
-    def make_request(self, payload):
-        method = requests.put if self.checkin_id else requests.post
-        resp = method(
-            self.url,
-            json=payload,
-            headers={
-                'Authorization': f'DSN {self.dsn}',
-            },
-            timeout=10,
+    def configure(self, payload):
+        return sentry_sdk.crons.api.capture_checkin(
+            monitor_slug=self.monitor_key,
+            status=sentry_sdk.crons.consts.MonitorStatus.OK,
+            monitor_config=payload,
         )
-        if resp.status_code >= 400:
-            raise SentryMonitorError(f'{resp.status_code}: {resp.content}')
-        return resp.json()
 
-    def ping_status(self, status):
+    def get_duration(self):
+        duration = None
+        if self.start_timestamp:
+            duration = sentry_sdk.utils.now() - self.start_timestamp
+        return duration
+
+    def ping_status(self, status, duration=None):
         self.status = status
-        data = self.make_request({'status': status, 'environment': self.env})
-        if 'id' in data:
-            # Store the ID so further status updates in this "session" are tied to the same
-            # checkin. Prevents issues with overlap of job runs.
-            self.checkin_id = data['id']
-        return data
+        kwargs = {}
+        if duration is not None:
+            kwargs['duration'] = duration
+        if self.checkin_id is not None:
+            kwargs['check_in_id'] = self.checkin_id
+        self.checkin_id = sentry_sdk.crons.api.capture_checkin(
+            monitor_slug=self.monitor_key, status=status, **kwargs
+        )
+        return self.checkin_id
 
     def ping_ok(self):
-        return self.ping_status('ok')
+        return self.ping_status(
+            sentry_sdk.crons.consts.MonitorStatus.OK,
+            duration=self.get_duration(),
+        )
 
     def ping_error(self):
-        return self.ping_status('error')
+        return self.ping_status(
+            sentry_sdk.crons.consts.MonitorStatus.ERROR,
+            duration=self.get_duration(),
+        )
 
     def ping_in_progress(self):
-        return self.ping_status('in_progress')
+        self.start_timestamp = sentry_sdk.utils.now()
+        return self.ping_status(sentry_sdk.crons.consts.MonitorStatus.IN_PROGRESS)
 
 
 @contextlib.contextmanager
-def sentry_monitor_job(org: str, key: str, env: str = None, do_ping: bool = False):
+def sentry_monitor_job(key: str, env: str = None, do_ping: bool = False):
     """Context manager for running in_progress, then ok status pings on a Sentry monitor.
 
     Sentry will not be pinged unless the ``do_ping`` kwarg is True (default is False).
@@ -391,13 +392,18 @@ def sentry_monitor_job(org: str, key: str, env: str = None, do_ping: bool = Fals
     if not do_ping:
         yield
     else:
-        monitor = SentryMonitor(org, key, env)
-        monitor.ping_in_progress()
+        monitor = SentryMonitor(key, env)
+
         try:
+            monitor.ping_in_progress()
+
             yield monitor
-            if monitor.status == 'in_progress':
-                # Code wrapped in context may have manually pinged another status
+
+            if monitor.status == sentry_sdk.crons.consts.MonitorStatus.IN_PROGRESS:
+                # Code wrapped in context likely has not manually pinged another status.
+                # This block allows us to manually set an error based on app logic.
                 monitor.ping_ok()
         except Exception:
             monitor.ping_error()
-            raise
+            exc_info = sys.exc_info()
+            sentry_sdk._compat.reraise(*exc_info)

@@ -2,8 +2,6 @@ from unittest import mock
 
 import flask
 import pytest
-import responses
-from responses import matchers
 
 from keg_elements import sentry
 
@@ -376,173 +374,109 @@ class TestSentryFilter:
 
 
 class TestSentryMonitorUtils:
-    @responses.activate
     @mock.patch.dict('flask.current_app.config', {
-        'SENTRY_DSN': 'mydsn',
         'SENTRY_ENVIRONMENT': 'testenv'
     })
-    def test_job_normal(self):
-        resp_in_progress = responses.add(
-            responses.POST,
-            'https://sentry.io/api/0/organizations/myorg/monitors/monitor-key-testenv/checkins/',
-            json={'id': 'test-checkin'},
-            status=200,
-            match=[
-                matchers.header_matcher({'Authorization': 'DSN mydsn'}),
-                matchers.json_params_matcher({'status': 'in_progress', 'environment': 'testenv'}),
-            ],
-        )
-        resp_ok = responses.add(
-            responses.PUT,
-            'https://sentry.io/api/0/organizations/myorg/monitors/'
-            'monitor-key-testenv/checkins/test-checkin/',
-            json={'id': 'test-checkin'},
-            status=200,
-            match=[
-                matchers.header_matcher({'Authorization': 'DSN mydsn'}),
-                matchers.json_params_matcher({'status': 'ok', 'environment': 'testenv'}),
-            ],
-        )
-        with sentry.sentry_monitor_job('myorg', 'monitor-key', do_ping=True):
+    @mock.patch(
+        'keg_elements.sentry.sentry_sdk.crons.api.capture_checkin', autospec=True, spec_set=True
+    )
+    def test_job_normal(self, m_sentry_checkin):
+        m_sentry_checkin.return_value = 'foo123'
+
+        with sentry.sentry_monitor_job('monitor-key', do_ping=True) as monitor:
             pass
 
-        assert resp_in_progress.call_count == 1
-        assert resp_ok.call_count == 1
+        assert m_sentry_checkin.call_count == 2
+        first_call = m_sentry_checkin.call_args_list[0].kwargs
+        assert first_call == dict(monitor_slug='monitor-key-testenv', status='in_progress')
+        second_call = m_sentry_checkin.call_args_list[1].kwargs
+        assert second_call['monitor_slug'] == 'monitor-key-testenv'
+        assert second_call['status'] == 'ok'
+        assert second_call['check_in_id'] == 'foo123'
+        assert second_call['duration']
+        assert monitor.checkin_id == 'foo123'
 
-    @responses.activate
     @mock.patch.dict('flask.current_app.config', {
-        'SENTRY_DSN': 'mydsn',
         'SENTRY_ENVIRONMENT': 'testenv'
     })
-    def test_job_network_error(self):
-        resp_in_progress = responses.add(
-            responses.POST,
-            'https://sentry.io/api/0/organizations/myorg/monitors/monitor-key-testenv/checkins/',
-            body='something wrong',
-            status=500,
-            match=[
-                matchers.header_matcher({'Authorization': 'DSN mydsn'}),
-                matchers.json_params_matcher({'status': 'in_progress', 'environment': 'testenv'}),
-            ],
-        )
-        with pytest.raises(sentry.SentryMonitorError, match='something wrong'):
-            with sentry.sentry_monitor_job('myorg', 'monitor-key', do_ping=True):
+    @mock.patch(
+        'keg_elements.sentry.sentry_sdk.crons.api.capture_checkin', autospec=True, spec_set=True
+    )
+    def test_job_sentry_exception(self, m_sentry_checkin):
+        m_sentry_checkin.side_effect = Exception('something wrong'), 'foo123'
+        with pytest.raises(Exception, match='something wrong'):
+            with sentry.sentry_monitor_job('monitor-key', do_ping=True):
                 pass
 
-        assert resp_in_progress.call_count == 1
+        assert m_sentry_checkin.call_count == 2
+        first_call = m_sentry_checkin.call_args_list[0].kwargs
+        assert first_call == dict(monitor_slug='monitor-key-testenv', status='in_progress')
+        second_call = m_sentry_checkin.call_args_list[1].kwargs
+        assert second_call['monitor_slug'] == 'monitor-key-testenv'
+        assert second_call['status'] == 'error'
 
-    @responses.activate
     @mock.patch.dict('flask.current_app.config', {
-        'SENTRY_DSN': 'mydsn',
         'SENTRY_ENVIRONMENT': 'testenv'
     })
-    def test_job_override_final_ping(self):
-        resp_in_progress = responses.add(
-            responses.POST,
-            'https://sentry.io/api/0/organizations/myorg/monitors/monitor-key-testenv/checkins/',
-            json={'id': 'test-checkin'},
-            status=200,
-            match=[
-                matchers.header_matcher({'Authorization': 'DSN mydsn'}),
-                matchers.json_params_matcher({'status': 'in_progress', 'environment': 'testenv'}),
-            ],
-        )
-        resp_ok = responses.add(
-            responses.PUT,
-            'https://sentry.io/api/0/organizations/myorg/monitors/'
-            'monitor-key-testenv/checkins/test-checkin/',
-            json={'id': 'test-checkin'},
-            status=200,
-            match=[
-                matchers.header_matcher({'Authorization': 'DSN mydsn'}),
-                matchers.json_params_matcher({'status': 'error', 'environment': 'testenv'}),
-            ],
-        )
-        with sentry.sentry_monitor_job('myorg', 'monitor-key', do_ping=True) as monitor:
+    @mock.patch(
+        'keg_elements.sentry.sentry_sdk.crons.api.capture_checkin', autospec=True, spec_set=True
+    )
+    def test_job_override_final_ping(self, m_sentry_checkin):
+        m_sentry_checkin.return_value = 'foo123'
+
+        with sentry.sentry_monitor_job('monitor-key', do_ping=True) as monitor:
             monitor.ping_error()
 
-        assert resp_in_progress.call_count == 1
-        assert resp_ok.call_count == 1
+        assert m_sentry_checkin.call_count == 2
+        first_call = m_sentry_checkin.call_args_list[0].kwargs
+        assert first_call == dict(monitor_slug='monitor-key-testenv', status='in_progress')
+        second_call = m_sentry_checkin.call_args_list[1].kwargs
+        assert second_call['monitor_slug'] == 'monitor-key-testenv'
+        assert second_call['status'] == 'error'
+        assert second_call['check_in_id'] == 'foo123'
+        assert second_call['duration']
 
-    @responses.activate
     @mock.patch.dict('flask.current_app.config', {
-        'SENTRY_DSN': 'mydsn',
         'SENTRY_ENVIRONMENT': 'testenv'
     })
-    def test_job_no_ping(self):
-        resp_in_progress = responses.add(
-            responses.POST,
-            'https://sentry.io/api/0/organizations/myorg/monitors/monitor-key-testenv/checkins/',
-            json={'id': 'test-checkin'},
-            status=200,
-        )
-        resp_ok = responses.add(
-            responses.PUT,
-            'https://sentry.io/api/0/organizations/myorg/monitors/'
-            'monitor-key-testenv/checkins/test-checkin/',
-            json={'id': 'test-checkin'},
-            status=200,
-        )
-        with sentry.sentry_monitor_job('myorg', 'monitor-key', do_ping=False):
+    @mock.patch(
+        'keg_elements.sentry.sentry_sdk.crons.api.capture_checkin', autospec=True, spec_set=True
+    )
+    def test_job_no_ping(self, m_sentry_checkin):
+        with sentry.sentry_monitor_job('monitor-key', do_ping=False):
             pass
 
-        assert resp_in_progress.call_count == 0
-        assert resp_ok.call_count == 0
+        assert m_sentry_checkin.call_count == 0
 
-    @responses.activate
     @mock.patch.dict('flask.current_app.config', {
-        'SENTRY_DSN': 'mydsn',
         'SENTRY_ENVIRONMENT': 'testenv'
     })
-    def test_job_exception(self):
-        resp_in_progress = responses.add(
-            responses.POST,
-            'https://sentry.io/api/0/organizations/myorg/monitors/monitor-key-testenv/checkins/',
-            json={'id': 'test-checkin'},
-            status=200,
-            match=[
-                matchers.header_matcher({'Authorization': 'DSN mydsn'}),
-                matchers.json_params_matcher({'status': 'in_progress', 'environment': 'testenv'}),
-            ],
-        )
-        resp_ok = responses.add(
-            responses.PUT,
-            'https://sentry.io/api/0/organizations/myorg/monitors/'
-            'monitor-key-testenv/checkins/test-checkin/',
-            json={'id': 'test-checkin'},
-            status=200,
-            match=[
-                matchers.header_matcher({'Authorization': 'DSN mydsn'}),
-                matchers.json_params_matcher({'status': 'error', 'environment': 'testenv'}),
-            ],
-        )
+    @mock.patch(
+        'keg_elements.sentry.sentry_sdk.crons.api.capture_checkin', autospec=True, spec_set=True
+    )
+    def test_job_exception(self, m_sentry_checkin):
+        m_sentry_checkin.return_value = 'foo123'
+
         with pytest.raises(Exception):
-            with sentry.sentry_monitor_job('myorg', 'monitor-key', do_ping=True):
+            with sentry.sentry_monitor_job('monitor-key', do_ping=True):
                 raise ValueError('foo')
 
-        assert resp_in_progress.call_count == 1
-        assert resp_ok.call_count == 1
+        assert m_sentry_checkin.call_count == 2
+        first_call = m_sentry_checkin.call_args_list[0].kwargs
+        assert first_call == dict(monitor_slug='monitor-key-testenv', status='in_progress')
+        second_call = m_sentry_checkin.call_args_list[1].kwargs
+        assert second_call['monitor_slug'] == 'monitor-key-testenv'
+        assert second_call['status'] == 'error'
+        assert second_call['check_in_id'] == 'foo123'
+        assert second_call['duration']
 
-    @responses.activate
     @mock.patch.dict('flask.current_app.config', {
-        'SENTRY_DSN': 'mydsn',
         'SENTRY_ENVIRONMENT': 'testenv'
     })
-    def test_config_applied(self):
-        resp_ok = responses.add(
-            responses.POST,
-            'https://sentry.io/api/0/organizations/myorg/monitors/monitor-key-testenv/checkins/',
-            json={'id': 'test-checkin'},
-            status=200,
-            match=[
-                matchers.header_matcher({'Authorization': 'DSN mydsn'}),
-                matchers.json_params_matcher({
-                    'monitor_config': {'key': 'value'},
-                    'status': 'ok',
-                    'environment': 'testenv',
-                }),
-            ],
-        )
+    @mock.patch(
+        'keg_elements.sentry.sentry_sdk.crons.api.capture_checkin', autospec=True, spec_set=True
+    )
+    def test_config_applied(self, m_sentry_checkin):
         config_data = {
             'jobs': {
                 'monitor-key': {
@@ -550,29 +484,22 @@ class TestSentryMonitorUtils:
                 }
             }
         }
-        sentry.SentryMonitor.apply_config('myorg', config_data)
-        assert resp_ok.call_count == 1
+        sentry.SentryMonitor.apply_config(config_data)
+        m_sentry_checkin.assert_called_once_with(
+            monitor_slug='monitor-key-testenv',
+            status='ok',
+            monitor_config={'key': 'value'},
+        )
 
-    @responses.activate
     @mock.patch.dict('flask.current_app.config', {
-        'SENTRY_DSN': 'mydsn',
         'SENTRY_ENVIRONMENT': 'testenv'
     })
-    def test_config_error(self):
-        resp_ok = responses.add(
-            responses.POST,
-            'https://sentry.io/api/0/organizations/myorg/monitors/monitor-key-testenv/checkins/',
-            json={'error': 'something wrong'},
-            status=200,
-            match=[
-                matchers.header_matcher({'Authorization': 'DSN mydsn'}),
-                matchers.json_params_matcher({
-                    'monitor_config': {'key': 'value'},
-                    'status': 'ok',
-                    'environment': 'testenv',
-                }),
-            ],
-        )
+    @mock.patch(
+        'keg_elements.sentry.sentry_sdk.crons.api.capture_checkin', autospec=True, spec_set=True
+    )
+    def test_config_error(self, m_sentry_checkin):
+        m_sentry_checkin.return_value = None
+
         config_data = {
             'jobs': {
                 'monitor-key': {
@@ -580,6 +507,5 @@ class TestSentryMonitorUtils:
                 }
             }
         }
-        with pytest.raises(sentry.SentryMonitorConfigError, match='something wrong'):
-            sentry.SentryMonitor.apply_config('myorg', config_data)
-        assert resp_ok.call_count == 1
+        with pytest.raises(sentry.SentryMonitorConfigError):
+            sentry.SentryMonitor.apply_config(config_data)
