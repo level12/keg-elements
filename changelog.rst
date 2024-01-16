@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.11.0 released 2024-01-16
+--------------------------
+
+- use sentry SDK for cron monitor setup and check-ins (405f677_)
+
+.. _405f677: https://github.com/level12/keg-elements/commit/405f677
+
+
 0.10.0 released 2023-12-01
 --------------------------
 
