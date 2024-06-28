@@ -244,7 +244,7 @@ def install_sentry(app, integrations, release=None, event_filter=None, **kwargs)
         before_send=event_filter.before_send,
         release=release,
         environment=app.config.get('SENTRY_ENVIRONMENT'),
-        with_locals=True,
+        include_local_variables=True,
         send_default_pii=True,  # include user details
         **kwargs
     )
@@ -406,4 +406,4 @@ def sentry_monitor_job(key: str, env: str = None, do_ping: bool = False):
         except Exception:
             monitor.ping_error()
             exc_info = sys.exc_info()
-            sentry_sdk._compat.reraise(*exc_info)
+            sentry_sdk.utils.reraise(*exc_info)
