@@ -409,6 +409,10 @@ class MethodsMixin:
         elif isinstance(column.type, sa.types.Date):
             return dt.date.today()
         elif isinstance(column.type, sa.types.DateTime):
+            if hasattr(dt, 'UTC'):
+                # Return a TZ-aware datetime if possible, since python is deprecating
+                # the utcnow method
+                return dt.datetime.now(dt.UTC)
             return dt.datetime.utcnow()
         elif isinstance(column.type, ArrowType):
             return arrow.utcnow()

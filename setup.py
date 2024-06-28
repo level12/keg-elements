@@ -39,7 +39,7 @@ setup(
         'WTForms-Alchemy>=0.18.0',
         'wtforms>=3.1.0',
         'cryptography',
-        'sentry_sdk',
+        'sentry_sdk>=2',
     ],
     extras_require={
         'tests': [
@@ -50,8 +50,7 @@ setup(
             'pyquery',
             'pytest',
             'pytest-cov',
-            # pinned to version in our package index.
-            'pyodbc==4.0.34',
+            'pyodbc',
             'responses',
             'sqlalchemy_pyodbc_mssql',
             'tox',

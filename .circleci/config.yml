@@ -11,12 +11,12 @@ commands:
             - run:
                 name: install tox
                 command: >
-                    python3.10 -m pip install --upgrade --force-reinstall tox pip
+                    python3.12 -m pip install --upgrade --force-reinstall tox pip
 
             - run:
                 name: version checks
                 command: |
-                    python3.10 --version
+                    python3.12 --version
                     tox --version
 
             - run:
