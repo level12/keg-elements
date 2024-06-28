@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.12.0 released 2024-06-28
+--------------------------
+
+- support python 3.12 (2fcecec_)
+- update sentry integration to support Sentry SDK 2+ (b40e3c8_)
+
+.. _2fcecec: https://github.com/level12/keg-elements/commit/2fcecec
+.. _b40e3c8: https://github.com/level12/keg-elements/commit/b40e3c8
+
+
 0.11.0 released 2024-01-16
 --------------------------
 
