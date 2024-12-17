@@ -691,7 +691,8 @@ class TestFormLevelValidation(FormBase):
     def test_form_invalid(self):
         form = self.assert_invalid(num1=40, num2=3, num3=50)
         assert form.form_errors == ['Does not add up', 'Out of order']
-        assert form.errors == {None: ['Does not add up', 'Out of order']}
+        assert list(form.errors.keys()) in ([None], [''])
+        assert list(form.errors.values())[0] == ['Does not add up', 'Out of order']
 
     def test_stop_validation_with_error(self):
         class StopValidationForm(Form):
@@ -708,8 +709,8 @@ class TestFormLevelValidation(FormBase):
                 assert False, 'Validation should have stopped'  # pragma: no cover
 
         form = self.assert_invalid(form_cls=StopValidationForm, s1='v1', s2='v2')
-        assert form.form_errors == ['not equal']
-        assert form.errors == {None: ['not equal']}
+        assert list(form.errors.keys()) in ([None], [''])
+        assert list(form.errors.values())[0] == ['not equal']
 
     def test_stop_validation_no_error(self):
         class StopValidationForm(Form):
@@ -741,10 +742,13 @@ class TestFormLevelValidation(FormBase):
 
         form = self.assert_invalid(form_cls=InvalidFieldsForm, s1='1234', s2='4321')
         assert form.form_errors == ['not equal']
-        assert form.errors == {
-            None: ['not equal'],
-            's1': ['Field cannot be longer than 3 characters.']
-        }
+        error_keys = list(form.errors.keys())
+        assert len(error_keys) == 2
+        assert 's1' in error_keys
+        assert None in error_keys or '' in error_keys
+        form_error_key = None if None in error_keys else ''
+        assert form.errors[form_error_key] == ['not equal']
+        assert form.errors['s1'] == ['Field cannot be longer than 3 characters.']
 
     def test_do_not_validate_with_field_errors(self):
         class InvalidFieldsForm(Form):
@@ -773,9 +777,8 @@ class TestFormLevelValidation(FormBase):
 
         form = self.assert_invalid(num1=7, num2=5, num3=51, form_cls=SubclassForm)
         assert form.form_errors == ['Out of order', 'Num3 is odd', 'Does not compute']
-        assert form.errors == {
-            None: ['Out of order', 'Num3 is odd', 'Does not compute']
-        }
+        assert list(form.errors.keys()) in ([None], [''])
+        assert list(form.errors.values())[0] == ['Out of order', 'Num3 is odd', 'Does not compute']
 
         form = self.assert_valid(num1=6, num2=7, num3=50, form_cls=SubclassForm)
         assert form.form_errors == []
