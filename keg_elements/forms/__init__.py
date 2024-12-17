@@ -553,7 +553,7 @@ class RelationshipMultipleField(RelationshipFieldBase, SelectMultipleField):
         selected_ids = [v.id for v in self.data or []]
         for value, label in self.choices():
             selected = selected_ids is not None and self.coerce(value) in selected_ids
-            yield (value, label, selected)
+            yield (value, label, selected, {})
 
     def process_formdata(self, valuelist):
         try:
