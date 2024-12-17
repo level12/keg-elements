@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.12.1 released 2024-12-17
+--------------------------
+
+- fix form test expectations for form-level errors (d158d29_)
+- support wtforms-components 0.11.0 (7c6716c_)
+
+.. _d158d29: https://github.com/level12/keg-elements/commit/d158d29
+.. _7c6716c: https://github.com/level12/keg-elements/commit/7c6716c
+
+
 0.12.0 released 2024-06-28
 --------------------------
 
