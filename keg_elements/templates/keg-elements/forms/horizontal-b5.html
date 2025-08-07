@@ -1,0 +1,328 @@
+{%- if _ is not defined -%}
+    {% macro _(message) -%}
+        {{ message }}
+    {%- endmacro %}
+{%- endif -%}
+
+{# Renders field for bootstrap 4 standards.
+
+    Params:
+        field - WTForm field
+        kwargs - pass any arguments you want in order to put them into the html attributes.
+        There are few exceptions: for - for_, class - class_, class__ - class_
+
+    Example usage:
+        {{ horz_form.field(form.email, placeholder='Input email', type='email') }}
+#}
+
+{% macro div_form_group(field) -%}
+    <div class="row mb-3 {{ 'required' if field.flags.required }} {{ kwargs.get('class_', '') }}">
+        {{ caller(**kwargs) }}
+    </div>
+{%- endmacro %}
+
+{% macro description(field) -%}
+    <small class="form-text text-muted description">
+        {% if field.description is callable %}
+            {{ field.description()|safe }}
+        {% else %}
+            {{ field.description|safe }}
+        {% endif %}
+    </small>
+{%- endmacro %}
+
+{% macro field_errors(field) -%}
+{# You will need javascript similar to below for validations to work properly.
+   Alternatively, remove .was-validated from the form element to disable native client side validations by default.
+
+    var forms = document.getElementsByClassName('needs-validation');
+    var validation = Array.prototype.filter.call(forms, function(form) {
+      form.addEventListener('submit', function(event) {
+        if (form.checkValidity() === false) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+
+     var fields = document.getElementsByClassName('is-invalid');
+     Array.prototype.filter.call(fields, function(field) {
+        field.setCustomValidity(false);
+    });
+#}
+    <div class="invalid-feedback">
+        {% if field.errors %}
+            {% for e in field.errors %}
+                <p>{{ e }}</p>
+            {% endfor %}
+        {% elif field.flags.required %}
+            <p>This field is required.</p>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{% macro field(field, label_visible=true) -%}
+    {% call div_form_group(field, **kwargs) %}
+        {% if (field.type != 'HiddenField' and field.type != 'CSRFTokenField') and label_visible %}
+            {{ field.label(class_='col-form-label col-3') }}
+        {% endif %}
+        <div class="col-9">
+            {{ field_widget(field, **kwargs) }}
+            {% if field.description %}
+                {{ description(field) }}
+            {% endif %}
+        </div>
+    {% endcall %}
+{%- endmacro %}
+
+
+{% macro custom_css() %}
+<!-- included from keg-elements custom-css macro -->
+<style>
+    .multi-checkbox > * {
+        flex: 1 1 48%;
+        margin: 0 1%;
+    }
+
+    .multi-checkbox-controls {
+        padding: 0.5em 1em;
+    }
+</style>
+{% endmacro %}
+
+{% macro custom_js() %}
+<!-- included from keg-elements custom-js macro -->
+<script>
+    document.querySelectorAll('[multi-checkbox-data^="select-"]').forEach(item => {
+        const target_value = item.attributes['multi-checkbox-data'].value.indexOf('select-all') !== -1;
+        item.addEventListener('click', event => {
+            event.target.parentElement.parentElement.querySelectorAll('.custom-checkbox input').forEach(checkbox => {
+                checkbox.checked = target_value;
+            });
+            event.preventDefault();
+        })
+    })
+</script>
+{{ datetime_helper() }}
+{% endmacro %}
+
+{% macro multi_checkbox(field) %}
+    <div class="multi-checkbox-controls">
+        <button multi-checkbox-data="select-all">Select All</button>
+        <button multi-checkbox-data="select-none">Select None</button>
+    </div>
+    <div id="{{ field.id }}" class="d-flex flex-row flex-wrap multi-checkbox">
+    {% for choice_id, choice in field.choices %}
+    <div class="custom-control custom-checkbox">
+        <input type="checkbox" name="{{ field.name }}"
+            {{ 'checked="checked"' if field.data and choice_id in field.data else "" }}
+            class="custom-control-input" value="{{ choice_id }}" id="{{ field.id }}{{choice_id}}">
+        <label class="col-form-label custom-control-label" for="{{ field.id }}{{ choice_id }}">{{choice}}</label>
+    </div>
+    {% endfor %}
+    </div>
+{% endmacro %}
+
+{% macro field_widget(field) %}
+    {% if field.type == "MultiCheckboxField" %}
+        {{ multi_checkbox(field) }}
+    {% else %}
+        {% if field.flags.disabled %}{% set _dummy = kwargs.update({'disabled': field.flags.disabled}) %}{% endif %}
+        {% if field.flags.readonly %}{% set _dummy = kwargs.update({'readonly': field.flags.readonly}) %}{% endif %}
+        {{ field(class_='form-control is-invalid' if field.errors else 'form-control', **kwargs) }}
+    {% endif %}
+    {{ field_errors(field) }}
+{% endmacro %}
+
+{# Renders checkbox fields since they are represented differently in bootstrap
+    Params:
+        field - WTForm field (there are no check, but you should put here only BooleanField.
+        kwargs - pass any arguments you want in order to put them into the html attributes.
+        There are few exceptions: for - for_, class - class_, class__ - class_
+
+    Example usage:
+        {{ horiz_form.checkbox_field(form.remember_me) }}
+ #}
+{% macro checkbox_field(field) -%}
+    {% call div_form_group(field, **kwargs) %}
+        <div class="col-sm-9 offset-sm-3">
+            <div class="pt-2 checkbox form-check custom-control custom-checkbox">
+                {% if field.flags.disabled %}{% set _dummy = kwargs.update({'disabled': field.flags.disabled}) %}{% endif %}
+                {{ field(type='checkbox', class_='form-check-input custom-control-input' + (' is-invalid' if field.errors else ''), **kwargs) }}
+                {# pt-0 is to align the label with the checkbox by removing the padding #}
+                <label class="pt-0 col-form-label form-check-label custom-control-label" for="{{ field.id }}">
+                    {{ field.label }}
+                </label>
+                {{ field_errors(field) }}
+            </div>
+            {% if field.description %}
+                {{ description(field) }}
+            {% endif %}
+        </div>
+    {% endcall %}
+{%- endmacro %}
+
+{# Renders radio field
+    Params:
+        field - WTForm field (must have an `iter_choices` method)
+        kwargs - pass any arguments you want in order to put them into the html attributes.
+        There are few exceptions: for - for_, class - class_, class__ - class_
+
+    Example usage:
+        {{ horiz_form.radio_field(form.answers) }}
+ #}
+{% macro radio_field(field, label_visible=true) -%}
+    <fieldset class="row mb-3 {{ 'required' if field.flags.required }} {{ kwargs.get('class_', '') }}">
+        {% if label_visible %}
+            {{ field.label(class_='col-form-label col-3') }}
+        {% endif %}
+        <div class="col-9">
+        {% for value, label, checked in field.iter_choices() %}
+            <div class="radio form-check">
+                <input type="radio"
+                    class="form-check-input{{' is-invalid' if field.errors }}"
+                    name="{{ field.id }}"
+                    id="{{ field.id }}-{{ value | lower }}"
+                    value="{{ value }}"
+                    {{ 'checked' if checked }}
+                    {{ 'disabled' if field.flags.disabled or (field.flags.readonly and not checked) }}
+                >
+                <label class="form-check-label">
+                    {{ label }}
+                </label>
+                {% if loop.last %}{{ field_errors(field) }}{% endif %}
+            </div>
+        {% endfor %}
+        </div>
+        {% if field.description %}
+            {{ description(field) }}
+        {% endif %}
+    </fieldset>
+{%- endmacro %}
+
+{% macro submit_group(action_text='Submit', btn_class='btn btn-primary', cancel_url='') -%}
+    <div class="row mb-3 col-9 offset-sm-3">
+      <div class="p-0">
+        <button type="submit" class="{{ btn_class }}">{{ action_text }} </button>
+        {% if cancel_url %}
+            <a href="{{cancel_url}}" class="cancel">Cancel</a>
+        {% endif %}
+      </div>
+    </div>
+{%- endmacro %}
+
+{% macro render_field(f) -%}
+    {% if f is none %}
+        {# Do nothing b/c the field is None #}
+    {% elif f.type == 'BooleanField' or f.widget.input_type == 'checkbox' %}
+        {{ checkbox_field(f, **kwargs) }}
+    {% elif f.type == 'RadioField' %}
+        {{ radio_field(f, **kwargs) }}
+    {% elif f.type == 'FormField' %}
+        {{ render_form_fields(f, render_hidden=true) }}
+    {% else %}
+        {{ field(f, **kwargs) }}
+    {% endif %}
+{%- endmacro %}
+
+
+{% macro form_errors(form) -%}
+    {% if form.form_errors %}
+        <div class="text-danger">
+            {% for e in form.form_errors %}
+                <p>{{ e }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endmacro %}
+
+
+{# Renders WTForm in bootstrap way. There are two ways to call function:
+     - as macros: it will render all field forms using cycle to iterate over them
+     - as call: it will insert form fields as you specify:
+     e.g. {% call macros.render_form(form, action_url=url_for('login_view'), action_text='Login',
+                                        class_='login-form') %}
+                {{ macros.render_field(form.email, placeholder='Input email', type='email') }}
+                {{ macros.render_field(form.password, placeholder='Input password', type='password') }}
+                {{ macros.render_checkbox_field(form.remember_me, type='checkbox') }}
+            {% endcall %}
+
+     Params:
+        form - WTForm class
+        action_url - url where to submit this form
+        action_text - text of submit button
+        class_ - sets a class for form
+#}
+{% macro form(
+    form,
+    field_names=None,
+    action_url='',
+    action_text='Submit',
+    class_='',
+    btn_class='btn btn-primary',
+    cancel_url='',
+    form_upload=false,
+    dirty_check=false,
+    form_id=None,
+    form_name=None,
+    form_attrs=None
+) -%}
+
+    <form method="POST"
+          action="{{ action_url }}"
+          role="form"
+          class="{{ class_ }} {{ 'was-validated needs-validation' if form.errors else 'needs-validation' }}"
+          {% if form_id %}id="{{ form_id }}"{% endif %}
+          {% if form_name %}name="{{ form_name }}"{% endif %}
+          {% if form_upload %}enctype="multipart/form-data"{% endif %}
+          {% if dirty_check %}data-dirty-check="on"{% endif %}
+          novalidate
+          {% for attr_key, attr_value in (form_attrs or {}).items() %}
+          {{attr_key}}{% if attr_value %}="{{attr_value}}"{% endif %}
+          {% endfor %}
+    >
+        {{ form.hidden_tag() if form.hidden_tag }}
+        {{ form_errors(form) }}
+
+        {% if caller %}
+            {{ caller() }}
+        {% elif field_names %}
+            {{ fields(form, field_names) }}
+        {% else %}
+            {{ render_form_fields(form) }}
+        {% endif %}
+        {{ submit_group(action_text=action_text, btn_class=btn_class, cancel_url=cancel_url) }}
+    </form>
+{%- endmacro %}
+
+{% macro render_form_fields(form, render_hidden=false) -%}
+    {# Render hidden tags if flag is passed (for subforms only) #}
+    {{ form.hidden_tag() if render_hidden and form.hidden_tag }}
+    {% for f in form %}
+        {% if not f.widget.input_type == 'hidden' %}
+            {{ render_field(f) }}
+        {% endif %}
+    {% endfor %}
+{%- endmacro %}
+
+{% macro fields(form, field_names) -%}
+    {% for field_name in field_names %}
+        {{ render_field(form[field_name]) }}
+    {% endfor %}
+{%- endmacro %}
+
+{% macro section(heading, form, field_names) -%}
+    <h2>{{heading}}</h2>
+    {% if caller %}
+        {{ caller() }}
+    {% else %}
+        {{ fields(form, field_names) }}
+    {% endif %}
+{%- endmacro %}
+
+{% macro datetime_helper() -%}
+    <script type="text/javascript">
+        {% include "keg-elements/forms/datetime-helper.js" %}
+    </script>
+{%- endmacro %}

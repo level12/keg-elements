@@ -7,6 +7,8 @@ class DefaultProfile(object):
     SQLALCHEMY_TRACK_MODIFICATIONS = True
     SQLALCHEMY_DATABASE_URI = os.environ.get('SQLALCHEMY_DATABASE_URI', 'sqlite://')
 
+    KEG_BOOTSTRAP_MAJOR_VERSION = 4
+
 
 class TestProfile(object):
     KEG_KEYRING_ENABLE = False
