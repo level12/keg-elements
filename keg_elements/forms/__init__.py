@@ -555,7 +555,7 @@ class RelationshipMultipleField(RelationshipFieldBase, SelectMultipleField):
     def iter_choices(self):
         selected_ids = [v.id for v in self.data or []]
         for value, label in self.concrete_choices:
-            selected = selected_ids is not None and self.coerce(value) in selected_ids
+            selected = self.coerce(value) in selected_ids
             yield Choice(value, label, selected, {})
 
     def process_formdata(self, valuelist):

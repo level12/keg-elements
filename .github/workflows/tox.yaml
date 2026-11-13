@@ -3,7 +3,7 @@ name: Tox
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
   workflow_dispatch:
 
@@ -19,20 +19,17 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PIP_CACHE_DIR: /tmp/pip-cache
+      SQLALCHEMY_DATABASE_URI: ${{ matrix.database_uri }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - database: postgres
-            database_uri: "postgresql://postgres@postgres:54321/postgres"
+            database_uri: "postgresql://postgres@localhost:54321/postgres"
           - database: sqlite
             database_uri: "sqlite://"
           - database: mssql
-            database_uri: "mssql+pyodbc_mssql://SA:Password12!@mssql:14331/tempdb?driver=ODBC+Driver+17+for+SQL+Server"
-    container:
-      image: level12/python-test-multi
-      env:
-        SQLALCHEMY_DATABASE_URI: ${{ matrix.database_uri }}
+            database_uri: "mssql+pyodbc_mssql://SA:Password12!@localhost:14331/tempdb?driver=ODBC+Driver+17+for+SQL+Server"
     services:
       postgres:
         image: ${{ matrix.database == 'postgres' && 'postgres:latest' || '' }}
@@ -40,15 +37,49 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_HOST_AUTH_METHOD: trust
           POSTGRES_DB: postgres
-          PGPORT: 54321
+        ports:
+          - 54321:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
       mssql:
         image: ${{ matrix.database == 'mssql' && 'mcr.microsoft.com/mssql/server' || '' }}
         env:
           ACCEPT_EULA: "Y"
           MSSQL_SA_PASSWORD: "Password12!"
-          MSSQL_TCP_PORT: 14331
+        ports:
+          - 14331:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P 'Password12!' -C -Q 'SELECT 1' -b"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
     steps:
       - uses: actions/checkout@v4
+
+      - name: set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: |
+            3.14
+            3.13
+            3.12
+
+      - name: install ODBC dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unixodbc-dev
+
+      - name: install SQL Server ODBC driver
+        if: matrix.database == 'mssql'
+        run: |
+          source /etc/os-release
+          curl -fsSLo /tmp/packages-microsoft-prod.deb "https://packages.microsoft.com/config/ubuntu/${VERSION_ID}/packages-microsoft-prod.deb"
+          sudo dpkg -i /tmp/packages-microsoft-prod.deb
+          sudo apt-get update
+          sudo env ACCEPT_EULA=Y apt-get install -y msodbcsql17
 
       - name: prepare pip cache
         run: mkdir -p "$PIP_CACHE_DIR"
@@ -67,10 +98,15 @@ jobs:
       - name: version checks
         run: |
           python3.12 --version
+          python3.13 --version
+          python3.14 --version
           tox --version
 
       - name: run tox
         run: tox
 
       - name: push code coverage
-        run: curl -s https://codecov.io/bash | bash -s -- -X coveragepy -t "1c18e756-0bd0-4106-98be-b2fedf1f88df"
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: ${{ matrix.database }}

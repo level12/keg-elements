@@ -26,7 +26,7 @@ project = 'KegElements'
 copyright = u"{year} Level 12".format(year=dt.datetime.utcnow().year)
 
 
-cfg = configparser.SafeConfigParser()
+cfg = configparser.ConfigParser()
 cfg.read('../../setup.cfg')
 
 tag = cfg.get('egg_info', 'tag_build')
