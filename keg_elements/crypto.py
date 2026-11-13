@@ -147,7 +147,7 @@ def encrypt_fileobj(key, in_fileobj, chunksize=64 * 1024):
     :returns: Output file path string.
     """
     encryptor, iv = aes_encryptor(key)
-    padder = padding.PKCS7(encryptor._ctx._cipher.block_size).padder()
+    padder = padding.PKCS7(ciphers.algorithms.AES.block_size).padder()
 
     yield iv
     for chunk in iter(lambda: in_fileobj.read(chunksize), b''):
@@ -216,7 +216,7 @@ def decrypt_fileobj(key, in_fileobj, out_fileobj, chunksize):
     """
     iv = in_fileobj.read(16)
     decryptor = aes_decryptor(key, iv)
-    unpadder = padding.PKCS7(decryptor._ctx._cipher.block_size).unpadder()
+    unpadder = padding.PKCS7(ciphers.algorithms.AES.block_size).unpadder()
 
     for chunk in iter(lambda: in_fileobj.read(chunksize), b''):
         data = decryptor.update(chunk)

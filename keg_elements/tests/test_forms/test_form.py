@@ -57,7 +57,7 @@ class FormBase(object):
 
 class FruitForm(Form):
     fruit = SelectField(validators=[validators.Optional()],
-                        choices=[('apple', 'apple'), ('banana', 'banana')])
+                        choices=[('apple', 'Apple'), ('banana', 'Banana')])
     letter = SelectField(validators=[validators.Optional()],
                          choices=[('a', 'a'), ('b', 'b'), ('', 'blank')], add_blank_choice=False)
     letter2 = SelectField(validators=[validators.InputRequired()], choices=[('a', 'a'), ('b', 'b')])
@@ -84,6 +84,26 @@ class TestSelectField(FormBase):
 
         assert form.fruit.data is None
         assert form.letter.data == ''
+
+    @pytest.mark.parametrize('value', [None, 'apple'])
+    @pytest.mark.parametrize('grouped', [False, True])
+    def test_selected_option_rendering(self, value, grouped):
+        form = FruitForm(fruit=value)
+        if grouped:
+            form.fruit.choices = [('Fruit', form.fruit.choices)]
+        options = pq(form.fruit())('option')
+        assert options.length == 3
+        assert options.eq(0).attr('value') == ''
+        selected = options.filter('[selected]')
+        assert selected.length == 1
+        assert selected.attr('value') == (value or '')
+
+    @pytest.mark.parametrize('grouped', [False, True])
+    def test_selected_choice_label(self, grouped):
+        form = FruitForm(fruit='apple')
+        if grouped:
+            form.fruit.choices = [('Fruit', form.fruit.choices)]
+        assert form.fruit.selected_choice_label == 'Apple'
 
     def test_blank_choice_required(self):
         form = self.assert_invalid(**{'letter2': ''})
@@ -1032,6 +1052,19 @@ class ThingForeignKeyRelationshipMixin:
         form = self.create_form(self.create_relationship())
 
         self.assert_object_options(self.get_field(form), [foo_thing, thing1])
+
+    def test_options_follow_data_changes(self):
+        foo_thing = ents.Thing.fake(name='Foo')
+        thing1 = ents.Thing.fake(name='Thing 1')
+        form = self.create_form(
+            self.create_relationship(lambda this: this.orm_cls.name != 'Foo')
+        )
+        field = self.get_field(form)
+        self.assert_object_options(field, [thing1])
+
+        # Choices depend on the field's data, so must not be cached from an earlier read.
+        field.data = foo_thing.id if field.fk_attr else foo_thing
+        self.assert_object_options(field, [foo_thing, thing1])
 
 
 class TestForeignKeyRelationship(ThingForeignKeyRelationshipMixin, RelationshipMixin):

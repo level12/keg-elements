@@ -1,4 +1,4 @@
-from keg_elements.forms import ModelForm
+from keg_elements.forms import ModelForm, RequiredBoolRadioField
 import keg_elements.testing as testing
 from kegel_app.model import entities
 
@@ -83,11 +83,14 @@ class TestFormBase(testing.FormBase):
         class FieldsMeta:
             pass
 
+        bool_check = RequiredBoolRadioField()
+
     form_cls = ThingForm
 
     def ok_data(self, **kwargs):
         return {
             "name": "foo",
+            "bool_check": "False",
             **kwargs
         }
 
@@ -96,3 +99,5 @@ class TestFormBase(testing.FormBase):
         self.verify_field('status', 'Status', required=False,
                           choice_values=[entities.ThingStatus.open,
                                          entities.ThingStatus.closed])
+        self.verify_field('bool_check', 'Bool Check', required=True,
+                          choice_values=[True, False])

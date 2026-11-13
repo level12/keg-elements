@@ -14,6 +14,7 @@ from markupsafe import Markup
 from sqlalchemy_utils import ArrowType, get_class_by_table
 import wtforms.fields
 import wtforms.form
+from wtforms.fields.choices import Choice, SelectChoice
 from wtforms.validators import InputRequired, Optional, StopValidation, NumberRange, AnyOf
 from wtforms_alchemy import (
     FormGenerator as FormGeneratorBase,
@@ -240,14 +241,28 @@ class SelectMixin:
 
         self.coerce = functools.partial(select_coerce, self.add_blank_choice, coerce_arg)
 
+    def _blank_choice(self):
+        return Choice('', '', self.data is None or self.data == '', {})
+
     def iter_choices(self):
         if self.add_blank_choice:
-            template_list = list(self._choices_generator([('', '')]))
-            template = list(template_list[0])
-            template[2] = (self.coerce, False)
-            yield tuple(template)
-        for value in super().iter_choices():
-            yield value
+            yield self._blank_choice()
+        yield from super().iter_choices()
+
+    def iter_groups(self):
+        if self.add_blank_choice:
+            yield None, [self._blank_choice()]
+        yield from super().iter_groups()
+
+    @property
+    def concrete_choices(self):
+        # WTForms 3.3 resolves a choices callable once and caches the result until
+        # post_process. Re-invoke it on each access so choices that depend on the
+        # field's current data (e.g. relationship fields) stay current.
+        choices_callable = getattr(self, '_choices_callable', None)
+        if choices_callable is not None:
+            return self._invoke_choices_callback(choices_callable)
+        return super().concrete_choices
 
     @property
     def choice_values(self):
@@ -258,7 +273,7 @@ class SelectMixin:
 
     @property
     def selected_choice_label(self):
-        value_dict = dict(self.concrete_choices)
+        value_dict = dict(self._flat_choices())
         return value_dict.get(self.data)
 
 
@@ -311,7 +326,7 @@ class RequiredBoolRadioField(wtforms.fields.RadioField):
                 return False
             return val
 
-        kwargs['choices'] = [(True, true_label), (False, false_label)]
+        kwargs['choices'] = [SelectChoice(True, true_label), SelectChoice(False, false_label)]
         kwargs['coerce'] = bool_coerce
         kwargs['validators'] = [InputRequired()] + kwargs.get('validators', [])
 
@@ -551,9 +566,9 @@ class RelationshipMultipleField(RelationshipFieldBase, SelectMultipleField):
 
     def iter_choices(self):
         selected_ids = [v.id for v in self.data or []]
-        for value, label in self.choices():
-            selected = selected_ids is not None and self.coerce(value) in selected_ids
-            yield (value, label, selected, {})
+        for value, label in self.concrete_choices:
+            selected = self.coerce(value) in selected_ids
+            yield Choice(value, label, selected, {})
 
     def process_formdata(self, valuelist):
         try:
@@ -569,7 +584,7 @@ class RelationshipMultipleField(RelationshipFieldBase, SelectMultipleField):
 
     def pre_validate(self, form):
         if self.data:
-            values = list(c[0] for c in self.choices())
+            values = list(c[0] for c in self.concrete_choices)
             for d in self.data:
                 if str(d.id) not in values:
                     raise ValueError(

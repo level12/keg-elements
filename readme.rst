@@ -4,9 +4,6 @@ Keg Elements
 ####################
 
 
-.. image:: https://circleci.com/gh/level12/keg-elements.svg?style=svg
-  :target: https://circleci.com/gh/level12/keg-elements
-
 .. image:: https://codecov.io/github/level12/keg-elements/coverage.svg?branch=master
   :target: https://codecov.io/github/level12/keg-elements?branch=master
 
