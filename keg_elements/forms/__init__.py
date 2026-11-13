@@ -241,16 +241,28 @@ class SelectMixin:
 
         self.coerce = functools.partial(select_coerce, self.add_blank_choice, coerce_arg)
 
+    def _blank_choice(self):
+        return Choice('', '', self.data is None or self.data == '', {})
+
     def iter_choices(self):
         if self.add_blank_choice:
-            yield Choice('', '', self.data is None or self.data == '', {})
-        for value in super().iter_choices():
-            yield value
+            yield self._blank_choice()
+        yield from super().iter_choices()
 
     def iter_groups(self):
         if self.add_blank_choice:
-            yield None, [Choice('', '', self.data is None or self.data == '', {})]
+            yield None, [self._blank_choice()]
         yield from super().iter_groups()
+
+    @property
+    def concrete_choices(self):
+        # WTForms 3.3 resolves a choices callable once and caches the result until
+        # post_process. Re-invoke it on each access so choices that depend on the
+        # field's current data (e.g. relationship fields) stay current.
+        choices_callable = getattr(self, '_choices_callable', None)
+        if choices_callable is not None:
+            return self._invoke_choices_callback(choices_callable)
+        return super().concrete_choices
 
     @property
     def choice_values(self):
@@ -261,7 +273,7 @@ class SelectMixin:
 
     @property
     def selected_choice_label(self):
-        value_dict = dict(self.concrete_choices)
+        value_dict = dict(self._flat_choices())
         return value_dict.get(self.data)
 
 

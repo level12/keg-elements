@@ -29,7 +29,7 @@ setup(
     zip_safe=False,
     include_package_data=True,
     version=version['VERSION'],
-    python_requires='>=3.11',
+    python_requires='>=3.12',
     install_requires=[
         'arrow',
         'Flask-WTF',

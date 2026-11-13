@@ -8,6 +8,7 @@ from pyquery import PyQuery
 import sqlalchemy as sa
 from sqlalchemy_utils import ArrowType
 from werkzeug.datastructures import MultiDict
+from wtforms.fields.choices import SelectChoice
 
 from .db.utils import validate_unique_exc
 from .db.mixins import DefaultColsMixin
@@ -307,7 +308,10 @@ class FormBase(object):
 
         if hasattr(field, "choices"):
             if choice_values:
-                assert choice_values == [choice[0] for choice in field.choices]
+                assert choice_values == [
+                    choice.value if isinstance(choice, SelectChoice) else choice[0]
+                    for choice in field.choices
+                ]
 
         if label:
             assert field.label.text == label
