@@ -82,14 +82,19 @@ def test_constant_time_compare():
 
 
 class TestCryptors:
-    def enc_algo(self, encryptor):
-        return encryptor._ctx._cipher.name, encryptor._ctx._mode.name
+    def assert_cipher(self, context, mode, decrypt=False):
+        cipher = ciphers.Cipher(ciphers.algorithms.AES(CRYPTO_KEY), mode)
+        expected = cipher.decryptor() if decrypt else cipher.encryptor()
+        data = b'a' * 32
+        assert context.update(data) + context.finalize() == (
+            expected.update(data) + expected.finalize()
+        )
 
     def test_aes_encryptor_defaults(self):
         enc1, iv1 = crypto.aes_encryptor(CRYPTO_KEY)
         enc2, iv2 = crypto.aes_encryptor(CRYPTO_KEY)
-        assert self.enc_algo(enc1) == ('AES', 'CBC')
-        assert self.enc_algo(enc2) == ('AES', 'CBC')
+        self.assert_cipher(enc1, ciphers.modes.CBC(iv1))
+        self.assert_cipher(enc2, ciphers.modes.CBC(iv2))
 
         assert iv1 != iv2
         assert len(iv1) == 16
@@ -97,17 +102,17 @@ class TestCryptors:
 
     def test_aes_encryptor_mode(self):
         enc, iv = crypto.aes_encryptor(CRYPTO_KEY, mode=ciphers.modes.ECB())
-        assert self.enc_algo(enc) == ('AES', 'ECB')
+        self.assert_cipher(enc, ciphers.modes.ECB())
 
     def test_aes_decryptor_defaults(self):
         dec1 = crypto.aes_decryptor(CRYPTO_KEY, b'a' * 16)
         dec2 = crypto.aes_decryptor(CRYPTO_KEY, b'a' * 16)
-        assert self.enc_algo(dec1) == ('AES', 'CBC')
-        assert self.enc_algo(dec2) == ('AES', 'CBC')
+        self.assert_cipher(dec1, ciphers.modes.CBC(b'a' * 16), decrypt=True)
+        self.assert_cipher(dec2, ciphers.modes.CBC(b'a' * 16), decrypt=True)
 
     def test_aes_decryptor_mode(self):
         dec = crypto.aes_decryptor(CRYPTO_KEY, b'a' * 16, mode=ciphers.modes.ECB())
-        assert self.enc_algo(dec) == ('AES', 'ECB')
+        self.assert_cipher(dec, ciphers.modes.ECB(), decrypt=True)
 
     def test_encrypt_decrypt(self):
         data = b'a' * 32
