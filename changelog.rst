@@ -1,6 +1,24 @@
 Changelog
 =========
 
+0.13.0 released 2026-11-13
+--------------------------
+
+- support wtforms 3.3 and wtforms-components 0.12 (20fb1ac_)
+- fix select choice labels and lazy choices for wtforms 3.3 (435ebda_)
+- support python 3.12 - 3.14, drop support for older versions (ce4cc25_)
+- support SQLAlchemy 2.1 (4d62a8f_)
+- fix file encryption padding for newer cryptography versions (cb679bd_)
+- move CI to GitHub Actions (0110e30_)
+
+.. _20fb1ac: https://github.com/level12/keg-elements/commit/20fb1ac
+.. _435ebda: https://github.com/level12/keg-elements/commit/435ebda
+.. _ce4cc25: https://github.com/level12/keg-elements/commit/ce4cc25
+.. _4d62a8f: https://github.com/level12/keg-elements/commit/4d62a8f
+.. _cb679bd: https://github.com/level12/keg-elements/commit/cb679bd
+.. _0110e30: https://github.com/level12/keg-elements/commit/0110e30
+
+
 0.12.1 released 2024-12-17
 --------------------------
 
