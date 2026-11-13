@@ -69,7 +69,7 @@ waitress==3.0.2
 WebGrid==0.20261113.1
 WebOb==1.8.11
 WebTest==3.0.7
-Werkzeug==3.0.3
+Werkzeug==3.1.9
 wrapt==2.5.2
 WTForms==3.3.2
 WTForms-Alchemy==0.18.0
