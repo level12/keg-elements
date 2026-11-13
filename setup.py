@@ -46,7 +46,7 @@ setup(
             'alembic',
             'flask-webtest',
             'pre-commit',
-            'psycopg2-binary',
+            'psycopg[binary]>=3',
             'pyquery',
             'pytest',
             'pytest-cov',
