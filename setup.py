@@ -56,6 +56,7 @@ setup(
             'tox',
             'freezegun',
             'webgrid',
+            'six',
             'xlsxwriter',
         ],
         'i18n': [

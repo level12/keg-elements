@@ -1,0 +1,76 @@
+name: Tox
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+
+# Limit this workflow to a single run at a time per-branch to avoid wasting worker resources
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tox:
+    name: ${{ matrix.database }}
+    runs-on: ubuntu-latest
+    env:
+      PIP_CACHE_DIR: /tmp/pip-cache
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - database: postgres
+            database_uri: "postgresql://postgres@postgres:54321/postgres"
+          - database: sqlite
+            database_uri: "sqlite://"
+          - database: mssql
+            database_uri: "mssql+pyodbc_mssql://SA:Password12!@mssql:14331/tempdb?driver=ODBC+Driver+17+for+SQL+Server"
+    container:
+      image: level12/python-test-multi
+      env:
+        SQLALCHEMY_DATABASE_URI: ${{ matrix.database_uri }}
+    services:
+      postgres:
+        image: ${{ matrix.database == 'postgres' && 'postgres:latest' || '' }}
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: postgres
+          PGPORT: 54321
+      mssql:
+        image: ${{ matrix.database == 'mssql' && 'mcr.microsoft.com/mssql/server' || '' }}
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: "Password12!"
+          MSSQL_TCP_PORT: 14331
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: prepare pip cache
+        run: mkdir -p "$PIP_CACHE_DIR"
+
+      - name: cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PIP_CACHE_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-pip-${{ hashFiles('setup.py', 'setup.cfg', 'tox.ini', 'stable-requirements.txt', 'docs/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-pip-
+
+      - name: install tox
+        run: python3.12 -m pip install --upgrade --force-reinstall tox pip
+
+      - name: version checks
+        run: |
+          python3.12 --version
+          tox --version
+
+      - name: run tox
+        run: tox
+
+      - name: push code coverage
+        run: curl -s https://codecov.io/bash | bash -s -- -X coveragepy -t "1c18e756-0bd0-4106-98be-b2fedf1f88df"
