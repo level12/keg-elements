@@ -55,7 +55,6 @@ PyYAML==6.0.3
 requests==2.32.3
 responses==0.25.3
 sentry-sdk==2.7.1
-six==1.16.0
 soupsieve==2.5
 SQLAlchemy==2.1.8
 sqlalchemy-pyodbc-mssql==0.1.1
@@ -67,7 +66,7 @@ urllib3==2.2.2
 validators==0.28.3
 virtualenv==20.26.3
 waitress==3.0.2
-WebGrid==0.5.9
+WebGrid==0.20261113.1
 WebOb==1.8.11
 WebTest==3.0.7
 Werkzeug==3.0.3
