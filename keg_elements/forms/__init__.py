@@ -14,6 +14,7 @@ from markupsafe import Markup
 from sqlalchemy_utils import ArrowType, get_class_by_table
 import wtforms.fields
 import wtforms.form
+from wtforms.fields.choices import Choice, SelectChoice
 from wtforms.validators import InputRequired, Optional, StopValidation, NumberRange, AnyOf
 from wtforms_alchemy import (
     FormGenerator as FormGeneratorBase,
@@ -242,12 +243,14 @@ class SelectMixin:
 
     def iter_choices(self):
         if self.add_blank_choice:
-            template_list = list(self._choices_generator([('', '')]))
-            template = list(template_list[0])
-            template[2] = (self.coerce, False)
-            yield tuple(template)
+            yield Choice('', '', self.data is None or self.data == '', {})
         for value in super().iter_choices():
             yield value
+
+    def iter_groups(self):
+        if self.add_blank_choice:
+            yield None, [Choice('', '', self.data is None or self.data == '', {})]
+        yield from super().iter_groups()
 
     @property
     def choice_values(self):
@@ -311,7 +314,7 @@ class RequiredBoolRadioField(wtforms.fields.RadioField):
                 return False
             return val
 
-        kwargs['choices'] = [(True, true_label), (False, false_label)]
+        kwargs['choices'] = [SelectChoice(True, true_label), SelectChoice(False, false_label)]
         kwargs['coerce'] = bool_coerce
         kwargs['validators'] = [InputRequired()] + kwargs.get('validators', [])
 
@@ -551,9 +554,9 @@ class RelationshipMultipleField(RelationshipFieldBase, SelectMultipleField):
 
     def iter_choices(self):
         selected_ids = [v.id for v in self.data or []]
-        for value, label in self.choices():
+        for value, label in self.concrete_choices:
             selected = selected_ids is not None and self.coerce(value) in selected_ids
-            yield (value, label, selected, {})
+            yield Choice(value, label, selected, {})
 
     def process_formdata(self, valuelist):
         try:
@@ -569,7 +572,7 @@ class RelationshipMultipleField(RelationshipFieldBase, SelectMultipleField):
 
     def pre_validate(self, form):
         if self.data:
-            values = list(c[0] for c in self.choices())
+            values = list(c[0] for c in self.concrete_choices)
             for d in self.data:
                 if str(d.id) not in values:
                     raise ValueError(

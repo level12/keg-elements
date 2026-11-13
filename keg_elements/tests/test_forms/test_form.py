@@ -57,7 +57,7 @@ class FormBase(object):
 
 class FruitForm(Form):
     fruit = SelectField(validators=[validators.Optional()],
-                        choices=[('apple', 'apple'), ('banana', 'banana')])
+                        choices=[('apple', 'Apple'), ('banana', 'Banana')])
     letter = SelectField(validators=[validators.Optional()],
                          choices=[('a', 'a'), ('b', 'b'), ('', 'blank')], add_blank_choice=False)
     letter2 = SelectField(validators=[validators.InputRequired()], choices=[('a', 'a'), ('b', 'b')])
@@ -84,6 +84,19 @@ class TestSelectField(FormBase):
 
         assert form.fruit.data is None
         assert form.letter.data == ''
+
+    @pytest.mark.parametrize('value', [None, 'apple'])
+    @pytest.mark.parametrize('grouped', [False, True])
+    def test_selected_option_rendering(self, value, grouped):
+        form = FruitForm(fruit=value)
+        if grouped:
+            form.fruit.choices = [('Fruit', form.fruit.choices)]
+        options = pq(form.fruit())('option')
+        assert options.length == 3
+        assert options.eq(0).attr('value') == ''
+        selected = options.filter('[selected]')
+        assert selected.length == 1
+        assert selected.attr('value') == (value or '')
 
     def test_blank_choice_required(self):
         form = self.assert_invalid(**{'letter2': ''})

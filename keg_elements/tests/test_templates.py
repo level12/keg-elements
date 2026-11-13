@@ -138,8 +138,7 @@ class TestGenericTemplates(TemplateTest):
 
 class TestReadonlyOrDisabledFormRender(TemplateTest):
     class MyTestForm(Form):
-        radio_options = ['A', 'B', 'C']
-        radio_choices = [(x, x) for x in radio_options]
+        radio_options = radio_choices = ['A', 'B', 'C']
 
         def field_flag(flags):
             """Creates a no-op validator that has the given field flags."""
