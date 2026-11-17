@@ -6,7 +6,7 @@ build:
     python: "3.12"
   commands:
     - pip install uv
-    - uv pip install --system tox-uv
-    - tox -e docs
+    - uv pip install --system nox
+    - nox -s docs
     - mkdir -p $READTHEDOCS_OUTPUT/html
     - cp -av docs/build/html/ $READTHEDOCS_OUTPUT

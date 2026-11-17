@@ -1,0 +1,91 @@
+name: Nox
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+
+# Limit this workflow to a single run at a time per-branch to avoid wasting worker resources
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
+jobs:
+  # JOB
+  nox-other:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        session: [audit, build, docs, i18n, prek]
+
+    steps:
+      - uses: level12/coppy/gh-actions/nox-run@main
+        with:
+          nox-session: ${{ matrix.session }}
+
+  # JOB
+  nox-pytest:
+    name: pytest (${{ matrix.database }})
+    runs-on: ubuntu-latest
+
+    env:
+      SQLALCHEMY_DATABASE_URI: ${{ matrix.database_uri }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - database: postgres
+            database_uri: "postgresql://postgres@localhost:54321/postgres"
+          - database: sqlite
+            database_uri: "sqlite://"
+          - database: mssql
+            database_uri: "mssql+pyodbc_mssql://SA:Password12!@localhost:14331/tempdb?driver=ODBC+Driver+17+for+SQL+Server"
+
+    services:
+      postgres:
+        image: ${{ matrix.database == 'postgres' && 'postgres:latest' || '' }}
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: postgres
+        ports:
+          - 54321:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+      mssql:
+        image: ${{ matrix.database == 'mssql' && 'mcr.microsoft.com/mssql/server' || '' }}
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: "Password12!"
+        ports:
+          - 14331:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P 'Password12!' -C -Q 'SELECT 1' -b"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+
+    # Specifying the permissions block sets anything not-specified to `none` so we have have to
+    # re-specify the default read permission to be able to set the write permission.
+    permissions:
+      contents: read    # For actions/checkout
+      id-token: write   # For codecov OIDC
+
+    steps:
+      - uses: level12/coppy/gh-actions/nox-run@main
+        with:
+          nox-session: pytest
+
+      - uses: codecov/codecov-action@v5
+        with:
+          use_oidc: true

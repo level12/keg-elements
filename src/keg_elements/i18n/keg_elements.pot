@@ -1,0 +1,109 @@
+# Translations template for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-11-17 15:18-0500\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: src/keg_elements/crypto.py:169
+msgid ""
+"If input file name doesn't end in \".enc\" then output filename must be "
+"given."
+msgstr ""
+
+#: src/keg_elements/http.py:15
+msgid "Base36 input too large"
+msgstr ""
+
+#: src/keg_elements/http.py:26
+msgid "Negative base36 conversion input."
+msgstr ""
+
+#: src/keg_elements/views.py:136
+#, python-brace-format
+msgid "Too many records to export as {}"
+msgstr ""
+
+#: src/keg_elements/db/columns.py:42
+msgid "Key must be at least 32 bytes long"
+msgstr ""
+
+#: src/keg_elements/db/mixins.py:55
+#, python-brace-format
+msgid "Unknown column or relationship names in kwargs: {kwargs!r}"
+msgstr ""
+
+#: src/keg_elements/db/mixins.py:123
+msgid "Updating property types is not implemented."
+msgstr ""
+
+#: src/keg_elements/db/mixins.py:226
+msgid ""
+"No primary key was found in `oid` or `kwargs` for which to retrieve the "
+"object to edit"
+msgstr ""
+
+#: src/keg_elements/db/mixins.py:437
+msgid "No randomization for this column type"
+msgstr ""
+
+#: src/keg_elements/db/utils.py:176
+msgid "length must be at least 7"
+msgstr ""
+
+#: src/keg_elements/forms/__init__.py:338
+msgid "Yes"
+msgstr ""
+
+#: src/keg_elements/forms/__init__.py:339
+msgid "No"
+msgstr ""
+
+#: src/keg_elements/forms/__init__.py:614
+msgid "Invalid Choice: could not coerce"
+msgstr ""
+
+#: src/keg_elements/forms/__init__.py:628
+#, python-format
+msgid "'%(value)s' is not a valid choice for this field"
+msgstr ""
+
+#: src/keg_elements/forms/validators.py:30
+msgid "Must only contain alphanumeric data."
+msgstr ""
+
+#: src/keg_elements/forms/validators.py:40
+msgid "Value is not numeric."
+msgstr ""
+
+#: src/keg_elements/forms/validators.py:49
+#, python-brace-format
+msgid "Field must have no more than {scale} decimal places."
+msgstr ""
+
+#: src/keg_elements/forms/validators.py:87
+msgid ""
+"Form must provide either `obj` or `_obj` property for uniqueness "
+"validation."
+msgstr ""
+
+#: src/keg_elements/forms/validators.py:100
+msgid "This value must be unique but is already assigned."
+msgstr ""
+
+#: src/keg_elements/forms/validators.py:103
+#, python-brace-format
+msgid "This value must be unique but is already assigned to {link}."
+msgstr ""
