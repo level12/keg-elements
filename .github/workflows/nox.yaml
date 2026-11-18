@@ -50,7 +50,7 @@ jobs:
 
     services:
       postgres:
-        image: ${{ matrix.database == 'postgres' && 'postgres:latest' || '' }}
+        image: ${{ matrix.database == 'postgres' && 'postgres:15-alpine' || '' }}
         env:
           POSTGRES_USER: postgres
           POSTGRES_HOST_AUTH_METHOD: trust
