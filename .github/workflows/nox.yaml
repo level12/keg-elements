@@ -32,7 +32,7 @@ jobs:
   # JOB
   nox-pytest:
     name: pytest (${{ matrix.database }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     env:
       SQLALCHEMY_DATABASE_URI: ${{ matrix.database_uri }}
@@ -46,7 +46,7 @@ jobs:
           - database: sqlite
             database_uri: "sqlite://"
           - database: mssql
-            database_uri: "mssql+pyodbc_mssql://SA:Password12!@localhost:14331/tempdb?driver=ODBC+Driver+17+for+SQL+Server"
+            database_uri: "mssql+pyodbc_mssql://SA:Password12!@localhost:14331/tempdb?driver=ODBC+Driver+18+for+SQL+Server&Encrypt=yes&TrustServerCertificate=yes"
 
     services:
       postgres:
@@ -63,9 +63,10 @@ jobs:
           --health-timeout 5s
           --health-retries 12
       mssql:
-        image: ${{ matrix.database == 'mssql' && 'mcr.microsoft.com/mssql/server' || '' }}
+        image: ${{ matrix.database == 'mssql' && 'mcr.microsoft.com/mssql/server:2022-latest' || '' }}
         env:
           ACCEPT_EULA: "Y"
+          MSSQL_PID: Developer
           MSSQL_SA_PASSWORD: "Password12!"
         ports:
           - 14331:1433
@@ -82,6 +83,14 @@ jobs:
       id-token: write   # For codecov OIDC
 
     steps:
+      - name: Install Microsoft ODBC Driver 18
+        if: matrix.database == 'mssql'
+        run: |
+          curl -sSL https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb -o /tmp/packages-microsoft-prod.deb
+          sudo dpkg -i /tmp/packages-microsoft-prod.deb
+          sudo apt-get update
+          sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
+
       - uses: level12/coppy/gh-actions/nox-run@main
         with:
           nox-session: pytest
