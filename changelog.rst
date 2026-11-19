@@ -1,6 +1,20 @@
 Changelog
 =========
 
+0.20261119.2 released 2026-11-19
+--------------------------------
+
+- prevent submitted relationship values from bypassing field query filters
+- redact additional secrets and request query parameters from Sentry events,
+  and make sending default PII opt-in
+- report malformed relationship IDs and validator inputs as form validation
+  errors instead of unhandled exceptions
+- require alphanumeric validators to match the complete value, including
+  rejecting trailing newlines
+- correct the instance-level value of ``LookupMixin.is_active``
+- retry transient Sentry API failures with exponential backoff
+
+
 0.20261119.1 released 2026-11-19
 --------------------------------
 

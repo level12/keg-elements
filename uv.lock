@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.15'",
@@ -904,6 +904,7 @@ dependencies = [
     { name = "keg" },
     { name = "pytz" },
     { name = "sentry-sdk" },
+    { name = "urllib3" },
     { name = "wtforms" },
     { name = "wtforms-alchemy" },
     { name = "wtforms-components" },
@@ -1014,6 +1015,7 @@ requires-dist = [
     { name = "setuptools", marker = "extra == 'i18n'" },
     { name = "sqlalchemy", marker = "extra == 'tests'", specifier = ">=2.1" },
     { name = "sqlalchemy-pyodbc-mssql", marker = "extra == 'tests'" },
+    { name = "urllib3" },
     { name = "webgrid", marker = "extra == 'tests'", specifier = ">=0.20261113.1" },
     { name = "wtforms", specifier = ">=3.3.2" },
     { name = "wtforms-alchemy", specifier = ">=0.18.0" },

@@ -8,6 +8,8 @@ import flask
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration as SentryFlask
 from sentry_sdk.integrations.logging import LoggingIntegration as SentryLogging
+from sentry_sdk.transport import HttpTransport
+import urllib3
 
 
 try:
@@ -269,6 +271,32 @@ class SentryEventFilter:
         return event
 
 
+class SentryRetryingTransport(HttpTransport):
+    """Retry bounded Sentry API requests that fail for transient reasons.
+
+    A request can make at most four attempts using the SDK's 30-second timeout,
+    plus six seconds of backoff. Read failures are not retried, and rate limiting
+    remains under the Sentry SDK's control.
+    """
+
+    def _get_pool_options(self):
+        options = super()._get_pool_options()
+        options['retries'] = urllib3.util.Retry(
+            total=3,
+            connect=3,
+            read=0,
+            redirect=0,
+            status=3,
+            other=0,
+            backoff_factor=1,
+            allowed_methods=['POST', 'PUT'],
+            status_forcelist=[500, 502, 503, 504],
+            raise_on_status=False,
+            respect_retry_after_header=False,
+        )
+        return options
+
+
 def install_sentry(app, integrations, release=None, event_filter=None, **kwargs):
     """Init Sentry SDK with helpful defaults and an event filter.
 
@@ -284,6 +312,12 @@ def install_sentry(app, integrations, release=None, event_filter=None, **kwargs)
 
     kwargs.setdefault('include_local_variables', True)
     kwargs.setdefault('send_default_pii', app.config.get('SENTRY_SEND_DEFAULT_PII', False))
+    experiments = kwargs.get('_experiments', {})
+    experimental_transport = experiments.get('transport_http2') or experiments.get(
+        'transport_async',
+    )
+    if not experimental_transport:
+        kwargs.setdefault('transport', SentryRetryingTransport)
 
     sentry_sdk.init(
         dsn=sentry_dsn,
