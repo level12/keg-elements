@@ -604,10 +604,19 @@ class RelationshipMultipleField(RelationshipFieldBase, SelectMultipleField):
         return int(value)
 
     def coerce_to_obj(self, value):
-        if type(value) in [int, str]:
-            return self.orm_cls.get(int(value))
-        else:
+        if isinstance(value, self.orm_cls):
             return value
+        if type(value) not in (int, str):
+            raise ValueError
+
+        try:
+            obj = self.orm_cls.get(int(value))
+        except (TypeError, ValueError, OverflowError):
+            raise ValueError from None
+
+        if obj is None:
+            raise ValueError
+        return obj
 
     def iter_choices(self):
         selected_ids = [v.id for v in self.data or []]
@@ -631,7 +640,7 @@ class RelationshipMultipleField(RelationshipFieldBase, SelectMultipleField):
         if self.data:
             values = list(c[0] for c in self.concrete_choices)
             for d in self.data:
-                if str(d.id) not in values:
+                if d is None or str(getattr(d, 'id', None)) not in values:
                     raise ValidationError(
                         self.gettext("'%(value)s' is not a valid choice for this field")
                         % dict(value=d),

@@ -1398,6 +1398,19 @@ class TestCollectionRelationship(RelationshipMixin):
 
         assert not form.related_things.validate(form)
 
+    @pytest.mark.parametrize(
+        'value',
+        ['999999', 'not-an-id', None, True, b'1', '9' * 100],
+    )
+    def test_invalid_submitted_id_is_a_validation_error(self, value):
+        form = self.create_form(
+            self.create_relationship(),
+            formdata=MultiDict([('related_things', value)]),
+        )
+
+        assert not form.related_things.validate(form)
+        assert form.related_things.errors == ['Invalid Choice: could not coerce']
+
     def test_load_save_data(self):
         class ManyThingsForm(ModelForm):
             things = RelationshipMultipleField('Things', ents.Thing)

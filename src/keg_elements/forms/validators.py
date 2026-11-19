@@ -17,7 +17,7 @@ class ValidateAlphaNumeric:
         wtforms.StringField('AlphaNumeric', validators=[validators.ValidateAlphaNumeric()])
     """
 
-    regex = re.compile(r'^[a-zA-Z0-9]+$')
+    regex = re.compile(r'[a-zA-Z0-9]+')
 
     def __init__(self, message=None):
         self.message = message
@@ -29,14 +29,14 @@ class ValidateAlphaNumeric:
         if message is None:
             message = field.gettext(_('Must only contain alphanumeric data.'))
 
-        if not self.regex.match(value):
+        if not isinstance(value, str) or not self.regex.fullmatch(value):
             raise ValidationError(message)
 
 
 def numeric(form, field):
     try:
         int(field.data)
-    except ValueError:
+    except (TypeError, ValueError, OverflowError):
         raise ValidationError(_('Value is not numeric.'))
 
 
