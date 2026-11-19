@@ -1,9 +1,42 @@
+import contextlib
+import http.server
+import threading
 from unittest import mock
 
 import flask
 import pytest
+import sentry_sdk
+from sentry_sdk.transport import EndpointType
+from sqlalchemy.engine import URL
 
 from keg_elements import sentry
+
+
+@contextlib.contextmanager
+def sentry_test_server(status, headers=None):
+    requests = []
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):
+            requests.append(self.path)
+            self.send_response(status)
+            for key, value in (headers or {}).items():
+                self.send_header(key, value)
+            self.end_headers()
+
+        def log_message(self, format, *args):
+            pass
+
+    server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        host, port = server.server_address
+        yield f'http://public@{host}:{port}/1', requests
+    finally:
+        server.shutdown()
+        thread.join()
+        server.server_close()
 
 
 class TestSentryFilter:
@@ -11,7 +44,16 @@ class TestSentryFilter:
         f = sentry.SentryEventFilter()
 
         conf = flask.config.Config(__file__)
+        db_url = URL.create(
+            'postgresql',
+            username='user',
+            password='secret',
+            host='database.example.test',
+            database='app',
+        )
         assert f.repr_process(conf, {}) == '<Filtered Config>'
+        assert 'secret' in db_url.render_as_string(hide_password=False)
+        assert f.repr_process(db_url, {}) == '<Filtered URL>'
         assert f.repr_process(dict(), {}) is NotImplemented
         assert f.repr_process(1, {}) is NotImplemented
         assert f.repr_process('', {}) is NotImplemented
@@ -201,6 +243,61 @@ class TestSentryFilter:
             },
         }
 
+    def test_filter_request_secrets(self):
+        event = {
+            'extra': {
+                'APIKey': 'api-key',
+                'auth': 'auth-secret',
+                'author': 'Ada',
+                'credentials': {'username': 'user', 'password': 'pass'},
+                'otp': '123456',
+                'pin': '1234',
+                'session': 'session-secret',
+                'ssn': '123-45-6789',
+            },
+            'request': {
+                'headers': {
+                    'X-API-KEY': 'header-secret',
+                    'X-Request-ID': 'request-id',
+                },
+                'query_string': ('token=first&safe=visible&token=second&%61pi%5Fkey=query-secret'),
+                'url': (
+                    'https://example.test/reset?token=first&safe=visible'
+                    '&token=second&%61pi%5Fkey=query-secret#fragment'
+                ),
+            },
+        }
+
+        filtered = sentry.SentryEventFilter().before_send(event, {})
+
+        assert filtered == {
+            'extra': {
+                'APIKey': '<Filtered str>',
+                'auth': '<Filtered str>',
+                'author': 'Ada',
+                'credentials': '<Filtered dict>',
+                'otp': '<Filtered str>',
+                'pin': '<Filtered str>',
+                'session': '<Filtered str>',
+                'ssn': '<Filtered str>',
+            },
+            'request': {
+                'cookies': {},
+                'headers': {
+                    'X-API-KEY': '<Filtered str>',
+                    'X-Request-ID': 'request-id',
+                },
+                'query_string': (
+                    'token=%3CFiltered+str%3E&safe=visible&token=%3CFiltered+str%3E'
+                    '&api_key=%3CFiltered+str%3E'
+                ),
+                'url': (
+                    'https://example.test/reset?token=%3CFiltered+str%3E&safe=visible'
+                    '&token=%3CFiltered+str%3E&api_key=%3CFiltered+str%3E#fragment'
+                ),
+            },
+        }
+
     def test_filter_by_config_value(self, monkeypatch):
         monkeypatch.setitem(flask.current_app.config, 'STRING', '1234567890')
         monkeypatch.setitem(flask.current_app.config, 'BYTES1', b'\xf0\x0b\xaa')
@@ -276,6 +373,134 @@ class TestSentryFilter:
                 },
             },
         }
+
+
+class TestInstallSentry:
+    def test_retrying_transport(self):
+        transport = object.__new__(sentry.SentryRetryingTransport)
+        sdk_timeout = mock.sentinel.sdk_timeout
+
+        with mock.patch.object(
+            sentry.HttpTransport,
+            '_get_pool_options',
+            return_value={'timeout': sdk_timeout},
+        ):
+            options = transport._get_pool_options()
+
+        retry = options['retries']
+        assert options['timeout'] is sdk_timeout
+        assert retry.total == 3
+        assert retry.connect == 3
+        assert retry.read == 0
+        assert retry.status == 3
+        assert retry.other == 0
+        assert retry.backoff_factor == 1
+        assert set(retry.allowed_methods) == {'POST', 'PUT'}
+        assert retry.status_forcelist == [500, 502, 503, 504]
+        assert retry.raise_on_status is False
+        assert retry.respect_retry_after_header is False
+
+    def test_rate_limit_response_is_not_retried(self):
+        headers = {
+            'Retry-After': '60',
+            'X-Sentry-Rate-Limits': '60::organization',
+        }
+        with sentry_test_server(429, headers) as (dsn, requests):
+            client = sentry_sdk.Client(dsn=dsn, transport=sentry.SentryRetryingTransport)
+            transport = client.transport
+            try:
+                transport._send_request(b'{}', {}, EndpointType.ENVELOPE)
+            finally:
+                client.close(0)
+
+        assert len(requests) == 1
+        assert transport._disabled_until
+
+    def test_final_server_error_reaches_sentry_response_handler(self):
+        with sentry_test_server(503) as (dsn, requests):
+            client = sentry_sdk.Client(dsn=dsn, transport=sentry.SentryRetryingTransport)
+            transport = client.transport
+            try:
+                with (
+                    mock.patch('urllib3.util.retry.time.sleep'),
+                    mock.patch.object(
+                        transport,
+                        '_handle_response',
+                        wraps=transport._handle_response,
+                    ) as handle_response,
+                ):
+                    transport._send_request(b'{}', {}, EndpointType.ENVELOPE)
+            finally:
+                client.close(0)
+
+        assert len(requests) == 4
+        handle_response.assert_called_once()
+        assert handle_response.call_args.kwargs['response'].status == 503
+
+    @pytest.mark.parametrize(
+        ('config_value', 'kwarg_value', 'expected'),
+        [
+            (None, None, False),
+            (None, True, True),
+            (True, None, True),
+            (True, False, False),
+        ],
+    )
+    @mock.patch('keg_elements.sentry.sentry_sdk.serializer.add_global_repr_processor')
+    @mock.patch('keg_elements.sentry.sentry_sdk.init')
+    def test_send_default_pii_is_opt_in(
+        self,
+        m_init,
+        m_add_repr_processor,
+        config_value,
+        kwarg_value,
+        expected,
+    ):
+        config = {'SENTRY_DSN': 'https://public@example.test/1'}
+        if config_value is not None:
+            config['SENTRY_SEND_DEFAULT_PII'] = config_value
+        kwargs = {} if kwarg_value is None else {'send_default_pii': kwarg_value}
+
+        with mock.patch.dict(flask.current_app.config, config, clear=False) as app_config:
+            if config_value is None:
+                app_config.pop('SENTRY_SEND_DEFAULT_PII', None)
+            sentry.install_sentry(flask.current_app, [], **kwargs)
+
+        assert m_init.call_args.kwargs['send_default_pii'] is expected
+        assert m_init.call_args.kwargs['transport'] is sentry.SentryRetryingTransport
+        m_add_repr_processor.assert_called_once()
+
+    @mock.patch('keg_elements.sentry.sentry_sdk.serializer.add_global_repr_processor')
+    @mock.patch('keg_elements.sentry.sentry_sdk.init')
+    @mock.patch.dict(
+        'flask.current_app.config',
+        {'SENTRY_DSN': 'https://public@example.test/1'},
+    )
+    def test_custom_transport_is_preserved(self, m_init, m_add_repr_processor):
+        custom_transport = mock.sentinel.transport
+
+        sentry.install_sentry(flask.current_app, [], transport=custom_transport)
+
+        assert m_init.call_args.kwargs['transport'] is custom_transport
+        m_add_repr_processor.assert_called_once()
+
+    @pytest.mark.parametrize('experiment', ['transport_http2', 'transport_async'])
+    @mock.patch('keg_elements.sentry.sentry_sdk.serializer.add_global_repr_processor')
+    @mock.patch('keg_elements.sentry.sentry_sdk.init')
+    @mock.patch.dict(
+        'flask.current_app.config',
+        {'SENTRY_DSN': 'https://public@example.test/1'},
+    )
+    def test_experimental_transport_is_preserved(
+        self,
+        m_init,
+        m_add_repr_processor,
+        experiment,
+    ):
+        sentry.install_sentry(flask.current_app, [], _experiments={experiment: True})
+
+        assert 'transport' not in m_init.call_args.kwargs
+        m_add_repr_processor.assert_called_once()
 
 
 class TestSentryMonitorUtils:

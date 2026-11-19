@@ -632,7 +632,7 @@ class LookupMixin(SoftDeleteMixin):
 
         By default, deleted == inactive.
         """
-        return self.deleted_utc is not None
+        return self.deleted_utc is None
 
     @is_active.expression
     def is_active(cls):

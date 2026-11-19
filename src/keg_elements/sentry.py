@@ -8,6 +8,9 @@ import flask
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration as SentryFlask
 from sentry_sdk.integrations.logging import LoggingIntegration as SentryLogging
+from sentry_sdk.transport import HttpTransport
+from sqlalchemy.engine import URL as SAEngineURL
+import urllib3
 
 
 try:
@@ -37,7 +40,7 @@ class SentryEventFilter:
     """
 
     # Filter out any variables having a type in the following tuple
-    sanitized_types = (flask.config.Config,)
+    sanitized_types = (flask.config.Config, SAEngineURL)
 
     # Filter out values anywhere in the event JSON with a key containing any of the following
     # strings or regular expressions.
@@ -47,9 +50,15 @@ class SentryEventFilter:
         'secret',
         'passwd',
         'authorization',
+        'credential',
+        'otp',
+        'session',
         'sentry_dsn',
+        'ssn',
         'xsrf',
-        re.compile('.*key$'),
+        re.compile(r'.*key$', re.IGNORECASE),
+        re.compile(r'^(?:.*[_-])?pin(?:$|[_-].*)', re.IGNORECASE),
+        re.compile(r'^(?:.*[_-])?o?auth(?:$|[_-].*)', re.IGNORECASE),
     ]
 
     # Filter out all local variables from the stacktrace contained within any of the modules listed.
@@ -209,8 +218,51 @@ class SentryEventFilter:
             k: (self._filter_repr(v) if 'cookie' in k.lower() else v)
             for k, v in request_dict.get('headers', {}).items()
         }
+        if 'query_string' in request_dict:
+            request_dict['query_string'] = self._filter_query_string(
+                request_dict['query_string'],
+            )
+        if 'url' in request_dict:
+            request_dict['url'] = self._filter_url(request_dict['url'])
 
         return event
+
+    def _filter_query_string(self, query_string):
+        if query_string in (None, ''):
+            return query_string
+        if not isinstance(query_string, str):
+            return self._filter_repr(query_string)
+
+        try:
+            query_params = urllib.parse.parse_qsl(query_string, keep_blank_values=True)
+        except ValueError:
+            return self._filter_repr(query_string)
+
+        return urllib.parse.urlencode(
+            [
+                (
+                    key,
+                    self._filter_repr(value) if self.should_exclude_var(key) else value,
+                )
+                for key, value in query_params
+            ],
+        )
+
+    def _filter_url(self, url):
+        if not isinstance(url, str):
+            return self._filter_repr(url)
+
+        try:
+            parsed_url = urllib.parse.urlsplit(url)
+        except ValueError:
+            return self._filter_repr(url)
+
+        if not parsed_url.query:
+            return url
+
+        return urllib.parse.urlunsplit(
+            parsed_url._replace(query=self._filter_query_string(parsed_url.query)),
+        )
 
     def before_send(self, event, hints):
         event = self._filter_recur(event)
@@ -220,8 +272,38 @@ class SentryEventFilter:
         return event
 
 
+class SentryRetryingTransport(HttpTransport):
+    """Retry bounded Sentry API requests that fail for transient reasons.
+
+    A request can make at most four attempts using the SDK's 30-second timeout,
+    plus six seconds of backoff. Read failures are not retried, and rate limiting
+    remains under the Sentry SDK's control.
+    """
+
+    def _get_pool_options(self):
+        options = super()._get_pool_options()
+        options['retries'] = urllib3.util.Retry(
+            total=3,
+            connect=3,
+            read=0,
+            redirect=0,
+            status=3,
+            other=0,
+            backoff_factor=1,
+            allowed_methods=['POST', 'PUT'],
+            status_forcelist=[500, 502, 503, 504],
+            raise_on_status=False,
+            respect_retry_after_header=False,
+        )
+        return options
+
+
 def install_sentry(app, integrations, release=None, event_filter=None, **kwargs):
-    """Init Sentry SDK with helpful defaults and an event filter."""
+    """Init Sentry SDK with helpful defaults and an event filter.
+
+    Sending default personally identifiable information is disabled unless the app sets
+    ``SENTRY_SEND_DEFAULT_PII`` or the caller passes ``send_default_pii`` explicitly.
+    """
     sentry_dsn = app.config.get('SENTRY_DSN')
     if sentry_dsn is None:
         return
@@ -229,14 +311,21 @@ def install_sentry(app, integrations, release=None, event_filter=None, **kwargs)
     event_filter = event_filter or SentryEventFilter()
     sentry_sdk.serializer.add_global_repr_processor(event_filter.repr_process)
 
+    kwargs.setdefault('include_local_variables', True)
+    kwargs.setdefault('send_default_pii', app.config.get('SENTRY_SEND_DEFAULT_PII', False))
+    experiments = kwargs.get('_experiments', {})
+    experimental_transport = experiments.get('transport_http2') or experiments.get(
+        'transport_async',
+    )
+    if not experimental_transport:
+        kwargs.setdefault('transport', SentryRetryingTransport)
+
     sentry_sdk.init(
         dsn=sentry_dsn,
         integrations=[SentryLogging(event_level=None), SentryFlask(), *integrations],
         before_send=event_filter.before_send,
         release=release,
         environment=app.config.get('SENTRY_ENVIRONMENT'),
-        include_local_variables=True,
-        send_default_pii=True,  # include user details
         **kwargs,
     )
 

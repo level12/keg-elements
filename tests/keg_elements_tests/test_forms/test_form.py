@@ -1,4 +1,5 @@
 import sys
+from unittest import mock
 
 from keg.db import db
 import kegel_app.model.entities as ents
@@ -1010,7 +1011,7 @@ class ThingForeignKeyRelationshipMixin:
     def get_field(self, form):
         raise NotImplementedError()  # pragma: no cover
 
-    def create_formdata(self, form):
+    def create_formdata(self, value):
         raise NotImplementedError()  # pragma: no cover
 
     def coerce(self, value):
@@ -1049,16 +1050,54 @@ class ThingForeignKeyRelationshipMixin:
 
         self.assert_object_options(self.get_field(form), [foo_thing, thing1])
 
-    def test_options_follow_data_changes(self):
+    def test_options_follow_object_data_changes(self):
         foo_thing = ents.Thing.fake(name='Foo')
         thing1 = ents.Thing.fake(name='Thing 1')
         form = self.create_form(self.create_relationship(lambda this: this.orm_cls.name != 'Foo'))
         field = self.get_field(form)
         self.assert_object_options(field, [thing1])
 
-        # Choices depend on the field's data, so must not be cached from an earlier read.
-        field.data = foo_thing.id if field.fk_attr else foo_thing
+        # Choices depend on the field's original object data, so must not be cached.
+        field.object_data = foo_thing.id if field.fk_attr else foo_thing
         self.assert_object_options(field, [foo_thing, thing1])
+
+    def test_submitted_value_does_not_bypass_query_filter(self):
+        foo_thing = ents.Thing.fake(name='Foo')
+        ents.Thing.fake(name='Thing 1')
+        form = self.create_form(
+            self.create_relationship(lambda this: this.orm_cls.name != 'Foo'),
+            formdata=self.create_formdata(foo_thing.id),
+        )
+        field = self.get_field(form)
+
+        assert not field.validate(form)
+        assert field.errors == ['Not a valid choice']
+
+    def test_existing_filtered_value_remains_valid_on_submit(self):
+        foo_thing = ents.Thing.fake(name='Foo')
+        related_thing = ents.RelatedThing.fake(thing=foo_thing, name='Related')
+        form = self.create_form(
+            self.create_relationship(lambda this: this.orm_cls.name != 'Foo'),
+            obj=related_thing,
+            formdata=self.create_formdata(foo_thing.id),
+        )
+        field = self.get_field(form)
+
+        assert field.validate(form)
+
+    def test_existing_filtered_value_does_not_allow_another_filtered_value(self):
+        foo_thing = ents.Thing.fake(name='Foo')
+        other_foo_thing = ents.Thing.fake(name='Foo')
+        related_thing = ents.RelatedThing.fake(thing=foo_thing, name='Related')
+        form = self.create_form(
+            self.create_relationship(lambda this: this.orm_cls.name != 'Foo'),
+            obj=related_thing,
+            formdata=self.create_formdata(other_foo_thing.id),
+        )
+        field = self.get_field(form)
+
+        assert not field.validate(form)
+        assert field.errors == ['Not a valid choice']
 
 
 class TestForeignKeyRelationship(ThingForeignKeyRelationshipMixin, RelationshipMixin):
@@ -1078,6 +1117,9 @@ class TestForeignKeyRelationship(ThingForeignKeyRelationshipMixin, RelationshipM
 
     def get_field(self, form):
         return form.thing_id
+
+    def create_formdata(self, value):
+        return MultiDict({'thing_id': str(value)})
 
     def test_coerce_formdata(self):
         thing = ents.Thing.fake()
@@ -1114,6 +1156,9 @@ class TestOrmRelationship(ThingForeignKeyRelationshipMixin, RelationshipMixin):
 
     def get_field(self, form):
         return form.thing
+
+    def create_formdata(self, value):
+        return MultiDict({'thing': str(value)})
 
     def test_coerce_formdata(self):
         thing = ents.Thing.fake()
@@ -1160,6 +1205,9 @@ class TestOrmRelationshipOrmFkAttr(TestOrmRelationship):
 
     def get_field(self, form):
         return form.thing_id
+
+    def create_formdata(self, value):
+        return MultiDict({'thing_id': str(value)})
 
     def test_coerce_formdata(self):
         thing = ents.Thing.fake()
@@ -1312,6 +1360,71 @@ class TestCollectionRelationship(RelationshipMixin):
             obj=thing_obj,
         )
         self.assert_object_options(form.related_things, [foo_thing, thing1, thing2])
+
+    def test_submitted_value_does_not_bypass_query_filter(self):
+        foo_thing = ents.RelatedThing.fake(name='Foo')
+        ents.RelatedThing.fake(name='Thing 1')
+        form = self.create_form(
+            self.create_relationship(lambda this: this.orm_cls.name != 'Foo'),
+            formdata=MultiDict([('related_things', str(foo_thing.id))]),
+        )
+
+        assert not form.related_things.validate(form)
+
+    def test_existing_filtered_value_remains_valid_on_submit(self):
+        foo_thing = ents.RelatedThing.fake(name='Foo')
+        thing_obj = ents.Thing.fake(related_things=[foo_thing])
+        form = self.create_form(
+            self.create_relationship(lambda this: this.orm_cls.name != 'Foo'),
+            obj=thing_obj,
+            formdata=MultiDict([('related_things', str(foo_thing.id))]),
+        )
+
+        assert form.related_things.validate(form)
+
+    def test_existing_filtered_value_does_not_allow_another_filtered_value(self):
+        foo_thing = ents.RelatedThing.fake(name='Foo')
+        other_foo_thing = ents.RelatedThing.fake(name='Foo')
+        thing_obj = ents.Thing.fake(related_things=[foo_thing])
+        form = self.create_form(
+            self.create_relationship(lambda this: this.orm_cls.name != 'Foo'),
+            obj=thing_obj,
+            formdata=MultiDict(
+                [
+                    ('related_things', str(foo_thing.id)),
+                    ('related_things', str(other_foo_thing.id)),
+                ],
+            ),
+        )
+
+        assert not form.related_things.validate(form)
+
+    @pytest.mark.parametrize(
+        'value',
+        ['999999', 'not-an-id', None, True, b'1', '9' * 100],
+    )
+    def test_invalid_submitted_id_is_a_validation_error(self, value):
+        form = self.create_form(
+            self.create_relationship(),
+            formdata=MultiDict([('related_things', value)]),
+        )
+
+        assert not form.related_things.validate(form)
+        assert form.related_things.errors == ['Invalid Choice: could not coerce']
+
+    @pytest.mark.parametrize('direction', ['below', 'above'])
+    def test_out_of_range_submitted_id_does_not_query(self, direction):
+        bits = 64 if db.engine.dialect.name == 'sqlite' else 32
+        value = -(2 ** (bits - 1)) - 1 if direction == 'below' else 2 ** (bits - 1)
+        with mock.patch.object(ents.RelatedThing, 'get') as get:
+            form = self.create_form(
+                self.create_relationship(),
+                formdata=MultiDict([('related_things', str(value))]),
+            )
+
+        assert not form.related_things.validate(form)
+        assert form.related_things.errors == ['Invalid Choice: could not coerce']
+        get.assert_not_called()
 
     def test_load_save_data(self):
         class ManyThingsForm(ModelForm):

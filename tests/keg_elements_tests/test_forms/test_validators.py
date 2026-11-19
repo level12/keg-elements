@@ -122,3 +122,40 @@ class TestAlphaNumericValidator:
         form = AlphaNumericMockForm(alpha_numeric_field='åfasdf')
         form.validate()
         assert form.errors['alpha_numeric_field'] == [message]
+
+    @pytest.mark.parametrize('value', [None, 'abc\n', 'abc\r\n', 'abc\ndef'])
+    def test_rejects_none_and_newlines(self, value):
+        class AlphaNumericMockForm(wtforms.Form):
+            alpha_numeric_field = wtforms.StringField(
+                'AlphaNumeric',
+                validators=[validators.ValidateAlphaNumeric()],
+            )
+
+        form = AlphaNumericMockForm()
+        form.alpha_numeric_field.data = value
+
+        assert not form.validate()
+        assert form.alpha_numeric_field.errors == ['Must only contain alphanumeric data.']
+
+
+class TestNumericValidator:
+    @pytest.mark.parametrize('value', [None, object(), float('inf'), float('nan'), 'not-a-number'])
+    def test_invalid_values_are_validation_errors(self, value):
+        class NumericMockForm(wtforms.Form):
+            numeric_field = wtforms.Field(validators=[validators.numeric])
+
+        form = NumericMockForm()
+        form.numeric_field.data = value
+
+        assert not form.validate()
+        assert form.numeric_field.errors == ['Value is not numeric.']
+
+    @pytest.mark.parametrize('value', [-1, 0, 1, '-1', '0', '1'])
+    def test_valid_values(self, value):
+        class NumericMockForm(wtforms.Form):
+            numeric_field = wtforms.Field(validators=[validators.numeric])
+
+        form = NumericMockForm()
+        form.numeric_field.data = value
+
+        assert form.validate()

@@ -15,7 +15,14 @@ from sqlalchemy_utils import ArrowType, get_class_by_table
 import wtforms.fields
 from wtforms.fields.choices import Choice, SelectChoice
 import wtforms.form
-from wtforms.validators import AnyOf, InputRequired, NumberRange, Optional, StopValidation
+from wtforms.validators import (
+    AnyOf,
+    InputRequired,
+    NumberRange,
+    Optional,
+    StopValidation,
+    ValidationError,
+)
 from wtforms_alchemy import (
     FormGenerator as FormGeneratorBase,
 )
@@ -441,9 +448,9 @@ class RelationshipFieldBase:
 
     def get_data_filter(self):
         if self.fk_attr:
-            return getattr(self.orm_cls, self.fk_attr_name) == self.data
+            return getattr(self.orm_cls, self.fk_attr_name) == self.object_data
         else:
-            return self.orm_cls.id == self.data.id
+            return self.orm_cls.id == self.object_data.id
 
     def filter_query(self, query):
         filter_terms = []
@@ -453,8 +460,9 @@ class RelationshipFieldBase:
         elif self.query_filter is not None:
             filter_terms.append(self.query_filter)
 
-        # Having an existing value should filter the query.
-        if self.data is not None:
+        # Keep an existing object value available even when it does not match the
+        # query filter. Submitted form data must not expand the valid choices.
+        if self.object_data is not None:
             data_filter = self.get_data_filter()
             if data_filter is not None and filter_terms:
                 filter_terms.append(data_filter)
@@ -584,22 +592,49 @@ class RelationshipMultipleField(RelationshipFieldBase, SelectMultipleField):
         super().__init__(label, orm_cls, label_attr, None, query_filter, coerce, **kwargs)
 
     def get_data_filter(self):
-        if not self.data:
+        if not self.object_data:
             # Empty set should not add any options. Returning in_ in this case has
             # undesirable results.
             return
-        existing_ids = [obj.id for obj in self.data]
+        existing_ids = [obj.id for obj in self.object_data]
         return self.orm_cls.id.in_(existing_ids)
 
     @staticmethod
     def coerce_to_int(value):
         return int(value)
 
-    def coerce_to_obj(self, value):
-        if type(value) in [int, str]:
-            return self.orm_cls.get(int(value))
+    def coerce_to_primary_key(self, value):
+        value = int(value)
+        mapper = sa.inspect(self.orm_cls)
+        column_type = mapper.columns.id.type
+        if isinstance(column_type, sa.SmallInteger):
+            bits = 16
+        elif isinstance(column_type, sa.BigInteger):
+            bits = 64
+        elif isinstance(column_type, sa.Integer):
+            bind = self.orm_cls.query.session.get_bind(mapper=mapper)
+            bits = 64 if bind.dialect.name == 'sqlite' else 32
         else:
             return value
+
+        if not -(2 ** (bits - 1)) <= value < 2 ** (bits - 1):
+            raise ValueError
+        return value
+
+    def coerce_to_obj(self, value):
+        if isinstance(value, self.orm_cls):
+            return value
+        if type(value) not in (int, str):
+            raise ValueError
+
+        try:
+            obj = self.orm_cls.get(self.coerce_to_primary_key(value))
+        except (TypeError, ValueError, OverflowError):
+            raise ValueError from None
+
+        if obj is None:
+            raise ValueError
+        return obj
 
     def iter_choices(self):
         selected_ids = [v.id for v in self.data or []]
@@ -623,8 +658,8 @@ class RelationshipMultipleField(RelationshipFieldBase, SelectMultipleField):
         if self.data:
             values = list(c[0] for c in self.concrete_choices)
             for d in self.data:
-                if str(d.id) not in values:
-                    raise ValueError(
+                if d is None or str(getattr(d, 'id', None)) not in values:
+                    raise ValidationError(
                         self.gettext("'%(value)s' is not a valid choice for this field")
                         % dict(value=d),
                     )

@@ -61,6 +61,7 @@ dependencies = [
     'Keg>=0.11.0',
     'pytz',
     'sentry-sdk>=2',
+    'urllib3',
     'WTForms>=3.3.2',
     'WTForms-Alchemy>=0.18.0',
     'WTForms-Components>=0.12.0',

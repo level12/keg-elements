@@ -465,6 +465,14 @@ class TestLookupMixin:
 
         return True
 
+    def test_is_active_matches_sql_expression(self):
+        active = ents.LookupTester.fake(label='active', deleted_utc=None)
+        inactive = ents.LookupTester.fake(label='inactive', deleted_utc=arrow.now())
+
+        assert active.is_active is True
+        assert inactive.is_active is False
+        assert ents.LookupTester.query.filter(ents.LookupTester.is_active).all() == [active]
+
     def test_list_active(self):
         a = ents.LookupTester.fake(label='a', deleted_utc=None)
         b = ents.LookupTester.fake(label='b', deleted_utc=None)
