@@ -201,6 +201,61 @@ class TestSentryFilter:
             },
         }
 
+    def test_filter_request_secrets(self):
+        event = {
+            'extra': {
+                'APIKey': 'api-key',
+                'auth': 'auth-secret',
+                'author': 'Ada',
+                'credentials': {'username': 'user', 'password': 'pass'},
+                'otp': '123456',
+                'pin': '1234',
+                'session': 'session-secret',
+                'ssn': '123-45-6789',
+            },
+            'request': {
+                'headers': {
+                    'X-API-KEY': 'header-secret',
+                    'X-Request-ID': 'request-id',
+                },
+                'query_string': ('token=first&safe=visible&token=second&%61pi%5Fkey=query-secret'),
+                'url': (
+                    'https://example.test/reset?token=first&safe=visible'
+                    '&token=second&%61pi%5Fkey=query-secret#fragment'
+                ),
+            },
+        }
+
+        filtered = sentry.SentryEventFilter().before_send(event, {})
+
+        assert filtered == {
+            'extra': {
+                'APIKey': '<Filtered str>',
+                'auth': '<Filtered str>',
+                'author': 'Ada',
+                'credentials': '<Filtered dict>',
+                'otp': '<Filtered str>',
+                'pin': '<Filtered str>',
+                'session': '<Filtered str>',
+                'ssn': '<Filtered str>',
+            },
+            'request': {
+                'cookies': {},
+                'headers': {
+                    'X-API-KEY': '<Filtered str>',
+                    'X-Request-ID': 'request-id',
+                },
+                'query_string': (
+                    'token=%3CFiltered+str%3E&safe=visible&token=%3CFiltered+str%3E'
+                    '&api_key=%3CFiltered+str%3E'
+                ),
+                'url': (
+                    'https://example.test/reset?token=%3CFiltered+str%3E&safe=visible'
+                    '&token=%3CFiltered+str%3E&api_key=%3CFiltered+str%3E#fragment'
+                ),
+            },
+        }
+
     def test_filter_by_config_value(self, monkeypatch):
         monkeypatch.setitem(flask.current_app.config, 'STRING', '1234567890')
         monkeypatch.setitem(flask.current_app.config, 'BYTES1', b'\xf0\x0b\xaa')
@@ -276,6 +331,40 @@ class TestSentryFilter:
                 },
             },
         }
+
+
+class TestInstallSentry:
+    @pytest.mark.parametrize(
+        ('config_value', 'kwarg_value', 'expected'),
+        [
+            (None, None, False),
+            (None, True, True),
+            (True, None, True),
+            (True, False, False),
+        ],
+    )
+    @mock.patch('keg_elements.sentry.sentry_sdk.serializer.add_global_repr_processor')
+    @mock.patch('keg_elements.sentry.sentry_sdk.init')
+    def test_send_default_pii_is_opt_in(
+        self,
+        m_init,
+        m_add_repr_processor,
+        config_value,
+        kwarg_value,
+        expected,
+    ):
+        config = {'SENTRY_DSN': 'https://public@example.test/1'}
+        if config_value is not None:
+            config['SENTRY_SEND_DEFAULT_PII'] = config_value
+        kwargs = {} if kwarg_value is None else {'send_default_pii': kwarg_value}
+
+        with mock.patch.dict(flask.current_app.config, config, clear=False) as app_config:
+            if config_value is None:
+                app_config.pop('SENTRY_SEND_DEFAULT_PII', None)
+            sentry.install_sentry(flask.current_app, [], **kwargs)
+
+        assert m_init.call_args.kwargs['send_default_pii'] is expected
+        m_add_repr_processor.assert_called_once()
 
 
 class TestSentryMonitorUtils:
