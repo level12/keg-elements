@@ -13,6 +13,7 @@ Changelog
   rejecting trailing newlines
 - correct the instance-level value of ``LookupMixin.is_active``
 - retry transient Sentry API failures with exponential backoff
+- redact SQLAlchemy database URLs from Sentry event local variables
 
 
 0.20261119.1 released 2026-11-19

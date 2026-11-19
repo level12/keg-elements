@@ -7,6 +7,7 @@ import flask
 import pytest
 import sentry_sdk
 from sentry_sdk.transport import EndpointType
+from sqlalchemy.engine import URL
 
 from keg_elements import sentry
 
@@ -43,7 +44,16 @@ class TestSentryFilter:
         f = sentry.SentryEventFilter()
 
         conf = flask.config.Config(__file__)
+        db_url = URL.create(
+            'postgresql',
+            username='user',
+            password='secret',
+            host='database.example.test',
+            database='app',
+        )
         assert f.repr_process(conf, {}) == '<Filtered Config>'
+        assert 'secret' in db_url.render_as_string(hide_password=False)
+        assert f.repr_process(db_url, {}) == '<Filtered URL>'
         assert f.repr_process(dict(), {}) is NotImplemented
         assert f.repr_process(1, {}) is NotImplemented
         assert f.repr_process('', {}) is NotImplemented

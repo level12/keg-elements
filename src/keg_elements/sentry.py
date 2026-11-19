@@ -9,6 +9,7 @@ import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration as SentryFlask
 from sentry_sdk.integrations.logging import LoggingIntegration as SentryLogging
 from sentry_sdk.transport import HttpTransport
+from sqlalchemy.engine import URL as SAEngineURL
 import urllib3
 
 
@@ -39,7 +40,7 @@ class SentryEventFilter:
     """
 
     # Filter out any variables having a type in the following tuple
-    sanitized_types = (flask.config.Config,)
+    sanitized_types = (flask.config.Config, SAEngineURL)
 
     # Filter out values anywhere in the event JSON with a key containing any of the following
     # strings or regular expressions.
