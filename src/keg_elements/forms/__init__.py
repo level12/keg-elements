@@ -603,6 +603,24 @@ class RelationshipMultipleField(RelationshipFieldBase, SelectMultipleField):
     def coerce_to_int(value):
         return int(value)
 
+    def coerce_to_primary_key(self, value):
+        value = int(value)
+        mapper = sa.inspect(self.orm_cls)
+        column_type = mapper.columns.id.type
+        if isinstance(column_type, sa.SmallInteger):
+            bits = 16
+        elif isinstance(column_type, sa.BigInteger):
+            bits = 64
+        elif isinstance(column_type, sa.Integer):
+            bind = self.orm_cls.query.session.get_bind(mapper=mapper)
+            bits = 64 if bind.dialect.name == 'sqlite' else 32
+        else:
+            return value
+
+        if not -(2 ** (bits - 1)) <= value < 2 ** (bits - 1):
+            raise ValueError
+        return value
+
     def coerce_to_obj(self, value):
         if isinstance(value, self.orm_cls):
             return value
@@ -610,7 +628,7 @@ class RelationshipMultipleField(RelationshipFieldBase, SelectMultipleField):
             raise ValueError
 
         try:
-            obj = self.orm_cls.get(int(value))
+            obj = self.orm_cls.get(self.coerce_to_primary_key(value))
         except (TypeError, ValueError, OverflowError):
             raise ValueError from None
 

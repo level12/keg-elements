@@ -1,4 +1,5 @@
 import sys
+from unittest import mock
 
 from keg.db import db
 import kegel_app.model.entities as ents
@@ -1410,6 +1411,20 @@ class TestCollectionRelationship(RelationshipMixin):
 
         assert not form.related_things.validate(form)
         assert form.related_things.errors == ['Invalid Choice: could not coerce']
+
+    @pytest.mark.parametrize('direction', ['below', 'above'])
+    def test_out_of_range_submitted_id_does_not_query(self, direction):
+        bits = 64 if db.engine.dialect.name == 'sqlite' else 32
+        value = -(2 ** (bits - 1)) - 1 if direction == 'below' else 2 ** (bits - 1)
+        with mock.patch.object(ents.RelatedThing, 'get') as get:
+            form = self.create_form(
+                self.create_relationship(),
+                formdata=MultiDict([('related_things', str(value))]),
+            )
+
+        assert not form.related_things.validate(form)
+        assert form.related_things.errors == ['Invalid Choice: could not coerce']
+        get.assert_not_called()
 
     def test_load_save_data(self):
         class ManyThingsForm(ModelForm):
