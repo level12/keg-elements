@@ -1,0 +1,14 @@
+## Build
+[build]
+dev-mode-dirs = ['src']
+exclude = ['/.codegraph']
+
+
+[build.targets.wheel]
+packages = ['src/keg_elements']
+
+
+## Version
+[version]
+source = 'regex'
+path = 'src/keg_elements/version.py'

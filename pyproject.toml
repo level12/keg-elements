@@ -1,0 +1,148 @@
+[build-system]
+requires = [
+    'hatchling',
+]
+build-backend = 'hatchling.build'
+
+
+[tool.hatch.build.targets.wheel]
+packages = ['src/keg_elements']
+
+
+[tool.babel.extract_messages]
+input_dirs = ['src/keg_elements']
+mapping_file = 'src/keg_elements/i18n/babel.cfg'
+output_file = 'src/keg_elements/i18n/keg_elements.pot'
+
+[tool.babel.init_catalog]
+domain = 'keg_elements'
+input_file = 'src/keg_elements/i18n/keg_elements.pot'
+output_dir = 'src/keg_elements/i18n'
+
+[tool.babel.update_catalog]
+domain = 'keg_elements'
+input_file = 'src/keg_elements/i18n/keg_elements.pot'
+output_dir = 'src/keg_elements/i18n'
+
+[tool.babel.compile_catalog]
+domain = 'keg_elements'
+directory = 'src/keg_elements/i18n'
+
+[tool.babel.compile_json]
+domain = 'keg_elements'
+directory = 'src/keg_elements/i18n'
+output_dir = 'src/keg_elements/static/i18n'
+
+
+[project]
+name = 'KegElements'
+description = 'A collection of helpers and base classes for building apps with Keg.'
+authors = [
+    {name = 'Randy Syring', email = 'randy.syring@level12.io'},
+]
+requires-python = '>=3.12'
+dynamic = ['version']
+readme = 'readme.md'
+license = 'BSD-3-Clause'
+license-files = ['license.txt']
+classifiers = [
+    'Intended Audience :: Developers',
+    'License :: OSI Approved :: BSD License',
+    'Operating System :: OS Independent',
+    'Programming Language :: Python :: 3.12',
+    'Programming Language :: Python :: 3.13',
+    'Programming Language :: Python :: 3.14',
+    'Programming Language :: Python :: 3.15',
+]
+dependencies = [
+    'arrow',
+    'cryptography',
+    'Flask-WTF',
+    'Keg>=0.11.0',
+    'pytz',
+    'sentry-sdk>=2',
+    'WTForms>=3.3.2',
+    'WTForms-Alchemy>=0.18.0',
+    'WTForms-Components>=0.12.0',
+]
+
+
+[project.urls]
+Homepage = 'https://github.com/level12/keg-elements'
+Repository = 'https://github.com/level12/keg-elements'
+Documentation = 'https://keg-elements.readthedocs.io/en/stable/'
+
+
+[project.optional-dependencies]
+tests = [
+    'alembic',
+    'flask-webtest',
+    'freezegun',
+    'nox',
+    'prek',
+    'psycopg[binary]>=3',
+    'pyodbc',
+    'pyquery',
+    'pytest',
+    'pytest-cov',
+    'responses',
+    'SQLAlchemy>=2.1',
+    'sqlalchemy_pyodbc_mssql',
+    'webgrid>=0.20261113.1',
+    'xlsxwriter',
+]
+i18n = [
+    'morphi',
+    'setuptools',
+]
+
+
+[dependency-groups]
+dev = [
+    {include-group = "pytest"},
+    {include-group = "prek"},
+    {include-group = "audit"},
+    {include-group = "build"},
+    {include-group = "docs"},
+    {include-group = "nox"},
+    'click',
+    'ruff==0.16.2',
+]
+# Used by nox
+pytest = [
+    'alembic',
+    'flask-webtest',
+    'freezegun',
+    'psycopg[binary]>=3',
+    'pyodbc',
+    'pyquery',
+    'pytest',
+    'pytest-cov',
+    'responses',
+    'SQLAlchemy>=2.1',
+    'sqlalchemy_pyodbc_mssql',
+    'webgrid>=0.20261113.1',
+    'xlsxwriter',
+]
+# Used by nox
+prek = [
+    'prek',
+]
+# Used by nox
+audit = [
+    'pip-audit',
+]
+# Used by nox and the publish workflow
+build = [
+    'build',
+    'twine',
+]
+# Used by nox and Read the Docs
+docs = [
+    'pyquery',
+    'sphinx',
+]
+# Used by CI
+nox = [
+    'nox',
+]

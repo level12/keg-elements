@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.20261119.1 released 2026-11-19
+--------------------------------
+
+- modernize packaging and development tooling with Coppy, uv, Nox, prek, and
+  GitHub Actions
+- test supported Python releases from 3.12 through 3.15
+- test PostgreSQL using supported server releases starting with PostgreSQL 15
+- test Microsoft SQL Server 2022 with ODBC Driver 18 in CI
+
+
 0.13.0 released 2026-11-13
 --------------------------
 
